@@ -1,0 +1,7 @@
+{
+  "install_mode": "global",
+  "project_name": "foreman-cli",
+  "project_root": "/Users/rodrigomardones/.agents/skills/foreman",
+  "foreman_root": "/Users/rodrigomardones/FOREMAN",
+  "harness_workspace": "/Users/rodrigomardones/FOREMAN/foreman-cli"
+}

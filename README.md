@@ -129,6 +129,69 @@ Ejemplo de flujo completo:
 5. foreman cierra la feature si el reviewer aprueba y el verificador queda verde
 ```
 
+## CLI Experimental
+
+Este repositorio incluye un primer MVP de CLI escrito en TypeScript para Bun. La CLI no reemplaza la skill: automatiza las operaciones repetibles del harness y mantiene los mismos archivos como fuente de verdad.
+
+Ejecutar ayuda:
+
+```bash
+bun run foreman -- help
+```
+
+Consultar estado de un proyecto:
+
+```bash
+bun run foreman -- --project /ruta/al/proyecto status
+```
+
+Listar features:
+
+```bash
+bun run foreman -- --project /ruta/al/proyecto feature list
+```
+
+Iniciar una feature pendiente:
+
+```bash
+bun run foreman -- --project /ruta/al/proyecto feature start 1 --agent implementer
+```
+
+Bloquear una feature con motivo:
+
+```bash
+bun run foreman -- --project /ruta/al/proyecto feature block 1 --reason "falta credencial de API"
+```
+
+Cerrar una feature con review aprobada y verificador verde:
+
+```bash
+bun run foreman -- --project /ruta/al/proyecto feature close 1 --review progress/review_first_feature.md
+```
+
+Validar el harness:
+
+```bash
+bun run foreman -- --project /ruta/al/proyecto verify
+```
+
+Comandos disponibles en el MVP:
+
+- `status`: resuelve `PROJECT_ROOT`, `HARNESS_WORKSPACE`, modo de instalacion y feature activa.
+- `config`: imprime la configuracion resuelta en formato `key=value`.
+- `verify`: valida archivos requeridos, estado de features y ejecuta `init.sh`.
+- `feature list`: muestra backlog en tabla.
+- `feature start`: cambia una feature `pending` a `in_progress` y actualiza `progress/current.md`.
+- `feature block`: cambia una feature a `blocked` y registra el motivo.
+- `feature close`: exige review `APPROVED` y verificacion verde antes de marcar `done`.
+- `progress show`: muestra `progress/current.md`.
+
+Ejecutar tests del CLI:
+
+```bash
+bun test
+```
+
 ## Reglas Operativas
 
 - Trabajar una sola feature a la vez.

@@ -1,0 +1,25 @@
+{
+  "name": "foreman-cli",
+  "version": "0.1.0",
+  "description": "Bun-powered CLI for operating Foreman harness workflows.",
+  "type": "module",
+  "bin": {
+    "foreman": "./bin/foreman.ts"
+  },
+  "scripts": {
+    "foreman": "bun run bin/foreman.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "SKILL.md",
+    "references"
+  ],
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^6.0.3"
+  }
+}
