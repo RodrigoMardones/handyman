@@ -86,10 +86,9 @@ install_progress_structure() {
   mkdir -p "$progress_dir/history"
   mkdir -p "$progress_dir/docs"
 
-  # Seed placeholder files so directories are tracked by VCS
-  _write_if_absent "$progress_dir/current/.gitkeep"   ""
-  _write_if_absent "$progress_dir/history/.gitkeep"   ""
-  _write_if_absent "$progress_dir/docs/.gitkeep"      ""
+  # Seed a placeholder in docs/ so the empty directory is tracked by VCS.
+  # current/ and history/ are non-empty once their seed files are written below.
+  _write_if_absent "$progress_dir/docs/.gitkeep" ""
 
   # Create default current-state file
   _write_if_absent "$progress_dir/current/state.md" "$(cat <<'STATE'
@@ -278,6 +277,7 @@ _write_if_absent() {
   local content="$2"
 
   if [[ ! -f "$path" ]]; then
-    printf '%s' "$content" > "$path"
+    # printf '%s\n' preserves content and ensures the file ends with a newline.
+    printf '%s\n' "$content" > "$path"
   fi
 }
