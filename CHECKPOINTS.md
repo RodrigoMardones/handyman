@@ -32,6 +32,9 @@ Resolve `HARNESS_WORKSPACE` from `harness.config.json` before checking mutable s
 
 - [ ] `bun run typecheck` passes.
 - [ ] `bun test` passes.
+- [ ] `bun run build` produces `dist/bin/foreman.js` and `dist/cli.js`.
+- [ ] `bun run smoke:node` proves the compiled CLI runs with Node.
+- [ ] `bun run pack:dry` succeeds.
 - [ ] `bun run foreman -- --project "$PROJECT_ROOT" status` resolves global mode.
 - [ ] No generated dependency folders are committed.
 

@@ -15,6 +15,10 @@ if ! command -v bun >/dev/null 2>&1; then
   fail "bun is required"
 fi
 
+if ! command -v npm >/dev/null 2>&1; then
+  fail "npm is required for packaging verification"
+fi
+
 if [ -f "$CONFIG_PATH" ]; then
   HARNESS_WORKSPACE="$(bun -e 'const fs = require("node:fs"); const [path] = process.argv.slice(1); const config = JSON.parse(fs.readFileSync(path, "utf8")); process.stdout.write(config.harness_workspace || "");' "$CONFIG_PATH")"
 fi
@@ -69,5 +73,8 @@ fi
 
 (cd "$PROJECT_ROOT" && bun run typecheck) || EXIT_CODE=1
 (cd "$PROJECT_ROOT" && bun test) || EXIT_CODE=1
+(cd "$PROJECT_ROOT" && bun run build) || EXIT_CODE=1
+(cd "$PROJECT_ROOT" && bun run smoke:node) || EXIT_CODE=1
+(cd "$PROJECT_ROOT" && bun run pack:dry) || EXIT_CODE=1
 
 exit "$EXIT_CODE"

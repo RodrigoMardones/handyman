@@ -1,25 +1,39 @@
 {
   "name": "foreman-cli",
   "version": "0.1.0",
-  "description": "Bun-powered CLI for operating Foreman harness workflows.",
+  "description": "TypeScript CLI for operating Foreman harness workflows.",
   "type": "module",
+  "main": "./dist/cli.js",
+  "types": "./dist/cli.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/cli.d.ts",
+      "import": "./dist/cli.js"
+    }
+  },
   "bin": {
-    "foreman": "./bin/foreman.ts"
+    "foreman": "./dist/bin/foreman.js"
   },
   "scripts": {
     "foreman": "bun run bin/foreman.ts",
+    "build": "tsup && node -e \"require('node:fs').chmodSync('dist/bin/foreman.js', 0o755)\"",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "smoke:node": "node dist/bin/foreman.js help",
+    "pack:dry": "npm pack --dry-run",
+    "verify:publish": "bun run typecheck && bun test && bun run build && bun run smoke:node && bun run pack:dry",
+    "prepublishOnly": "bun run verify:publish"
   },
   "files": [
-    "bin",
-    "src",
-    "README.md",
-    "SKILL.md",
-    "references"
+    "dist",
+    "README.md"
   ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "devDependencies": {
     "@types/bun": "latest",
+    "tsup": "^8.5.1",
     "typescript": "^6.0.3"
   }
 }

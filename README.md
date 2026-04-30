@@ -192,6 +192,16 @@ Ejecutar tests del CLI:
 bun test
 ```
 
+Preparar artefactos para npm:
+
+```bash
+bun run build
+bun run smoke:node
+bun run pack:dry
+```
+
+El desarrollo local sigue usando Bun y TypeScript directamente. Para publicacion futura en npm, el paquete apunta el binario `foreman` a `dist/bin/foreman.js`, que se ejecuta con Node.js 18 o superior.
+
 ## Reglas Operativas
 
 - Trabajar una sola feature a la vez.
