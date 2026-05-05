@@ -190,10 +190,12 @@ tags: [handyman/role/implementer, handyman/feature/<feature_name>]
 
 ## progress/review_<feature>.md
 
+Use `status: approved` with `handyman/review/approved`, or `status: changes_requested` with `handyman/review/changes_requested`.
+
 ```markdown
 ---
 feature: <feature_name>
-status: approved   # or changes_requested
+status: approved
 role: reviewer
 updated: YYYY-MM-DD
 tags: [handyman/role/reviewer, handyman/review/approved, handyman/feature/<feature_name>]
@@ -220,6 +222,7 @@ _None, or a concrete list of file-specific changes._
 ## index.md (Obsidian MOC)
 
 Optional but recommended at the root of the `HARNESS_WORKSPACE` to make the vault navigable from Obsidian.
+The starter MOC only links files that are generated inside `HARNESS_WORKSPACE`, so it works for both local and global installs. In local installs you may add `[[AGENTS]]` and `[[CHECKPOINTS]]` when those files exist in the same vault; in global installs those bridge files stay in `PROJECT_ROOT` and should not be vault wikilinks unless you mirror them intentionally.
 
 ```markdown
 ---
@@ -228,11 +231,9 @@ tags: [handyman/moc]
 
 # <project_name> - Handyman Workspace
 
-## Entrypoints
+## State
 
-- [[AGENTS]]
-- [[CHECKPOINTS]]
-- [[feature_list]] <!-- mirror of feature_list.json, if maintained -->
+- [feature_list.json](feature_list.json)
 
 ## Docs
 
@@ -244,6 +245,11 @@ tags: [handyman/moc]
 
 - [[progress/current]]
 - [[progress/history]]
+
+## Bridge Files
+
+- `AGENTS.md` and `CHECKPOINTS.md` live in `PROJECT_ROOT` for global installs.
+- Add `[[AGENTS]]` and `[[CHECKPOINTS]]` only when those files exist inside this vault.
 
 ## Tags
 

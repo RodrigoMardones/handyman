@@ -75,11 +75,11 @@ En modo global, el repositorio conserva archivos puente como `AGENTS.md`, `CHECK
 El `HARNESS_WORKSPACE` esta disenado para abrirse directamente como vault de Obsidian, sin duplicar archivos.
 
 1. Abre Obsidian y elige **Open folder as vault** apuntando al `HARNESS_WORKSPACE` (`PROJECT_ROOT` en modo local o `$HOME/HANDYMAN/<project_name>` en modo global).
-2. Los reportes en `progress/` y `docs/` ya traen YAML frontmatter (`feature`, `status`, `role`, `updated`, `tags`).
-3. El archivo `index.md` actua como MOC con enlaces a `AGENTS`, `CHECKPOINTS`, `docs/`, `progress/current` y `progress/history`.
+2. Los reportes en `progress/` ya traen YAML frontmatter (`feature`, `status`, `role`, `updated`, `tags`); los documentos en `docs/` son markdown plano y, si usan frontmatter, solo incluyen `tags` opcional.
+3. El archivo `index.md` actua como MOC con enlaces a `feature_list.json`, `docs/`, `progress/current` y `progress/history`. En modo local puede sumar `AGENTS` y `CHECKPOINTS` si existen dentro del vault; en modo global esos archivos son puente en `PROJECT_ROOT`.
 4. Los tags siguen el namespace `#handyman/...` (ej: `#handyman/feature/in_progress`, `#handyman/review/approved`).
 5. Plugins recomendados: **Outline**, **Backlinks** y **Tags** (todos core). Opcionales: **Dataview** y **Templater**.
-6. La carpeta `.obsidian/` queda fuera del versionado por defecto (`.gitignore`).
+6. Agrega `.obsidian/` y `.trash/` al `.gitignore` del proyecto o workspace antes de commitear metadata local de Obsidian; usa el snippet de [references/templates.md](references/templates.md#gitignore-obsidian).
 
 Mas detalles en [references/obsidian.md](references/obsidian.md).
 
@@ -167,23 +167,21 @@ Ejemplo de flujo completo:
 
 ## Licencia Y Atribucion
 
-Handyman se distribuye bajo la licencia [Creative Commons Attribution 4.0 International (CC BY 4.0)](LICENSE).
+Handyman se distribuye bajo la licencia [MIT](LICENSE).
 
 Esto significa que puedes:
 
 - Usar la skill libremente, incluso con fines comerciales.
-- Modificarla, adaptarla y redistribuirla.
+- Modificarla, adaptarla, redistribuirla y sublicenciarla.
 
-A cambio debes:
+La licencia MIT requiere:
 
-- Mantener la atribucion al autor original (**Rodrigo Mardones**) tal como aparece en [NOTICE](NOTICE).
-- Indicar si introdujiste cambios respecto del original.
-- No sugerir que el autor original respalda tu version derivada.
+- Incluir el aviso de copyright y el texto de la licencia en copias o porciones sustanciales del software.
 
 Texto sugerido para citar la skill:
 
 ```text
-Based on Handyman skill by Rodrigo Mardones, licensed under CC BY 4.0.
+Handyman skill by Rodrigo Mardones, licensed under the MIT License.
 ```
 
 ## Contacto

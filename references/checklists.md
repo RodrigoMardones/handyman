@@ -32,6 +32,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] In global mode, create `harness.config.json` in the project root.
 - [ ] Create `$HARNESS_WORKSPACE/progress/` before any agent work starts.
 - [ ] Add a starter `$HARNESS_WORKSPACE/feature_list.json` with at least one concrete feature.
+- [ ] Add `.obsidian/` and `.trash/` to the relevant project or workspace `.gitignore` when the workspace will be opened in Obsidian.
 - [ ] Write docs that match the actual repo, not generic placeholders.
 - [ ] Make the verifier executable.
 - [ ] Ensure the verifier fails on invalid feature state.
@@ -74,10 +75,12 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 ## Obsidian Checklist
 
 - [ ] `progress/current.md` includes YAML frontmatter with `feature`, `status`, `role`, `updated`, `tags`.
+- [ ] `progress/history.md` includes YAML frontmatter with `tags`.
 - [ ] `progress/impl_<feature>.md` and `progress/review_<feature>.md` carry frontmatter with `feature`, `status`, `role`, `updated`, `tags`.
-- [ ] Tags follow the `#handyman/...` namespace (`feature`, `role`, `review`, `blocked`, `moc`).
-- [ ] An `index.md` MOC at the workspace root links `AGENTS`, `CHECKPOINTS`, `docs/`, `progress/current`, `progress/history`.
-- [ ] `.obsidian/` is in `.gitignore` and not committed.
+- [ ] `progress/explore_<topic>.md` reports carry frontmatter with `topic`, `role`, `updated`, `tags`.
+- [ ] Tags use the documented `#handyman/...` namespace, including `feature`, `role`, `review`, `session/current`, `history`, `docs`, `blocked`, and `moc` as applicable.
+- [ ] An `index.md` MOC at the workspace root links `feature_list.json`, `docs/`, `progress/current`, and `progress/history`; it links `AGENTS` or `CHECKPOINTS` only when those files exist inside the same vault.
+- [ ] `.obsidian/` and `.trash/` are in the relevant `.gitignore` and not committed.
 - [ ] Wikilinks (`[[...]]`) used in markdown still resolve to existing files.
 
 ## Common Risks

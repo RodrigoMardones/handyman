@@ -11,7 +11,7 @@ This document covers how to open the workspace as a vault, the conventions Handy
    - Global mode: `$HOME/HANDYMAN/<project_name>` (the resolved `HARNESS_WORKSPACE`).
 2. In Obsidian choose **Open folder as vault** and point it to that folder.
 3. Trust the vault when prompted.
-4. Confirm the file tree shows `AGENTS.md`, `CHECKPOINTS.md`, `docs/`, `progress/`, `feature_list.json` and (optionally) `index.md`.
+4. Confirm the file tree shows `docs/`, `progress/`, `feature_list.json` and (optionally) `index.md`. In local mode it also shows repo-root bridge files such as `AGENTS.md` and `CHECKPOINTS.md`; in global mode those bridge files remain in `PROJECT_ROOT` outside the vault.
 
 The harness keeps editing markdown the same way as before. Obsidian only adds visualization, search, backlinks, and tag navigation.
 
@@ -54,7 +54,7 @@ Tags are additive: a review report typically carries `#handyman/role/reviewer` p
 
 ## Map Of Content (MOC)
 
-The optional `index.md` at the root of the workspace acts as a hub. It lists the entrypoints, docs, progress files and useful tag queries. See [templates.md](./templates.md#indexmd-obsidian-moc).
+The optional `index.md` at the root of the workspace acts as a hub. It lists files that exist inside `HARNESS_WORKSPACE`: `feature_list.json`, docs, progress files and useful tag queries. Local installs may add `AGENTS.md` and `CHECKPOINTS.md` wikilinks because the vault is `PROJECT_ROOT`; global installs should mention those bridge files as plain paths unless they are intentionally mirrored into the vault. See [templates.md](./templates.md#indexmd-obsidian-moc).
 
 ## Wikilinks vs Markdown Links
 
@@ -64,6 +64,7 @@ Handyman accepts both styles:
 - Wikilinks: `[[docs/architecture]]`. Resolves natively in Obsidian.
 
 Use wikilinks for cross-references inside the vault and markdown links for anything that is also read by non-Obsidian readers (CLI, GitHub, agent file viewers).
+For non-markdown files inside the vault, include the extension or use a markdown link, such as `[feature_list.json](feature_list.json)`. Do not add wikilinks to files outside the opened vault.
 
 ## Recommended Plugins
 
@@ -83,7 +84,7 @@ Example Dataview query for current work:
 
 ````markdown
 ```dataview
-TABLE feature, role, updated FROM "progress" WHERE status = "implemented"
+TABLE feature, role, updated FROM "progress" WHERE status = "in_progress"
 ```
 ````
 
@@ -96,7 +97,7 @@ Keep Obsidian's local cache out of git. Add to `.gitignore`:
 .trash/
 ```
 
-Frontmatter, tags, MOC and wikilinks should be committed. They are part of the harness contract.
+Frontmatter, tags, MOC and wikilinks are part of the harness contract. Commit them when `HARNESS_WORKSPACE` is versioned with the project; in global installs, keep them in the external workspace and back them up according to the team's policy.
 
 ## Migration From Plain Markdown
 

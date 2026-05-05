@@ -29,10 +29,13 @@ Tag namespace:
 - `#handyman/feature/pending|in_progress|done|blocked`
 - `#handyman/role/leader|implementer|reviewer|explorer`
 - `#handyman/review/approved|changes_requested`
+- `#handyman/session/current` for the active session file.
+- `#handyman/history` for the append-only session history.
+- `#handyman/docs` for optional documentation frontmatter.
 - `#handyman/blocked` for any blocker note.
 - `#handyman/moc` for the index.
 
-Wikilinks (`[[CHECKPOINTS]]`, `[[progress/current]]`) are optional and coexist with regular markdown links. The `.obsidian/` directory must stay out of version control.
+Wikilinks (`[[docs/architecture]]`, `[[progress/current]]`) are optional and coexist with regular markdown links. Only wikilink files that exist inside the opened vault; in global mode, repo-root bridge files such as `AGENTS.md` and `CHECKPOINTS.md` live outside `HARNESS_WORKSPACE` unless mirrored intentionally. The `.obsidian/` directory must stay out of version control.
 
 ## Required Core Files
 

@@ -142,4 +142,4 @@ See [references/obsidian.md](./references/obsidian.md) for conventions, recommen
 
 ## License & Attribution
 
-Handyman is distributed under the [Creative Commons Attribution 4.0 International (CC BY 4.0)](./LICENSE) license. You may use, adapt, and redistribute it (including commercially) provided you keep the attribution to **Rodrigo Mardones** as described in [NOTICE](./NOTICE).
+Handyman is distributed under the [MIT](./LICENSE) license. You may use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of it, provided the copyright notice and license text are included in copies or substantial portions of the software.
