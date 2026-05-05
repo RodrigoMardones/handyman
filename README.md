@@ -1,5 +1,7 @@
 # 🧰 Handyman
 
+[![skills.sh](https://skills.sh/b/RodrigoMardones/handyman)](https://skills.sh/RodrigoMardones/handyman)
+
 Handyman es una skill para crear y operar un **harness de trabajo con agentes**: una estructura de archivos, roles y verificaciones que permite que uno o mas agentes trabajen sobre un proyecto de software de forma ordenada, auditable y retomable.
 
 La idea central es simple: el chat coordina, pero el disco es la fuente de verdad. Handyman instala o analiza una capa operativa alrededor de un repositorio para que cada sesion tenga estado, backlog, criterios de cierre, reportes y verificacion ejecutable.
@@ -10,6 +12,7 @@ La idea central es simple: el chat coordina, pero el disco es la fuente de verda
 
 | Si quieres... | Ve a... | Resultado esperado |
 |---------------|---------|--------------------|
+| Instalar la skill | [Instalacion Con Skills](#-instalacion-con-skills) | Agregar Handyman a tu entorno de skills. |
 | Entender el flujo | [Que Es Handyman](#-que-es-handyman) | Roles, estado en disco y verificacion. |
 | Instalar el harness | [Modos De Instalacion](#-modos-de-instalacion) | Elegir `local` o `global` sin mezclar estado. |
 | Ubicar archivos | [Archivos Principales](#-archivos-principales) | Saber que editar y que revisar. |
@@ -54,6 +57,15 @@ Usa Handyman cuando quieras:
 - 🪨 Navegar el progreso desde Obsidian con backlinks, tags y un MOC central.
 
 No es necesario para tareas pequenas o implementaciones puntuales donde no quieres usar el flujo formal de harness.
+
+## 📦 Instalacion Con Skills
+
+Instala Handyman directamente desde este repositorio con el cliente de skills:
+
+```bash
+npx skills add "RodrigoMardones/handyman"
+```
+
 
 ## 🏗️ Modos De Instalacion
 
