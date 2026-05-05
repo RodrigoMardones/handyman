@@ -37,7 +37,7 @@ The implementer owns exactly one feature.
 4. Implement the smallest code change that satisfies the acceptance criteria.
 5. Add or update tests at the same risk level as the change.
 6. Run the verifier from `PROJECT_ROOT`.
-7. Write `$HARNESS_WORKSPACE/progress/impl_<feature>.md` with files changed, design notes, and test output.
+7. Write `$HARNESS_WORKSPACE/progress/impl_<feature>.md` with YAML frontmatter (`feature`, `status: implemented`, `role: implementer`, `updated`, `tags`), files changed, design notes, and test output.
 8. Return only `done -> $HARNESS_WORKSPACE/progress/impl_<feature>.md` or `blocked -> $HARNESS_WORKSPACE/progress/current.md`.
 
 The implementer does not self-approve. It can mark `done` only if the local protocol explicitly says the implementer performs closure after reviewer approval.
@@ -52,7 +52,7 @@ The reviewer validates and does not edit code.
 4. Inspect changed files.
 5. Run the verifier from `PROJECT_ROOT`.
 6. Mark checklist items as pass or fail.
-7. Write `$HARNESS_WORKSPACE/progress/review_<feature>.md` with `APPROVED` or `CHANGES_REQUESTED`.
+7. Write `$HARNESS_WORKSPACE/progress/review_<feature>.md` with YAML frontmatter (`feature`, `status: approved` or `status: changes_requested`, `role: reviewer`, `updated`, `tags`) and `APPROVED` or `CHANGES_REQUESTED` in the body.
 8. Return only `APPROVED -> $HARNESS_WORKSPACE/progress/review_<feature>.md` or `CHANGES_REQUESTED -> $HARNESS_WORKSPACE/progress/review_<feature>.md`.
 
 ## Closure Protocol
@@ -92,7 +92,7 @@ For complex work, the leader may launch read-only exploration subagents before i
 Rules:
 
 - Each explorer gets one narrow question.
-- Each explorer writes to `$HARNESS_WORKSPACE/progress/explore_<topic>.md`.
+- Each explorer writes to `$HARNESS_WORKSPACE/progress/explore_<topic>.md` with frontmatter (`topic`, `role: explorer`, `updated`, `tags`).
 - Each explorer returns only a file reference.
 - The leader synthesizes the reports before selecting implementation scope.
 
