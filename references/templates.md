@@ -5,8 +5,8 @@ Use these as starting points. Adjust them to the project language, test runner, 
 Path placeholders used below:
 
 - `PROJECT_ROOT`: the repo where product code and verifier commands run.
-- `FOREMAN_ROOT`: `$HOME/FOREMAN` in global mode.
-- `HARNESS_WORKSPACE`: the directory that owns mutable harness state. It is `PROJECT_ROOT` in local mode and `$FOREMAN_ROOT/<project_name>` in global mode.
+- `HANDYMAN_ROOT`: `$HOME/HANDYMAN` in global mode.
+- `HARNESS_WORKSPACE`: the directory that owns mutable harness state. It is `PROJECT_ROOT` in local mode and `$HANDYMAN_ROOT/<project_name>` in global mode.
 
 ## AGENTS.md
 
@@ -19,10 +19,10 @@ This file is the entrypoint for any agent working in this repo. It is a map, not
 
 - **Install scope:** local
 - **Project root:** `.`
-- **Foreman root:** _not used_
+- **Handyman root:** _not used_
 - **Harness workspace:** `.`
 
-If install scope is `global`, the harness workspace must be `$HOME/FOREMAN/<project_name>`. Read and write mutable harness state there, not in the project root. Product code, tests, and verifier commands still run from the project root.
+If install scope is `global`, the harness workspace must be `$HOME/HANDYMAN/<project_name>`. Read and write mutable harness state there, not in the project root. Product code, tests, and verifier commands still run from the project root.
 
 ## Before Starting
 
@@ -66,7 +66,7 @@ If install scope is `global`, the harness workspace must be `$HOME/FOREMAN/<proj
     "install_mode": "local",
     "project_name": "project-name",
     "project_root": ".",
-    "foreman_root": null,
+    "handyman_root": null,
     "harness_workspace": "."
   },
   "rules": {
@@ -99,17 +99,25 @@ Create this bridge file in the project root for global installs. Existing local 
   "install_mode": "global",
   "project_name": "project-name",
   "project_root": "/absolute/path/to/project-name",
-  "foreman_root": "/Users/any_user/FOREMAN",
-  "harness_workspace": "/Users/any_user/FOREMAN/project-name"
+  "handyman_root": "/Users/any_user/HANDYMAN",
+  "harness_workspace": "/Users/any_user/HANDYMAN/project-name"
 }
 ```
 
 ## progress/current.md
 
 ```markdown
+---
+feature: none
+status: idle
+role: leader
+updated: YYYY-MM-DD
+tags: [handyman/session/current]
+---
+
 # Current Session
 
-This file is reset when a session closes and its summary moves to `history.md`. Keep it updated while working, not only at the end.
+This file is reset when a session closes and its summary moves to `[[history]]`. Keep it updated while working, not only at the end.
 
 - **Feature in progress:** _none_
 - **Start:** _-_ 
@@ -133,6 +141,10 @@ _If interrupted, the next session starts here._
 ## progress/history.md
 
 ```markdown
+---
+tags: [handyman/history]
+---
+
 # Session History
 
 Append-only. Do not edit earlier entries during normal work.
@@ -146,6 +158,107 @@ Append-only. Do not edit earlier entries during normal work.
 - **Verification:** command and result
 - **Review:** APPROVED or CHANGES_REQUESTED with report path
 - **Closure:** final feature status
+```
+
+## progress/impl_<feature>.md
+
+```markdown
+---
+feature: <feature_name>
+status: implemented
+role: implementer
+updated: YYYY-MM-DD
+tags: [handyman/role/implementer, handyman/feature/<feature_name>]
+---
+
+# Implementation Report: <feature_name>
+
+## Files Changed
+
+- ...
+
+## Design Notes
+
+- ...
+
+## Test Output
+
+```text
+<verifier output>
+```
+```
+
+## progress/review_<feature>.md
+
+```markdown
+---
+feature: <feature_name>
+status: approved   # or changes_requested
+role: reviewer
+updated: YYYY-MM-DD
+tags: [handyman/role/reviewer, handyman/review/approved, handyman/feature/<feature_name>]
+---
+
+# Review: <feature_name>
+
+## Verdict
+
+APPROVED   <!-- or CHANGES_REQUESTED -->
+
+## Checklist
+
+- [x] Architecture respected
+- [x] Conventions respected
+- [x] Tests meaningful and green
+- [x] Verifier exits 0
+
+## Required Changes
+
+_None, or a concrete list of file-specific changes._
+```
+
+## index.md (Obsidian MOC)
+
+Optional but recommended at the root of the `HARNESS_WORKSPACE` to make the vault navigable from Obsidian.
+
+```markdown
+---
+tags: [handyman/moc]
+---
+
+# <project_name> - Handyman Workspace
+
+## Entrypoints
+
+- [[AGENTS]]
+- [[CHECKPOINTS]]
+- [[feature_list]] <!-- mirror of feature_list.json, if maintained -->
+
+## Docs
+
+- [[docs/architecture]]
+- [[docs/conventions]]
+- [[docs/verification]]
+
+## Progress
+
+- [[progress/current]]
+- [[progress/history]]
+
+## Tags
+
+- `#handyman/feature/in_progress`
+- `#handyman/feature/blocked`
+- `#handyman/review/changes_requested`
+```
+
+## .gitignore (Obsidian)
+
+Append to the project or workspace `.gitignore` so Obsidian's local cache stays out of version control:
+
+```text
+.obsidian/
+.trash/
 ```
 
 ## docs/architecture.md
@@ -232,7 +345,7 @@ The agent does not claim it works; it demonstrates it.
 ```markdown
 # CHECKPOINTS
 
-Resolve `HARNESS_WORKSPACE` before checking state. In local mode it is the project root. In global mode it is `$HOME/FOREMAN/<project_name>`.
+Resolve `HARNESS_WORKSPACE` before checking state. In local mode it is the project root. In global mode it is `$HOME/HANDYMAN/<project_name>`.
 
 ## C1 - Harness Complete
 

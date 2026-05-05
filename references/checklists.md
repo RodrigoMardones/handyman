@@ -7,7 +7,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] `AGENTS.md` exists and gives a progressive navigation map.
 - [ ] Install scope is identified as `local` or `global`.
 - [ ] `HARNESS_WORKSPACE` is resolved from `harness.config.json`, `feature_list.json` config, or local fallback.
-- [ ] In global mode, `HARNESS_WORKSPACE` is `$HOME/FOREMAN/<project_name>`.
+- [ ] In global mode, `HARNESS_WORKSPACE` is `$HOME/HANDYMAN/<project_name>`.
 - [ ] `$HARNESS_WORKSPACE/feature_list.json` exists and has valid JSON.
 - [ ] Valid statuses are explicit.
 - [ ] At most one feature is `in_progress`.
@@ -28,7 +28,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] Ask before overwriting existing repo instructions or verifier files.
 - [ ] Ask for `local` or `global` install scope when the user did not specify it.
 - [ ] In global mode, derive `project_name` from the target repo directory name.
-- [ ] In global mode, create `$HOME/FOREMAN/<project_name>` before any agent work starts.
+- [ ] In global mode, create `$HOME/HANDYMAN/<project_name>` before any agent work starts.
 - [ ] In global mode, create `harness.config.json` in the project root.
 - [ ] Create `$HARNESS_WORKSPACE/progress/` before any agent work starts.
 - [ ] Add a starter `$HARNESS_WORKSPACE/feature_list.json` with at least one concrete feature.
@@ -71,6 +71,15 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] Required changes are concrete and file-specific.
 - [ ] Reviewer did not edit code.
 
+## Obsidian Checklist
+
+- [ ] `progress/current.md` includes YAML frontmatter with `feature`, `status`, `role`, `updated`, `tags`.
+- [ ] `progress/impl_<feature>.md` and `progress/review_<feature>.md` carry frontmatter with `feature`, `status`, `role`, `updated`, `tags`.
+- [ ] Tags follow the `#handyman/...` namespace (`feature`, `role`, `review`, `blocked`, `moc`).
+- [ ] An `index.md` MOC at the workspace root links `AGENTS`, `CHECKPOINTS`, `docs/`, `progress/current`, `progress/history`.
+- [ ] `.obsidian/` is in `.gitignore` and not committed.
+- [ ] Wikilinks (`[[...]]`) used in markdown still resolve to existing files.
+
 ## Common Risks
 
 | Risk | Symptom | Response |
@@ -85,8 +94,8 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 | Verifier too weak | It checks files but not tests | Add test execution before trusting closure. |
 | Platform mismatch | Role files are for another agent system | Keep protocol, adapt paths and frontmatter. |
 | Path drift | `AGENTS.md`, `CHECKPOINTS.md`, and role files disagree about `HARNESS_WORKSPACE` | Stop and repair the bridge config before editing state. |
-| Project name collision | Two repos share the same basename under `$HOME/FOREMAN` | Ask before reusing; consider a disambiguated name. |
-| Split state | Some reports are in the repo and some are under FOREMAN | Move the reports to the resolved workspace or document a migration before continuing. |
+| Project name collision | Two repos share the same basename under `$HOME/HANDYMAN` | Ask before reusing; consider a disambiguated name. |
+| Split state | Some reports are in the repo and some are under HANDYMAN | Move the reports to the resolved workspace or document a migration before continuing. |
 
 ## Dry Run Expected Findings For The Example Repo
 

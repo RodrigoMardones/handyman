@@ -5,16 +5,41 @@ A harness-subagents repo is a normal software project plus an explicit operating
 The harness has two possible roots:
 
 - `PROJECT_ROOT`: the repo where product code, tests, verifier scripts, and stable agent entrypoints live.
-- `HARNESS_WORKSPACE`: the directory that owns mutable harness state. In local mode this is `PROJECT_ROOT`; in global mode this is `$HOME/FOREMAN/<project_name>`.
+- `HARNESS_WORKSPACE`: the directory that owns mutable harness state. In local mode this is `PROJECT_ROOT`; in global mode this is `$HOME/HANDYMAN/<project_name>`.
 
-Global mode keeps the repo as a stable bridge and moves operational state into FOREMAN. This separates code from work history while preserving a single source of truth for active sessions.
+Global mode keeps the repo as a stable bridge and moves operational state into HANDYMAN. This separates code from work history while preserving a single source of truth for active sessions.
+
+## Obsidian Frontmatter And Tags
+
+The `HARNESS_WORKSPACE` is also a valid Obsidian vault. Mutable markdown files carry YAML frontmatter so Obsidian can index them by feature, status, role, and tags.
+
+Minimal frontmatter per file:
+
+| File | Required keys |
+|------|---------------|
+| `progress/current.md` | `feature`, `status`, `role`, `updated`, `tags` |
+| `progress/history.md` | `tags` (typically `[handyman/history]`) |
+| `progress/impl_<feature>.md` | `feature`, `status`, `role: implementer`, `updated`, `tags` |
+| `progress/review_<feature>.md` | `feature`, `status` (`approved` or `changes_requested`), `role: reviewer`, `updated`, `tags` |
+| `progress/explore_<topic>.md` | `topic`, `role: explorer`, `updated`, `tags` |
+| `index.md` (MOC) | `tags: [handyman/moc]` |
+
+Tag namespace:
+
+- `#handyman/feature/pending|in_progress|done|blocked`
+- `#handyman/role/leader|implementer|reviewer|explorer`
+- `#handyman/review/approved|changes_requested`
+- `#handyman/blocked` for any blocker note.
+- `#handyman/moc` for the index.
+
+Wikilinks (`[[CHECKPOINTS]]`, `[[progress/current]]`) are optional and coexist with regular markdown links. The `.obsidian/` directory must stay out of version control.
 
 ## Required Core Files
 
 | Logical path | Local mode location | Global mode location | Purpose |
 |--------------|---------------------|----------------------|---------|
 | `AGENTS.md` | `PROJECT_ROOT/AGENTS.md` | `PROJECT_ROOT/AGENTS.md` | Entrypoint map for agents. It explains what to read first and where rules live. |
-| `harness.config.json` | Optional | `PROJECT_ROOT/harness.config.json` | Bridge file that records `install_mode`, `project_root`, `foreman_root`, and `harness_workspace`. |
+| `harness.config.json` | Optional | `PROJECT_ROOT/harness.config.json` | Bridge file that records `install_mode`, `project_root`, `handyman_root`, and `harness_workspace`. |
 | `feature_list.json` | `PROJECT_ROOT/feature_list.json` | `HARNESS_WORKSPACE/feature_list.json` | Backlog and state machine. It lists features and valid statuses. |
 | `progress/current.md` | `PROJECT_ROOT/progress/current.md` | `HARNESS_WORKSPACE/progress/current.md` | Live session state. It records the active feature, plan, log, and next step. |
 | `progress/history.md` | `PROJECT_ROOT/progress/history.md` | `HARNESS_WORKSPACE/progress/history.md` | Append-only history of closed sessions. |
@@ -50,7 +75,7 @@ Use role files when the host agent system supports subagents. Adapt the path to 
 A minimal `feature_list.json` lives in `HARNESS_WORKSPACE` and contains:
 
 - Project metadata.
-- Optional config for `install_mode`, `project_name`, `project_root`, `foreman_root`, and `harness_workspace`.
+- Optional config for `install_mode`, `project_name`, `project_root`, `handyman_root`, and `harness_workspace`.
 - Global rules such as `one_feature_at_a_time` and `require_tests_to_close`.
 - `valid_status`: usually `pending`, `in_progress`, `done`, `blocked`.
 - A `features` array with `id`, `name`, `title`, `description`, `acceptance`, and `status`.

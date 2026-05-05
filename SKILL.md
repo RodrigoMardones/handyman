@@ -1,21 +1,23 @@
 ---
-name: foreman
-description: 'Use when: install, analyze, create, migrate, or operate a Foreman harness/subagent workflow. Triggers: foreman, FOREMAN, bootstrap local, bootstrap global, migrate-global, local global harness, /Users/<user>/FOREMAN, harness_workspace, feature_list.json, progress/current.md, AGENTS.md, CHECKPOINTS.md, leader implementer reviewer, anti telefono descompuesto, multi-agent harness, subagent workflow. Handles: local project harness installs, global FOREMAN workspace installs, repo bridge files, one-feature lifecycle, disk-based progress, executable verification. DO NOT USE FOR: generic coding tasks without a harness workflow.'
+name: handyman
+description: 'Use when: install, analyze, create, migrate, or operate a Handyman harness/subagent workflow. Triggers: handyman, HANDYMAN, bootstrap local, bootstrap global, migrate-global, local global harness, /Users/<user>/HANDYMAN, harness_workspace, feature_list.json, progress/current.md, AGENTS.md, CHECKPOINTS.md, leader implementer reviewer, anti telefono descompuesto, multi-agent harness, subagent workflow, obsidian vault. Handles: local project harness installs, global HANDYMAN workspace installs, repo bridge files, one-feature lifecycle, disk-based progress, executable verification, Obsidian-friendly frontmatter and MOC. DO NOT USE FOR: generic coding tasks without a harness workflow.'
 argument-hint: 'analyze | bootstrap local|global | run-feature | review | migrate-global'
 user-invocable: true
 ---
 
-# Foreman
+# Handyman
 
-Use this skill to install, analyze, create, migrate, or operate a Foreman harness where agents work through explicit roles, disk state, one feature at a time, and executable verification.
+Use this skill to install, analyze, create, migrate, or operate a Handyman harness where agents work through explicit roles, disk state, one feature at a time, and executable verification.
 
-The reference project pattern is a small app surrounded by a strong workflow: `AGENTS.md`, `feature_list.json`, `progress/`, `docs/`, `CHECKPOINTS.md`, `init.sh`, and role files for leader, implementer, and reviewer. Foreman can install that harness locally in the project or use a global operational workspace under `$HOME/FOREMAN/<project_name>`.
+The reference project pattern is a small app surrounded by a strong workflow: `AGENTS.md`, `feature_list.json`, `progress/`, `docs/`, `CHECKPOINTS.md`, `init.sh`, and role files for leader, implementer, and reviewer. Handyman can install that harness locally in the project or use a global operational workspace under `$HOME/HANDYMAN/<project_name>`.
+
+The `HARNESS_WORKSPACE` is designed to also work as an [Obsidian](https://obsidian.md) vault: reports use YAML frontmatter, an `index.md` MOC links the main files, and tags follow a `#handyman/...` namespace. See [references/obsidian.md](./references/obsidian.md).
 
 ## When To Use
 
 Use this skill when the user asks to:
 
-- Analyze a project as a Foreman or harness-subagents example.
+- Analyze a project as a Handyman or harness-subagents example.
 - Generate a reusable subagent working structure.
 - Create global or project instructions for leader, implementer, reviewer roles.
 - Bootstrap an agent harness in another repo.
@@ -31,7 +33,7 @@ Choose one mode from the user request. If unclear, start with `analyze`.
 | Mode | Goal | Primary output |
 |------|------|----------------|
 | `analyze` | Inspect an existing harness | Findings, missing files, state risks, next actions |
-| `bootstrap` | Create the harness structure in a repo | Files under project root and, for global installs, `$HOME/FOREMAN/<project_name>` |
+| `bootstrap` | Create the harness structure in a repo | Files under project root and, for global installs, `$HOME/HANDYMAN/<project_name>` |
 | `run-feature` | Execute one pending feature | Updated progress files, tests, review evidence |
 | `review` | Validate a finished feature or harness | Checklist verdict and required changes |
 
@@ -42,13 +44,13 @@ During `bootstrap`, choose one install scope. If the user did not specify it, as
 | Scope | Project root contents | Harness workspace contents |
 |-------|-----------------------|----------------------------|
 | `local` | All harness files live in the repo root | Same as project root |
-| `global` | Stable bridge files: `AGENTS.md`, `CHECKPOINTS.md`, `init.sh`, role files, and `harness.config.json` | Mutable and operational files under `$HOME/FOREMAN/<project_name>` |
+| `global` | Stable bridge files: `AGENTS.md`, `CHECKPOINTS.md`, `init.sh`, role files, and `harness.config.json` | Mutable and operational files under `$HOME/HANDYMAN/<project_name>` |
 
 Global mode rules:
 
-- Set `FOREMAN_ROOT` to `$HOME/FOREMAN` for the active system user.
+- Set `HANDYMAN_ROOT` to `$HOME/HANDYMAN` for the active system user.
 - Derive `project_name` from the basename of the target repo directory.
-- Set `HARNESS_WORKSPACE` to `$FOREMAN_ROOT/$project_name`.
+- Set `HARNESS_WORKSPACE` to `$HANDYMAN_ROOT/$project_name`.
 - Store mutable harness files in `HARNESS_WORKSPACE`: `feature_list.json`, `progress/`, subagent reports, and operational `docs/`.
 - Keep project execution local: `init.sh` runs from the project root, but validates state files from `HARNESS_WORKSPACE`.
 - Generate local bridge instructions so `AGENTS.md`, `CHECKPOINTS.md`, and role files point agents to the real editable state location.
@@ -82,7 +84,7 @@ Global mode rules:
 2. If the scope is unclear, ask the user to choose `local` or `global`.
 3. Create only missing or approved files.
 4. In `local` mode, add the base structure in the repo root: `AGENTS.md`, `feature_list.json`, `progress/`, `docs/`, `CHECKPOINTS.md`, `init.sh`, and role definitions if supported.
-5. In `global` mode, add local bridge files in the repo root and add operational state under `$HOME/FOREMAN/<project_name>`.
+5. In `global` mode, add local bridge files in the repo root and add operational state under `$HOME/HANDYMAN/<project_name>`.
 6. Keep docs specific to the repo architecture, not generic filler.
 7. Add an executable verifier that checks required files, validates feature state from `HARNESS_WORKSPACE`, and runs tests from the project root.
 8. Use [templates](./references/templates.md).
@@ -112,9 +114,9 @@ Global mode rules:
 ### 5. Migrate Local To Global
 
 1. Do not migrate while local `progress/current.md` contains an active session unless the user explicitly approves.
-2. Create `$HOME/FOREMAN/<project_name>`.
+2. Create `$HOME/HANDYMAN/<project_name>`.
 3. Move or copy `feature_list.json`, `progress/`, and operational `docs/` into the global harness workspace.
-4. Add `harness.config.json` in the project root with `install_mode`, `project_name`, `project_root`, `foreman_root`, and `harness_workspace`.
+4. Add `harness.config.json` in the project root with `install_mode`, `project_name`, `project_root`, `handyman_root`, and `harness_workspace`.
 5. Update `AGENTS.md`, `CHECKPOINTS.md`, role files, and `init.sh` so all mutable state edits point to `HARNESS_WORKSPACE`.
 6. Run the verifier and document any path drift before continuing feature work.
 
@@ -124,9 +126,20 @@ For analysis, return concise sections: `Structure`, `Lifecycle`, `Current State`
 
 For bootstrap or run-feature work, keep the user updated, write evidence to disk, and summarize file paths plus verification results at the end.
 
+## Obsidian Integration
+
+The `HARNESS_WORKSPACE` doubles as an Obsidian vault without duplicating files. Reports include YAML frontmatter, an `index.md` MOC links the main entrypoints, and tags follow the `#handyman/...` namespace. Open the workspace folder with Obsidian's *Open folder as vault*. The harness keeps editing markdown as before; Obsidian only adds visualization.
+
+See [references/obsidian.md](./references/obsidian.md) for conventions, recommended plugins, and the MOC template.
+
 ## References
 
 - [Anatomy](./references/anatomy.md)
 - [Workflow](./references/workflow.md)
 - [Templates](./references/templates.md)
 - [Checklists](./references/checklists.md)
+- [Obsidian Integration](./references/obsidian.md)
+
+## License & Attribution
+
+Handyman is distributed under the [Creative Commons Attribution 4.0 International (CC BY 4.0)](./LICENSE) license. You may use, adapt, and redistribute it (including commercially) provided you keep the attribution to **Rodrigo Mardones** as described in [NOTICE](./NOTICE).
