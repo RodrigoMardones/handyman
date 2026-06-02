@@ -6,7 +6,7 @@ This workflow keeps agent work resumable and auditable.
 
 1. Read `AGENTS.md`.
 2. Resolve `PROJECT_ROOT` and `HARNESS_WORKSPACE`.
-3. If `harness.config.json` exists, use it as the local bridge file. If it does not exist, fall back to local mode and treat `PROJECT_ROOT` as `HARNESS_WORKSPACE`.
+3. Resolve `HARNESS_WORKSPACE` in this order: `harness.config.json`, then `feature_list.json` config, then a `PROJECT_ROOT/.handyman/` directory (local install), then the legacy `PROJECT_ROOT` fallback. Resolve any relative `harness_workspace` such as `.handyman` against `PROJECT_ROOT`.
 4. Read `$HARNESS_WORKSPACE/feature_list.json`.
 5. Read `$HARNESS_WORKSPACE/progress/current.md`.
 6. Run `./init.sh` or the project verifier from `PROJECT_ROOT`.
@@ -15,7 +15,7 @@ This workflow keeps agent work resumable and auditable.
 
 ## Leader Protocol
 
-The leader coordinates. It does not implement product code and does not mark a feature `done` alone.
+The leader coordinates. It does not implement product code and does not mark a feature `done` alone. It runs under a stronger reasoning model and delegates cheaper roles (see [models.md](./models.md)).
 
 1. Decide whether the request is analysis, bootstrap, one feature, or review.
 2. For analysis, inspect and report. Do not modify product code.
@@ -29,7 +29,7 @@ The leader coordinates. It does not implement product code and does not mark a f
 
 ## Implementer Protocol
 
-The implementer owns exactly one feature.
+The implementer owns exactly one feature. It runs under its assigned model, which defaults to a cheaper, faster model (see [models.md](./models.md)).
 
 1. Read `AGENTS.md`, resolve `HARNESS_WORKSPACE`, and read `$HARNESS_WORKSPACE/docs/architecture.md`, `$HARNESS_WORKSPACE/docs/conventions.md`, and the selected feature acceptance criteria.
 2. Change that feature from `pending` to `in_progress` in `$HARNESS_WORKSPACE/feature_list.json`.
@@ -44,7 +44,7 @@ The implementer does not self-approve. It can mark `done` only if the local prot
 
 ## Reviewer Protocol
 
-The reviewer validates and does not edit code.
+The reviewer validates and does not edit code. It runs under its assigned model, which defaults to a cheaper, faster model (see [models.md](./models.md)).
 
 1. Resolve `HARNESS_WORKSPACE`.
 2. Read `$HARNESS_WORKSPACE/docs/architecture.md`, `$HARNESS_WORKSPACE/docs/conventions.md`, `$HARNESS_WORKSPACE/docs/verification.md`, and `$PROJECT_ROOT/CHECKPOINTS.md`.
@@ -92,6 +92,7 @@ For complex work, the leader may launch read-only exploration subagents before i
 Rules:
 
 - Each explorer gets one narrow question.
+- Each explorer runs under the cheapest fast model (see [models.md](./models.md)).
 - Each explorer writes to `$HARNESS_WORKSPACE/progress/explore_<topic>.md` with frontmatter (`topic`, `role: explorer`, `updated`, `tags`).
 - Each explorer returns only a file reference.
 - The leader synthesizes the reports before selecting implementation scope.

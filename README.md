@@ -17,6 +17,7 @@ La idea central es simple: el chat coordina, pero el disco es la fuente de verda
 | Instalar el harness | [Modos De Instalacion](#-modos-de-instalacion) | Elegir `local` o `global` sin mezclar estado. |
 | Ubicar archivos | [Archivos Principales](#-archivos-principales) | Saber que editar y que revisar. |
 | Usarlo con Obsidian | [Visualizar En Obsidian](#-visualizar-en-obsidian) | Abrir el vault sin commitear metadata local. |
+| Asignar modelos | [Modelos Por Rol](#-modelos-por-rol) | Modelo fuerte para leader, baratos para implementer y reviewer. |
 | Ejecutar una feature | [Ejemplos De Uso](#-ejemplos-de-uso) | Comandos tipicos para arrancar el flujo. |
 
 > 💡 **Idea guia:** el chat coordina, pero `HARNESS_WORKSPACE` es la fuente de verdad.
@@ -25,9 +26,11 @@ La idea central es simple: el chat coordina, pero el disco es la fuente de verda
 
 Handyman define un flujo de trabajo para agentes basado en tres roles:
 
-- 🧭 **Leader:** coordina el trabajo, resuelve el estado del harness, elige una feature y delega.
-- 🛠️ **Implementer:** implementa una sola feature, agrega o ajusta tests y deja evidencia en disco.
-- ✅ **Reviewer:** valida la implementacion contra arquitectura, convenciones, checkpoints y verificacion.
+- 🧭 **Leader:** coordina el trabajo, resuelve el estado del harness, elige una feature y delega. Usa un modelo de mayor capacidad de razonamiento.
+- 🛠️ **Implementer:** implementa una sola feature, agrega o ajusta tests y deja evidencia en disco. Usa por defecto un modelo mas barato y rapido.
+- ✅ **Reviewer:** valida la implementacion contra arquitectura, convenciones, checkpoints y verificacion. Usa por defecto un modelo mas barato y rapido.
+
+Cada rol puede correr bajo su propio modelo: el leader usa un modelo fuerte, mientras que implementer y reviewer prefieren un modelo barato ya configurado en el editor y, si no hay, caen a `Claude Sonnet 4.6`. Mas detalles en [references/models.md](references/models.md).
 
 Este patron evita que el trabajo viva solamente en mensajes largos de chat. Los agentes escriben reportes bajo `progress/`, el backlog vive en `feature_list.json`, las reglas del proyecto viven en `docs/`, y el cierre de una feature depende de una verificacion real, normalmente `./init.sh`.
 
@@ -73,12 +76,12 @@ Handyman soporta dos formas de organizar el harness.
 
 | Modo | Donde vive el estado mutable | Cuando conviene |
 |------|-------------------------------|-----------------|
-| `local` | En el root del repositorio | Proyectos pequenos, ejemplos, repos donde quieres versionar todo el harness junto al codigo. |
+| `local` | En un directorio oculto `.handyman/` dentro del repositorio | Proyectos donde quieres versionar el harness junto al codigo pero manteniendo el root limpio y enfocado en el codigo fuente. |
 | `global` | En `$HOME/HANDYMAN/<project_name>` | Proyectos donde quieres mantener el repo limpio y guardar progreso, reportes y docs operativas fuera del codigo fuente. |
 
-En modo global, el repositorio conserva archivos puente como `AGENTS.md`, `CHECKPOINTS.md`, `init.sh` y `harness.config.json`. El estado operativo vive en `HARNESS_WORKSPACE`.
+En modo local, el estado mutable y las docs operativas (`feature_list.json`, `progress/`, `docs/`, `index.md`) viven bajo `.handyman/`, y el repo conserva en el root los archivos puente `AGENTS.md`, `CHECKPOINTS.md` e `init.sh`. En modo global, el repositorio conserva archivos puente como `AGENTS.md`, `CHECKPOINTS.md`, `init.sh` y `harness.config.json`, y el estado operativo vive en `HARNESS_WORKSPACE`.
 
-> ⚠️ **Guia de decision:** usa `local` si quieres versionar todo junto al repo; usa `global` si quieres separar codigo fuente de historial operativo.
+> ⚠️ **Guia de decision:** usa `local` si quieres versionar el harness junto al repo sin ensuciar el root; usa `global` si quieres separar codigo fuente de historial operativo.
 
 ## 🗂️ Archivos Principales
 
@@ -98,22 +101,41 @@ En modo global, el repositorio conserva archivos puente como `AGENTS.md`, `CHECK
 
 > 🧭 **Ruta mental:** `AGENTS.md` orienta, `feature_list.json` decide, `progress/` registra y `init.sh` verifica.
 
+> 📁 **En modo local:** `AGENTS.md`, `CHECKPOINTS.md` e `init.sh` quedan en el root del repo; `feature_list.json`, `progress/`, `docs/` e `index.md` viven bajo `.handyman/`.
+
 ## 🪨 Visualizar En Obsidian
 
 El `HARNESS_WORKSPACE` esta disenado para abrirse directamente como vault de Obsidian, sin duplicar archivos.
 
-1. Abre Obsidian y elige **Open folder as vault** apuntando al `HARNESS_WORKSPACE` (`PROJECT_ROOT` en modo local o `$HOME/HANDYMAN/<project_name>` en modo global).
+1. Abre Obsidian y elige **Open folder as vault** apuntando al `HARNESS_WORKSPACE` (`PROJECT_ROOT/.handyman` en modo local o `$HOME/HANDYMAN/<project_name>` en modo global).
 2. Los reportes en `progress/` ya traen YAML frontmatter (`feature`, `status`, `role`, `updated`, `tags`); los documentos en `docs/` son markdown plano y, si usan frontmatter, solo incluyen `tags` opcional.
-3. El archivo `index.md` actua como MOC con enlaces a `feature_list.json`, `docs/`, `progress/current` y `progress/history`. En modo local puede sumar `AGENTS` y `CHECKPOINTS` si existen dentro del vault; en modo global esos archivos son puente en `PROJECT_ROOT`.
+3. El archivo `index.md` actua como MOC con enlaces a `feature_list.json`, `docs/`, `progress/current` y `progress/history`. Los archivos puente `AGENTS.md` y `CHECKPOINTS.md` viven en el root del repo, fuera del vault, en ambos modos.
 4. Los tags siguen el namespace `#handyman/...` (ej: `#handyman/feature/in_progress`, `#handyman/review/approved`).
 5. Plugins recomendados: **Outline**, **Backlinks** y **Tags** (todos core). Opcionales: **Dataview** y **Templater**.
-6. Agrega `.obsidian/` y `.trash/` al `.gitignore` del proyecto o workspace antes de commitear metadata local de Obsidian; usa el snippet de [references/templates.md](references/templates.md#gitignore-obsidian).
+6. Agrega `.obsidian/` y `.trash/` al `.gitignore` (en modo local incluye tambien `.handyman/.obsidian/` y `.handyman/.trash/`) antes de commitear metadata local de Obsidian; usa el snippet de [references/templates.md](references/templates.md#gitignore-obsidian).
 
 Mas detalles en [references/obsidian.md](references/obsidian.md).
 
 > 🧹 **Ayuda de versionado:** `.obsidian/` y `.trash/` son metadata local; frontmatter, tags, MOC y wikilinks son parte del contrato del harness.
 
-## 🧪 Casos De Uso
+## � Modelos Por Rol
+
+Cada rol puede correr bajo su propio modelo para gastar el presupuesto de razonamiento donde se toman las decisiones:
+
+| Rol | Tier por defecto | Modelo sugerido |
+|-----|------------------|-----------------|
+| `leader` | Razonamiento de alta capacidad | Modelo por defecto del editor o el mas fuerte disponible. |
+| `implementer` | Codigo barato y rapido | Modelo barato del editor; si no hay, `Claude Sonnet 4.6`. |
+| `reviewer` | Validacion barata | Modelo barato del editor; si no hay, `Claude Sonnet 4.6`. |
+| `explorer` | El mas barato y rapido | Modelo rapido del editor; si no hay, `Claude Sonnet 4.6`. |
+
+El modelo se declara en el frontmatter del archivo de rol (`model:`) o en un mapa `models` dentro de `harness.config.json`. El identificador `Claude Sonnet 4.6` es un valor por defecto: reemplazalo por el nombre o alias exacto que exponga la plataforma (por ejemplo `sonnet` en Claude Code, o el nombre del selector de modelos de VS Code). Documenta cualquier sustitucion en `progress/current.md`.
+
+Mas detalles en [references/models.md](references/models.md).
+
+> 💸 **Idea de costo:** modelo fuerte para coordinar, modelos baratos para implementar y revisar.
+
+##  Casos De Uso
 
 ### 🔎 Analizar Un Harness Existente
 
@@ -186,6 +208,7 @@ Ejemplo de flujo completo:
 - 🕰️ Mantener `progress/history.md` como historial append-only.
 - 🚧 Documentar bloqueos en `progress/current.md` antes de improvisar soluciones.
 - 🧪 Hacer que `./init.sh` falle cuando el estado del harness sea incoherente.
+- 🧠 Asignar un modelo por rol: fuerte para el leader, barato para implementer y reviewer.
 
 ## ✅ Checklist Express
 
@@ -201,6 +224,7 @@ Ejemplo de flujo completo:
 - [Workflow](references/workflow.md)
 - [Templates](references/templates.md)
 - [Checklists](references/checklists.md)
+- [Modelos por rol](references/models.md)
 - [Integracion con Obsidian](references/obsidian.md)
 
 ## 📜 Licencia Y Atribucion

@@ -6,7 +6,8 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 
 - [ ] `AGENTS.md` exists and gives a progressive navigation map.
 - [ ] Install scope is identified as `local` or `global`.
-- [ ] `HARNESS_WORKSPACE` is resolved from `harness.config.json`, `feature_list.json` config, or local fallback.
+- [ ] `HARNESS_WORKSPACE` is resolved from `harness.config.json`, `feature_list.json` config, a `PROJECT_ROOT/.handyman/` directory, or the legacy `PROJECT_ROOT` fallback.
+- [ ] In local mode, `HARNESS_WORKSPACE` is `PROJECT_ROOT/.handyman` (or the legacy `PROJECT_ROOT` for older installs).
 - [ ] In global mode, `HARNESS_WORKSPACE` is `$HOME/HANDYMAN/<project_name>`.
 - [ ] `$HARNESS_WORKSPACE/feature_list.json` exists and has valid JSON.
 - [ ] Valid statuses are explicit.
@@ -20,6 +21,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] `CHECKPOINTS.md` gives objective pass/fail criteria and points to `HARNESS_WORKSPACE` for mutable state.
 - [ ] A verifier such as `./init.sh` exists and can be run.
 - [ ] Role files exist if the project claims multi-agent orchestration.
+- [ ] Role files declare a `model` (or rely on a documented default) appropriate to the role: stronger for leader, cheaper for implementer and reviewer.
 - [ ] Subagent reports live in `$HARNESS_WORKSPACE/progress/` instead of chat.
 - [ ] README or docs explain the workflow for humans.
 
@@ -27,6 +29,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 
 - [ ] Ask before overwriting existing repo instructions or verifier files.
 - [ ] Ask for `local` or `global` install scope when the user did not specify it.
+- [ ] In local mode, create `PROJECT_ROOT/.handyman/` and keep bridge files (`AGENTS.md`, `CHECKPOINTS.md`, `init.sh`) in the repo root.
 - [ ] In global mode, derive `project_name` from the target repo directory name.
 - [ ] In global mode, create `$HOME/HANDYMAN/<project_name>` before any agent work starts.
 - [ ] In global mode, create `harness.config.json` in the project root.
@@ -38,6 +41,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] Ensure the verifier fails on invalid feature state.
 - [ ] Ensure the verifier reads state from `HARNESS_WORKSPACE` and runs tests from `PROJECT_ROOT`.
 - [ ] Add leader, implementer, and reviewer role definitions when the platform supports them.
+- [ ] Assign a model per role: stronger for leader, cheaper for implementer and reviewer, preferring an editor-configured model and otherwise `Claude Sonnet 4.6`.
 - [ ] Add anti-telephone instructions to all role files.
 - [ ] Add closure instructions to `AGENTS.md`.
 - [ ] Run the verifier before declaring the harness ready.
@@ -80,7 +84,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] `progress/explore_<topic>.md` reports carry frontmatter with `topic`, `role`, `updated`, `tags`.
 - [ ] Tags use the documented `#handyman/...` namespace, including `feature`, `role`, `review`, `session/current`, `history`, `docs`, `blocked`, and `moc` as applicable.
 - [ ] An `index.md` MOC at the workspace root links `feature_list.json`, `docs/`, `progress/current`, and `progress/history`; it links `AGENTS` or `CHECKPOINTS` only when those files exist inside the same vault.
-- [ ] `.obsidian/` and `.trash/` are in the relevant `.gitignore` and not committed.
+- [ ] `.obsidian/` and `.trash/` are in the relevant `.gitignore` and not committed (in local installs also ignore `.handyman/.obsidian/` and `.handyman/.trash/`).
 - [ ] Wikilinks (`[[...]]`) used in markdown still resolve to existing files.
 
 ## Common Risks

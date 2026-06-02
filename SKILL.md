@@ -1,6 +1,6 @@
 ---
 name: handyman
-description: 'Use when: install, analyze, create, migrate, or operate a Handyman harness/subagent workflow. Triggers: handyman, HANDYMAN, bootstrap local, bootstrap global, migrate-global, local global harness, /Users/<user>/HANDYMAN, harness_workspace, feature_list.json, progress/current.md, AGENTS.md, CHECKPOINTS.md, leader implementer reviewer, anti telefono descompuesto, multi-agent harness, subagent workflow, obsidian vault. Handles: local project harness installs, global HANDYMAN workspace installs, repo bridge files, one-feature lifecycle, disk-based progress, executable verification, Obsidian-friendly frontmatter and MOC. DO NOT USE FOR: generic coding tasks without a harness workflow.'
+description: 'Use when: install, analyze, create, migrate, or operate a Handyman harness/subagent workflow. Triggers: handyman, HANDYMAN, bootstrap local, bootstrap global, migrate-global, local global harness, .handyman directory, /Users/<user>/HANDYMAN, harness_workspace, feature_list.json, progress/current.md, AGENTS.md, CHECKPOINTS.md, leader implementer reviewer, role models, cheap model implementer reviewer, anti telefono descompuesto, multi-agent harness, subagent workflow, obsidian vault. Handles: local project harness installs under .handyman, global HANDYMAN workspace installs, repo bridge files, per-role model assignment, one-feature lifecycle, disk-based progress, executable verification, Obsidian-friendly frontmatter and MOC. DO NOT USE FOR: generic coding tasks without a harness workflow.'
 argument-hint: 'analyze | bootstrap local|global | run-feature | review | migrate-global'
 user-invocable: true
 ---
@@ -9,7 +9,9 @@ user-invocable: true
 
 Use this skill to install, analyze, create, migrate, or operate a Handyman harness where agents work through explicit roles, disk state, one feature at a time, and executable verification.
 
-The reference project pattern is a small app surrounded by a strong workflow: `AGENTS.md`, `feature_list.json`, `progress/`, `docs/`, `CHECKPOINTS.md`, `init.sh`, and role files for leader, implementer, and reviewer. Handyman can install that harness locally in the project or use a global operational workspace under `$HOME/HANDYMAN/<project_name>`.
+The reference project pattern is a small app surrounded by a strong workflow: `AGENTS.md`, `feature_list.json`, `progress/`, `docs/`, `CHECKPOINTS.md`, `init.sh`, and role files for leader, implementer, and reviewer. Handyman can install that harness locally inside a hidden `.handyman/` directory in the project so the repo root stays focused on product code, or use a global operational workspace under `$HOME/HANDYMAN/<project_name>`.
+
+Roles can run under different models. The leader uses a stronger reasoning model, while the implementer and reviewer default to cheaper, faster models. See [references/models.md](./references/models.md).
 
 The `HARNESS_WORKSPACE` is designed to also work as an [Obsidian](https://obsidian.md) vault: reports use YAML frontmatter, an `index.md` MOC links the main files, and tags follow a `#handyman/...` namespace. See [references/obsidian.md](./references/obsidian.md).
 
@@ -43,8 +45,17 @@ During `bootstrap`, choose one install scope. If the user did not specify it, as
 
 | Scope | Project root contents | Harness workspace contents |
 |-------|-----------------------|----------------------------|
-| `local` | All harness files live in the repo root | Same as project root |
+| `local` | Stable bridge files: `AGENTS.md`, `CHECKPOINTS.md`, `init.sh`, role files | Mutable and operational files under `PROJECT_ROOT/.handyman` |
 | `global` | Stable bridge files: `AGENTS.md`, `CHECKPOINTS.md`, `init.sh`, role files, and `harness.config.json` | Mutable and operational files under `$HOME/HANDYMAN/<project_name>` |
+
+Local mode rules:
+
+- Set `HARNESS_WORKSPACE` to `PROJECT_ROOT/.handyman`.
+- Keep stable bridge files in the repo root: `AGENTS.md`, `CHECKPOINTS.md`, and `init.sh`.
+- Store all mutable harness state and operational docs under `.handyman/`: `feature_list.json`, `progress/`, `docs/`, subagent reports, and the optional `index.md`.
+- This keeps the repo root focused on product code so contributors are not distracted by harness files.
+- Add `.handyman/.obsidian/` and `.handyman/.trash/` to `.gitignore`; commit the rest of `.handyman/` with the project when you want versioned harness state.
+- Legacy local harnesses with harness files in the repo root and no `.handyman/` directory keep resolving `HARNESS_WORKSPACE` to `PROJECT_ROOT` for backward compatibility.
 
 Global mode rules:
 
@@ -65,6 +76,7 @@ Global mode rules:
 - Chat responses from subagents should be references only, such as `done -> $HARNESS_WORKSPACE/progress/impl_cli_edit.md`.
 - No feature is `done` until the verifier, normally `./init.sh`, exits 0.
 - A leader coordinates and does not edit product code. An implementer writes code and tests. A reviewer validates and does not edit code.
+- Assign a model per role. The leader uses a stronger reasoning model; the implementer and reviewer default to cheaper, faster models, preferring a model already configured in the editor and otherwise falling back to `Claude Sonnet 4.6`. See [references/models.md](./references/models.md).
 - If any required file, command, or path configuration is missing, document the gap before inventing a workaround.
 
 ## Workflow
@@ -72,8 +84,8 @@ Global mode rules:
 ### 1. Analyze Existing Harness
 
 1. Read the repo entrypoint first: `AGENTS.md` or equivalent.
-2. Resolve `HARNESS_WORKSPACE` from `harness.config.json`, `feature_list.json` config, or local fallback.
-3. Inspect `feature_list.json`, `progress/current.md`, `progress/history.md`, `docs/`, `CHECKPOINTS.md`, verifier scripts, and role files at their resolved locations.
+2. Resolve `HARNESS_WORKSPACE` from `harness.config.json`, `feature_list.json` config, a `PROJECT_ROOT/.handyman/` directory, or the legacy `PROJECT_ROOT` fallback.
+3. Inspect `feature_list.json`, `progress/current.md`, `progress/history.md`, `docs/`, `CHECKPOINTS.md`, verifier scripts, and role files (including their per-role `model`) at their resolved locations.
 4. Run the verifier if the repo asks for it and the command is safe.
 5. Report: install scope, structure map, lifecycle, current feature state, verification command, missing files, and risks.
 6. Use [anatomy](./references/anatomy.md) and [checklists](./references/checklists.md).
@@ -83,11 +95,12 @@ Global mode rules:
 1. Confirm the target repo, install scope, and whether existing files may be modified.
 2. If the scope is unclear, ask the user to choose `local` or `global`.
 3. Create only missing or approved files.
-4. In `local` mode, add the base structure in the repo root: `AGENTS.md`, `feature_list.json`, `progress/`, `docs/`, `CHECKPOINTS.md`, `init.sh`, and role definitions if supported.
+4. In `local` mode, keep bridge files in the repo root (`AGENTS.md`, `CHECKPOINTS.md`, `init.sh`, and role definitions if supported) and place mutable state and operational docs under `PROJECT_ROOT/.handyman`: `feature_list.json`, `progress/`, `docs/`, and the optional `index.md`.
 5. In `global` mode, add local bridge files in the repo root and add operational state under `$HOME/HANDYMAN/<project_name>`.
 6. Keep docs specific to the repo architecture, not generic filler.
-7. Add an executable verifier that checks required files, validates feature state from `HARNESS_WORKSPACE`, and runs tests from the project root.
-8. Use [templates](./references/templates.md).
+7. Assign a model per role when role files are supported: a stronger model for the leader and cheaper, faster models for the implementer and reviewer, following [references/models.md](./references/models.md).
+8. Add an executable verifier that checks required files, validates feature state from `HARNESS_WORKSPACE`, and runs tests from the project root.
+9. Use [templates](./references/templates.md).
 
 ### 3. Run One Feature
 
@@ -115,8 +128,8 @@ Global mode rules:
 
 1. Do not migrate while local `progress/current.md` contains an active session unless the user explicitly approves.
 2. Create `$HOME/HANDYMAN/<project_name>`.
-3. Move or copy `feature_list.json`, `progress/`, and operational `docs/` into the global harness workspace.
-4. Add `harness.config.json` in the project root with `install_mode`, `project_name`, `project_root`, `handyman_root`, and `harness_workspace`.
+3. Move or copy `feature_list.json`, `progress/`, and operational `docs/` from `PROJECT_ROOT/.handyman` (or the legacy repo root) into the global harness workspace.
+4. Add or update `harness.config.json` in the project root with `install_mode`, `project_name`, `project_root`, `handyman_root`, `harness_workspace`, and the optional `models` map.
 5. Update `AGENTS.md`, `CHECKPOINTS.md`, role files, and `init.sh` so all mutable state edits point to `HARNESS_WORKSPACE`.
 6. Run the verifier and document any path drift before continuing feature work.
 
@@ -132,12 +145,25 @@ The `HARNESS_WORKSPACE` doubles as an Obsidian vault without duplicating files. 
 
 See [references/obsidian.md](./references/obsidian.md) for conventions, recommended plugins, and the MOC template.
 
+## Role Models
+
+Each role can run under its own model so reasoning budget is spent where decisions are made:
+
+- The leader uses a higher-capability reasoning model (the editor default or the strongest available).
+- The implementer and reviewer default to cheaper, faster models. Prefer a cheap model already configured in the editor; if none is found, fall back to `Claude Sonnet 4.6`.
+- The explorer uses the cheapest fast model.
+
+Declare the model in role-file frontmatter (`model:`) or in a `models` map inside `harness.config.json`. Confirm the identifier matches a model the host platform exposes, and record any substitution in `$HARNESS_WORKSPACE/progress/current.md`.
+
+See [references/models.md](./references/models.md) for the full resolution order, defaults, and per-platform syntax.
+
 ## References
 
 - [Anatomy](./references/anatomy.md)
 - [Workflow](./references/workflow.md)
 - [Templates](./references/templates.md)
 - [Checklists](./references/checklists.md)
+- [Role Models](./references/models.md)
 - [Obsidian Integration](./references/obsidian.md)
 
 ## License & Attribution

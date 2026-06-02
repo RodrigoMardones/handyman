@@ -7,11 +7,11 @@ This document covers how to open the workspace as a vault, the conventions Handy
 ## Open The Workspace As A Vault
 
 1. Pick the right folder:
-   - Local mode: `PROJECT_ROOT`.
+   - Local mode: `PROJECT_ROOT/.handyman` (the resolved `HARNESS_WORKSPACE`).
    - Global mode: `$HOME/HANDYMAN/<project_name>` (the resolved `HARNESS_WORKSPACE`).
 2. In Obsidian choose **Open folder as vault** and point it to that folder.
 3. Trust the vault when prompted.
-4. Confirm the file tree shows `docs/`, `progress/`, `feature_list.json` and (optionally) `index.md`. In local mode it also shows repo-root bridge files such as `AGENTS.md` and `CHECKPOINTS.md`; in global mode those bridge files remain in `PROJECT_ROOT` outside the vault.
+4. Confirm the file tree shows `docs/`, `progress/`, `feature_list.json` and (optionally) `index.md`. In both modes the repo-root bridge files such as `AGENTS.md` and `CHECKPOINTS.md` live outside the vault, since the vault is `.handyman` (local) or the external HANDYMAN workspace (global).
 
 The harness keeps editing markdown the same way as before. Obsidian only adds visualization, search, backlinks, and tag navigation.
 
@@ -54,7 +54,7 @@ Tags are additive: a review report typically carries `#handyman/role/reviewer` p
 
 ## Map Of Content (MOC)
 
-The optional `index.md` at the root of the workspace acts as a hub. It lists files that exist inside `HARNESS_WORKSPACE`: `feature_list.json`, docs, progress files and useful tag queries. Local installs may add `AGENTS.md` and `CHECKPOINTS.md` wikilinks because the vault is `PROJECT_ROOT`; global installs should mention those bridge files as plain paths unless they are intentionally mirrored into the vault. See [templates.md](./templates.md#indexmd-obsidian-moc).
+The optional `index.md` at the root of the workspace acts as a hub. It lists files that exist inside `HARNESS_WORKSPACE`: `feature_list.json`, docs, progress files and useful tag queries. Because the vault is `.handyman` (local) or the external HANDYMAN workspace (global), the repo-root bridge files `AGENTS.md` and `CHECKPOINTS.md` sit outside the vault; mention them as plain paths unless they are intentionally mirrored into the vault. See [templates.md](./templates.md#indexmd-obsidian-moc).
 
 ## Wikilinks vs Markdown Links
 

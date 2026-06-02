@@ -1,6 +1,6 @@
 # Handyman References
 
-This directory contains progressive-loading references for the global `handyman` skill. The references cover both local installs, where all harness files live in the project root, and global HANDYMAN installs, where mutable state lives under `$HOME/HANDYMAN/<project_name>`.
+This directory contains progressive-loading references for the global `handyman` skill. The references cover both local installs, where mutable harness files live under a hidden `.handyman/` directory in the project, and global HANDYMAN installs, where mutable state lives under `$HOME/HANDYMAN/<project_name>`.
 
 Read only the file needed for the current mode:
 
@@ -8,4 +8,5 @@ Read only the file needed for the current mode:
 - `workflow.md` for leader, implementer, reviewer, and closure protocols.
 - `templates.md` for starter files when bootstrapping a repo (including Obsidian MOC and `.gitignore`).
 - `checklists.md` for analysis, bootstrap, run, review, Obsidian, and risk checks.
+- `models.md` for per-role model assignment, defaults, and editor model discovery.
 - `obsidian.md` for vault setup, recommended plugins, frontmatter, tags and wikilinks.
