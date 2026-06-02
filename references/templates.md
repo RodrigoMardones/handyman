@@ -6,7 +6,7 @@ Path placeholders used below:
 
 - `PROJECT_ROOT`: the repo where product code and verifier commands run.
 - `HANDYMAN_ROOT`: `$HOME/HANDYMAN` in global mode.
-- `HARNESS_WORKSPACE`: the directory that owns mutable harness state. It is `PROJECT_ROOT` in local mode and `$HANDYMAN_ROOT/<project_name>` in global mode.
+- `HARNESS_WORKSPACE`: the directory that owns mutable harness state. It is `PROJECT_ROOT/.handyman` in local mode and `$HANDYMAN_ROOT/<project_name>` in global mode.
 
 ## AGENTS.md
 
@@ -20,14 +20,14 @@ This file is the entrypoint for any agent working in this repo. It is a map, not
 - **Install scope:** local
 - **Project root:** `.`
 - **Handyman root:** _not used_
-- **Harness workspace:** `.`
+- **Harness workspace:** `.handyman`
 
-If install scope is `global`, the harness workspace must be `$HOME/HANDYMAN/<project_name>`. Read and write mutable harness state there, not in the project root. Product code, tests, and verifier commands still run from the project root.
+In local mode the harness workspace is `PROJECT_ROOT/.handyman`. Read and write mutable harness state there, not in the repo root, so the root stays focused on product code. If install scope is `global`, the harness workspace must be `$HOME/HANDYMAN/<project_name>` instead. Product code, tests, and verifier commands still run from the project root in both modes.
 
 ## Before Starting
 
 1. Run `./init.sh` and verify it exits 0. If it fails, stop and fix the environment before code changes.
-2. Resolve `HARNESS_WORKSPACE` from `harness.config.json`, `feature_list.json` config, or local fallback.
+2. Resolve `HARNESS_WORKSPACE` from `harness.config.json`, `feature_list.json` config, a `.handyman/` directory, or the legacy project-root fallback.
 3. Read `$HARNESS_WORKSPACE/progress/current.md`.
 4. Read `$HARNESS_WORKSPACE/feature_list.json` and choose one `pending` feature, normally the lowest id.
 5. Work on only one feature at a time.
@@ -67,7 +67,7 @@ If install scope is `global`, the harness workspace must be `$HOME/HANDYMAN/<pro
     "project_name": "project-name",
     "project_root": ".",
     "handyman_root": null,
-    "harness_workspace": "."
+    "harness_workspace": ".handyman"
   },
   "rules": {
     "one_feature_at_a_time": true,
@@ -92,7 +92,27 @@ If install scope is `global`, the harness workspace must be `$HOME/HANDYMAN/<pro
 
 ## harness.config.json
 
-Create this bridge file in the project root for global installs. Existing local installs may omit it.
+Create this bridge file in the project root. In local mode it records the `.handyman` workspace; in global mode it points to the external HANDYMAN workspace. The optional `models` map assigns a model per role (see [models.md](./models.md)).
+
+Local install:
+
+```json
+{
+  "install_mode": "local",
+  "project_name": "project-name",
+  "project_root": ".",
+  "handyman_root": null,
+  "harness_workspace": ".handyman",
+  "models": {
+    "leader": "editor-default",
+    "implementer": "Claude Sonnet 4.6",
+    "reviewer": "Claude Sonnet 4.6",
+    "explorer": "Claude Sonnet 4.6"
+  }
+}
+```
+
+Global install:
 
 ```json
 {
@@ -100,9 +120,17 @@ Create this bridge file in the project root for global installs. Existing local 
   "project_name": "project-name",
   "project_root": "/absolute/path/to/project-name",
   "handyman_root": "/Users/any_user/HANDYMAN",
-  "harness_workspace": "/Users/any_user/HANDYMAN/project-name"
+  "harness_workspace": "/Users/any_user/HANDYMAN/project-name",
+  "models": {
+    "leader": "editor-default",
+    "implementer": "Claude Sonnet 4.6",
+    "reviewer": "Claude Sonnet 4.6",
+    "explorer": "Claude Sonnet 4.6"
+  }
 }
 ```
+
+Use `"editor-default"` (or omit a key) to follow the model configured in the host editor.
 
 ## progress/current.md
 
@@ -222,7 +250,7 @@ _None, or a concrete list of file-specific changes._
 ## index.md (Obsidian MOC)
 
 Optional but recommended at the root of the `HARNESS_WORKSPACE` to make the vault navigable from Obsidian.
-The starter MOC only links files that are generated inside `HARNESS_WORKSPACE`, so it works for both local and global installs. In local installs you may add `[[AGENTS]]` and `[[CHECKPOINTS]]` when those files exist in the same vault; in global installs those bridge files stay in `PROJECT_ROOT` and should not be vault wikilinks unless you mirror them intentionally.
+The starter MOC only links files that are generated inside `HARNESS_WORKSPACE`, so it works for both local and global installs. In both modes the repo-root bridge files `AGENTS.md` and `CHECKPOINTS.md` live outside the vault (`.handyman` in local mode, the external HANDYMAN workspace in global mode), so reference them as plain paths and do not add them as vault wikilinks unless you mirror them intentionally.
 
 ```markdown
 ---
@@ -248,8 +276,8 @@ tags: [handyman/moc]
 
 ## Bridge Files
 
-- `AGENTS.md` and `CHECKPOINTS.md` live in `PROJECT_ROOT` for global installs.
-- Add `[[AGENTS]]` and `[[CHECKPOINTS]]` only when those files exist inside this vault.
+- `AGENTS.md` and `CHECKPOINTS.md` live in `PROJECT_ROOT`, outside this vault, in both local and global installs.
+- Add `[[AGENTS]]` and `[[CHECKPOINTS]]` only when those files are intentionally mirrored inside this vault.
 
 ## Tags
 
@@ -260,11 +288,13 @@ tags: [handyman/moc]
 
 ## .gitignore (Obsidian)
 
-Append to the project or workspace `.gitignore` so Obsidian's local cache stays out of version control:
+Append to the project or workspace `.gitignore` so Obsidian's local cache stays out of version control. In local installs the vault lives in `.handyman/`, so ignore the cache there too:
 
 ```text
 .obsidian/
 .trash/
+.handyman/.obsidian/
+.handyman/.trash/
 ```
 
 ## docs/architecture.md
@@ -385,10 +415,13 @@ Resolve `HARNESS_WORKSPACE` before checking state. In local mode it is the proje
 
 ## Role: leader
 
+The leader uses a stronger reasoning model. Set `model` to the editor default or the strongest available model. See [models.md](./models.md).
+
 ```markdown
 ---
 name: leader
 description: Orchestrates work, delegates to subagents, and never edits product code directly.
+model: editor-default
 ---
 
 # Leader
@@ -406,10 +439,13 @@ Never pass long diffs through chat. Require subagents to write files under `$HAR
 
 ## Role: implementer
 
+The implementer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `Claude Sonnet 4.6`. See [models.md](./models.md).
+
 ```markdown
 ---
 name: implementer
 description: Implements exactly one feature with tests and self-verification.
+model: Claude Sonnet 4.6
 ---
 
 # Implementer
@@ -427,10 +463,13 @@ description: Implements exactly one feature with tests and self-verification.
 
 ## Role: reviewer
 
+The reviewer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `Claude Sonnet 4.6`. See [models.md](./models.md).
+
 ```markdown
 ---
 name: reviewer
 description: Reviews implementation against architecture, conventions, verification, and checkpoints. Does not edit code.
+model: Claude Sonnet 4.6
 ---
 
 # Reviewer
@@ -460,7 +499,17 @@ if [ -f "$PROJECT_ROOT/harness.config.json" ]; then
     echo "jq is required to parse harness.config.json" >&2
     EXIT_CODE=1
   fi
+elif [ -f "$PROJECT_ROOT/.handyman/feature_list.json" ]; then
+  # Local install: mutable state lives under .handyman/
+  HARNESS_WORKSPACE="$PROJECT_ROOT/.handyman"
 fi
+
+# Resolve a relative harness_workspace (e.g. ".handyman") against PROJECT_ROOT.
+case "${HARNESS_WORKSPACE:-}" in
+  /*) : ;;
+  "") : ;;
+  *) HARNESS_WORKSPACE="$PROJECT_ROOT/$HARNESS_WORKSPACE" ;;
+esac
 
 if [ -z "${HARNESS_WORKSPACE:-}" ]; then
   echo "HARNESS_WORKSPACE could not be resolved" >&2

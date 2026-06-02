@@ -5,9 +5,9 @@ A harness-subagents repo is a normal software project plus an explicit operating
 The harness has two possible roots:
 
 - `PROJECT_ROOT`: the repo where product code, tests, verifier scripts, and stable agent entrypoints live.
-- `HARNESS_WORKSPACE`: the directory that owns mutable harness state. In local mode this is `PROJECT_ROOT`; in global mode this is `$HOME/HANDYMAN/<project_name>`.
+- `HARNESS_WORKSPACE`: the directory that owns mutable harness state. In local mode this is `PROJECT_ROOT/.handyman`; in global mode this is `$HOME/HANDYMAN/<project_name>`.
 
-Global mode keeps the repo as a stable bridge and moves operational state into HANDYMAN. This separates code from work history while preserving a single source of truth for active sessions.
+Both modes keep the repo as a stable bridge and move operational state out of the way. Local mode stores it in a hidden `.handyman/` directory so the repo root stays focused on product code; global mode moves it into HANDYMAN. This separates code from work history while preserving a single source of truth for active sessions.
 
 ## Obsidian Frontmatter And Tags
 
@@ -42,13 +42,13 @@ Wikilinks (`[[docs/architecture]]`, `[[progress/current]]`) are optional and coe
 | Logical path | Local mode location | Global mode location | Purpose |
 |--------------|---------------------|----------------------|---------|
 | `AGENTS.md` | `PROJECT_ROOT/AGENTS.md` | `PROJECT_ROOT/AGENTS.md` | Entrypoint map for agents. It explains what to read first and where rules live. |
-| `harness.config.json` | Optional | `PROJECT_ROOT/harness.config.json` | Bridge file that records `install_mode`, `project_root`, `handyman_root`, and `harness_workspace`. |
-| `feature_list.json` | `PROJECT_ROOT/feature_list.json` | `HARNESS_WORKSPACE/feature_list.json` | Backlog and state machine. It lists features and valid statuses. |
-| `progress/current.md` | `PROJECT_ROOT/progress/current.md` | `HARNESS_WORKSPACE/progress/current.md` | Live session state. It records the active feature, plan, log, and next step. |
-| `progress/history.md` | `PROJECT_ROOT/progress/history.md` | `HARNESS_WORKSPACE/progress/history.md` | Append-only history of closed sessions. |
-| `docs/architecture.md` | `PROJECT_ROOT/docs/architecture.md` | `HARNESS_WORKSPACE/docs/architecture.md` | Project-specific definition of good architecture. |
-| `docs/conventions.md` | `PROJECT_ROOT/docs/conventions.md` | `HARNESS_WORKSPACE/docs/conventions.md` | Style, naming, layout, and error-handling rules. |
-| `docs/verification.md` | `PROJECT_ROOT/docs/verification.md` | `HARNESS_WORKSPACE/docs/verification.md` | Commands and evidence required before a feature can close. |
+| `harness.config.json` | Recommended (`PROJECT_ROOT/harness.config.json`) | `PROJECT_ROOT/harness.config.json` | Bridge file that records `install_mode`, `project_root`, `handyman_root`, `harness_workspace`, and the optional `models` map. |
+| `feature_list.json` | `PROJECT_ROOT/.handyman/feature_list.json` | `HARNESS_WORKSPACE/feature_list.json` | Backlog and state machine. It lists features and valid statuses. |
+| `progress/current.md` | `PROJECT_ROOT/.handyman/progress/current.md` | `HARNESS_WORKSPACE/progress/current.md` | Live session state. It records the active feature, plan, log, and next step. |
+| `progress/history.md` | `PROJECT_ROOT/.handyman/progress/history.md` | `HARNESS_WORKSPACE/progress/history.md` | Append-only history of closed sessions. |
+| `docs/architecture.md` | `PROJECT_ROOT/.handyman/docs/architecture.md` | `HARNESS_WORKSPACE/docs/architecture.md` | Project-specific definition of good architecture. |
+| `docs/conventions.md` | `PROJECT_ROOT/.handyman/docs/conventions.md` | `HARNESS_WORKSPACE/docs/conventions.md` | Style, naming, layout, and error-handling rules. |
+| `docs/verification.md` | `PROJECT_ROOT/.handyman/docs/verification.md` | `HARNESS_WORKSPACE/docs/verification.md` | Commands and evidence required before a feature can close. |
 | `CHECKPOINTS.md` | `PROJECT_ROOT/CHECKPOINTS.md` | `PROJECT_ROOT/CHECKPOINTS.md` | Objective final-state checklist for reviewers, with checks pointing to `HARNESS_WORKSPACE`. |
 | `init.sh` or equivalent | `PROJECT_ROOT/init.sh` | `PROJECT_ROOT/init.sh` | Executable verifier that checks environment, resolved harness state, and tests. |
 
@@ -61,6 +61,19 @@ Use role files when the host agent system supports subagents. Adapt the path to 
 | `leader` | `.claude/agents/leader.md` or `.github/agents/leader.agent.md` | Orchestrates, reads state, delegates, never implements product code. |
 | `implementer` | `.claude/agents/implementer.md` or `.github/agents/implementer.agent.md` | Implements exactly one feature, writes tests, self-verifies. |
 | `reviewer` | `.claude/agents/reviewer.md` or `.github/agents/reviewer.agent.md` | Reviews against docs and checkpoints, runs verifier, never edits product code. |
+
+## Role Models
+
+Each role file may declare a `model` in its frontmatter so roles run under the model that fits their job. The leader uses a stronger reasoning model; the implementer and reviewer default to cheaper, faster models; the explorer uses the cheapest fast model.
+
+Resolution order for a role's model:
+
+1. The `model` value in the role frontmatter.
+2. A `models` map in `harness.config.json` keyed by role.
+3. A model already configured in the host editor or agent platform.
+4. The Handyman default for that role (cheap roles fall back to `Claude Sonnet 4.6`).
+
+See [models.md](./models.md) for defaults, per-platform syntax, and what to document per project.
 
 ## Optional Support Files
 
@@ -78,7 +91,7 @@ Use role files when the host agent system supports subagents. Adapt the path to 
 A minimal `feature_list.json` lives in `HARNESS_WORKSPACE` and contains:
 
 - Project metadata.
-- Optional config for `install_mode`, `project_name`, `project_root`, `handyman_root`, and `harness_workspace`.
+- Optional config for `install_mode`, `project_name`, `project_root`, `handyman_root`, `harness_workspace`, and a `models` map keyed by role.
 - Global rules such as `one_feature_at_a_time` and `require_tests_to_close`.
 - `valid_status`: usually `pending`, `in_progress`, `done`, `blocked`.
 - A `features` array with `id`, `name`, `title`, `description`, `acceptance`, and `status`.
