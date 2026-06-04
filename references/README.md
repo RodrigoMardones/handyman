@@ -7,6 +7,7 @@ Read only the file needed for the current mode:
 - `anatomy.md` for structure, file responsibilities and Obsidian frontmatter conventions.
 - `workflow.md` for leader, implementer, reviewer, and closure protocols.
 - `templates.md` for starter files when bootstrapping a repo (including Obsidian MOC and `.gitignore`).
+- `examples.md` for end-to-end bootstrap and run-feature walkthroughs with concrete file states.
 - `checklists.md` for analysis, bootstrap, run, review, Obsidian, and risk checks.
 - `models.md` for per-role model assignment, defaults, and editor model discovery.
 - `tools.md` for per-role tool restrictions, capability groups, and per-platform syntax.
