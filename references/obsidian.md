@@ -11,7 +11,7 @@ This document covers how to open the workspace as a vault, the conventions Handy
    - Global mode: `$HOME/HANDYMAN/<project_name>` (the resolved `HARNESS_WORKSPACE`).
 2. In Obsidian choose **Open folder as vault** and point it to that folder.
 3. Trust the vault when prompted.
-4. Confirm the file tree shows `docs/`, `progress/`, `feature_list.json` and (optionally) `index.md`. In both modes the repo-root bridge files such as `AGENTS.md` and `CHECKPOINTS.md` live outside the vault, since the vault is `.handyman` (local) or the external HANDYMAN workspace (global).
+4. Confirm the file tree shows `docs/`, `progress/`, `backlog/`, `feature_list.json` and (optionally) `index.md`. In both modes the repo-root bridge files such as `AGENTS.md` and `CHECKPOINTS.md` live outside the vault, since the vault is `.handyman` (local) or the external HANDYMAN workspace (global).
 
 The harness keeps editing markdown the same way as before. Obsidian only adds visualization, search, backlinks, and tag navigation.
 
@@ -23,9 +23,9 @@ Handyman files carry minimal YAML frontmatter so Obsidian can index them by feat
 |------|---------------|-------|
 | `progress/current.md` | `feature`, `status`, `role`, `updated`, `tags` | `status` is `idle` when the workspace has no active feature. |
 | `progress/history.md` | `tags: [handyman/history]` | Append-only. |
-| `progress/impl_<feature>.md` | `feature`, `status: implemented`, `role: implementer`, `updated`, `tags` | Written by the implementer. |
-| `progress/review_<feature>.md` | `feature`, `status: approved` or `status: changes_requested`, `role: reviewer`, `updated`, `tags` | Written by the reviewer. |
-| `progress/explore_<topic>.md` | `topic`, `role: explorer`, `updated`, `tags` | Written by read-only exploration subagents. |
+| `backlog/impl_<feature>.md` | `feature`, `status: implemented`, `role: implementer`, `updated`, `tags` | Written by the implementer. |
+| `backlog/review_<feature>.md` | `feature`, `status: approved` or `status: changes_requested`, `role: reviewer`, `updated`, `tags` | Written by the reviewer. |
+| `backlog/explore_<topic>.md` | `topic`, `role: explorer`, `updated`, `tags` | Written by read-only exploration subagents. |
 | `index.md` | `tags: [handyman/moc]` | Optional MOC at the workspace root. |
 | `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md` | `tags: [handyman/docs]` (optional) | Plain markdown otherwise. |
 
@@ -54,7 +54,7 @@ Tags are additive: a review report typically carries `#handyman/role/reviewer` p
 
 ## Map Of Content (MOC)
 
-The optional `index.md` at the root of the workspace acts as a hub. It lists files that exist inside `HARNESS_WORKSPACE`: `feature_list.json`, docs, progress files and useful tag queries. Because the vault is `.handyman` (local) or the external HANDYMAN workspace (global), the repo-root bridge files `AGENTS.md` and `CHECKPOINTS.md` sit outside the vault; mention them as plain paths unless they are intentionally mirrored into the vault. See [templates.md](./templates.md#indexmd-obsidian-moc).
+The optional `index.md` at the root of the workspace acts as a hub. It lists files that exist inside `HARNESS_WORKSPACE`: `feature_list.json`, docs, progress files, backlog reports and useful tag queries. Because the vault is `.handyman` (local) or the external HANDYMAN workspace (global), the repo-root bridge files `AGENTS.md` and `CHECKPOINTS.md` sit outside the vault; mention them as plain paths unless they are intentionally mirrored into the vault. See [templates.md](./templates.md#indexmd-obsidian-moc).
 
 ## Wikilinks vs Markdown Links
 

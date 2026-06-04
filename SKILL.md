@@ -1,6 +1,6 @@
 ---
 name: handyman
-description: 'Use when: install, analyze, create, migrate, or operate a Handyman harness/subagent workflow. Triggers: handyman, HANDYMAN, bootstrap local, bootstrap global, migrate-global, local global harness, .handyman directory, /Users/<user>/HANDYMAN, harness_workspace, feature_list.json, progress/current.md, AGENTS.md, CHECKPOINTS.md, leader implementer reviewer, role models, cheap model implementer reviewer, anti telefono descompuesto, multi-agent harness, subagent workflow, obsidian vault. Handles: local project harness installs under .handyman, global HANDYMAN workspace installs, repo bridge files, per-role model assignment, one-feature lifecycle, disk-based progress, executable verification, Obsidian-friendly frontmatter and MOC. DO NOT USE FOR: generic coding tasks without a harness workflow.'
+description: 'Use when: install, analyze, create, migrate, or operate a Handyman harness/subagent workflow. Triggers: handyman, HANDYMAN, bootstrap local, bootstrap global, migrate-global, local global harness, .handyman directory, /Users/<user>/HANDYMAN, harness_workspace, feature_list.json, progress/current.md, backlog directory, AGENTS.md, CHECKPOINTS.md, leader implementer reviewer, role models, per-role tools, tool restrictions, least-privilege roles, cheap model implementer reviewer, anti telefono descompuesto, multi-agent harness, subagent workflow, obsidian vault. Handles: local project harness installs under .handyman, global HANDYMAN workspace installs, repo bridge files, per-role model assignment, per-role tool restrictions, backlog reports directory, one-feature lifecycle, disk-based progress, executable verification, Obsidian-friendly frontmatter and MOC. DO NOT USE FOR: generic coding tasks without a harness workflow.'
 argument-hint: 'analyze | bootstrap local|global | run-feature | review | migrate-global'
 user-invocable: true
 ---
@@ -11,7 +11,9 @@ Use this skill to install, analyze, create, migrate, or operate a Handyman harne
 
 The reference project pattern is a small app surrounded by a strong workflow: `AGENTS.md`, `feature_list.json`, `progress/`, `docs/`, `CHECKPOINTS.md`, `init.sh`, and role files for leader, implementer, and reviewer. Handyman can install that harness locally inside a hidden `.handyman/` directory in the project so the repo root stays focused on product code, or use a global operational workspace under `$HOME/HANDYMAN/<project_name>`.
 
-Roles can run under different models. The leader uses a stronger reasoning model, while the implementer and reviewer default to cheaper, faster models. See [references/models.md](./references/models.md).
+Roles can run under different models. The leader uses a stronger reasoning model, while the implementer and reviewer default to cheaper, faster models. See [references/models.md](./references/models.md). Roles also run with restricted tool sets so each role only gets the capabilities its job requires. See [references/tools.md](./references/tools.md).
+
+Task-detail reports (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`) live in `$HARNESS_WORKSPACE/backlog/`, separate from the important harness state in `$HARNESS_WORKSPACE/progress/` (`current.md`, `history.md`).
 
 The `HARNESS_WORKSPACE` is designed to also work as an [Obsidian](https://obsidian.md) vault: reports use YAML frontmatter, an `index.md` MOC links the main files, and tags follow a `#handyman/...` namespace. See [references/obsidian.md](./references/obsidian.md).
 
@@ -72,11 +74,12 @@ Global mode rules:
 
 - One feature at a time. Never mix unrelated feature work in the same harness session.
 - Disk is the source of truth. Resolve `HARNESS_WORKSPACE` before reading or writing `feature_list.json`, `progress/current.md`, and `progress/history.md`.
-- Subagents write reports to files such as `$HARNESS_WORKSPACE/progress/impl_<feature>.md` and `$HARNESS_WORKSPACE/progress/review_<feature>.md`.
-- Chat responses from subagents should be references only, such as `done -> $HARNESS_WORKSPACE/progress/impl_cli_edit.md`.
+- Subagents write reports to files such as `$HARNESS_WORKSPACE/backlog/impl_<feature>.md` and `$HARNESS_WORKSPACE/backlog/review_<feature>.md`.
+- Chat responses from subagents should be references only, such as `done -> $HARNESS_WORKSPACE/backlog/impl_cli_edit.md`.
 - No feature is `done` until the verifier, normally `./init.sh`, exits 0.
 - A leader coordinates and does not edit product code. An implementer writes code and tests. A reviewer validates and does not edit code.
 - Assign a model per role. The leader uses a stronger reasoning model; the implementer and reviewer default to cheaper, faster models, preferring a model already configured in the editor and otherwise falling back to `Claude Sonnet 4.6`. See [references/models.md](./references/models.md).
+- Assign a restricted tool set per role following least privilege: the leader gets the widest surface (including `agent`, `web`, `browser`); the implementer and reviewer drop delegation and web; the explorer is read-only with no `edit`. See [references/tools.md](./references/tools.md).
 - If any required file, command, or path configuration is missing, document the gap before inventing a workaround.
 
 ## Workflow
@@ -85,7 +88,7 @@ Global mode rules:
 
 1. Read the repo entrypoint first: `AGENTS.md` or equivalent.
 2. Resolve `HARNESS_WORKSPACE` from `harness.config.json`, `feature_list.json` config, a `PROJECT_ROOT/.handyman/` directory, or the legacy `PROJECT_ROOT` fallback.
-3. Inspect `feature_list.json`, `progress/current.md`, `progress/history.md`, `docs/`, `CHECKPOINTS.md`, verifier scripts, and role files (including their per-role `model`) at their resolved locations.
+3. Inspect `feature_list.json`, `progress/current.md`, `progress/history.md`, `backlog/` reports, `docs/`, `CHECKPOINTS.md`, verifier scripts, and role files (including their per-role `model` and `tools`) at their resolved locations.
 4. Run the verifier if the repo asks for it and the command is safe.
 5. Report: install scope, structure map, lifecycle, current feature state, verification command, missing files, and risks.
 6. Use [anatomy](./references/anatomy.md) and [checklists](./references/checklists.md).
@@ -99,8 +102,10 @@ Global mode rules:
 5. In `global` mode, add local bridge files in the repo root and add operational state under `$HOME/HANDYMAN/<project_name>`.
 6. Keep docs specific to the repo architecture, not generic filler.
 7. Assign a model per role when role files are supported: a stronger model for the leader and cheaper, faster models for the implementer and reviewer, following [references/models.md](./references/models.md).
-8. Add an executable verifier that checks required files, validates feature state from `HARNESS_WORKSPACE`, and runs tests from the project root.
-9. Use [templates](./references/templates.md).
+8. Assign a restricted tool set per role when role files are supported, following the least-privilege defaults in [references/tools.md](./references/tools.md).
+9. Create the `$HARNESS_WORKSPACE/backlog/` directory for task-detail reports (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`), keeping `progress/` for `current.md` and `history.md`.
+10. Add an executable verifier that checks required files, validates feature state from `HARNESS_WORKSPACE`, and runs tests from the project root.
+11. Use [templates](./references/templates.md).
 
 ### 3. Run One Feature
 
@@ -118,18 +123,18 @@ Global mode rules:
 ### 4. Review
 
 1. Resolve `HARNESS_WORKSPACE`.
-2. Read the claimed implementation report in `$HARNESS_WORKSPACE/progress/`.
+2. Read the claimed implementation report in `$HARNESS_WORKSPACE/backlog/`.
 3. Compare changed files against resolved `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md`, and `CHECKPOINTS.md`.
 4. Run the verifier.
-5. Write a verdict file. Prefer `$HARNESS_WORKSPACE/progress/review_<feature>.md`.
+5. Write a verdict file. Prefer `$HARNESS_WORKSPACE/backlog/review_<feature>.md`.
 6. Return only `APPROVED -> <file>` or `CHANGES_REQUESTED -> <file>`.
 
 ### 5. Migrate Local To Global
 
 1. Do not migrate while local `progress/current.md` contains an active session unless the user explicitly approves.
 2. Create `$HOME/HANDYMAN/<project_name>`.
-3. Move or copy `feature_list.json`, `progress/`, and operational `docs/` from `PROJECT_ROOT/.handyman` (or the legacy repo root) into the global harness workspace.
-4. Add or update `harness.config.json` in the project root with `install_mode`, `project_name`, `project_root`, `handyman_root`, `harness_workspace`, and the optional `models` map.
+3. Move or copy `feature_list.json`, `progress/`, `backlog/`, and operational `docs/` from `PROJECT_ROOT/.handyman` (or the legacy repo root) into the global harness workspace.
+4. Add or update `harness.config.json` in the project root with `install_mode`, `project_name`, `project_root`, `handyman_root`, `harness_workspace`, and the optional `models` and `tools` maps.
 5. Update `AGENTS.md`, `CHECKPOINTS.md`, role files, and `init.sh` so all mutable state edits point to `HARNESS_WORKSPACE`.
 6. Run the verifier and document any path drift before continuing feature work.
 
@@ -157,6 +162,18 @@ Declare the model in role-file frontmatter (`model:`) or in a `models` map insid
 
 See [references/models.md](./references/models.md) for the full resolution order, defaults, and per-platform syntax.
 
+## Role Tools
+
+Each role runs with a restricted tool set so it only gets the capabilities its job requires (least privilege):
+
+- The leader gets the widest surface: `vscode`, `execute`, `read`, `agent`, `edit`, `search`, `web`, `browser`, `todo`.
+- The implementer and reviewer drop delegation and web: `vscode`, `execute`, `read`, `edit`, `search`, `todo`.
+- The explorer is read-only with no `edit` and no `agent`: `vscode`, `execute`, `read`, `search`, `todo`.
+
+Declare tools in role-file frontmatter (`tools:`) or in a `tools` map inside `harness.config.json`. Map each logical group to the concrete tools the host platform exposes, and record any dropped group in `$HARNESS_WORKSPACE/progress/current.md`.
+
+See [references/tools.md](./references/tools.md) for capability groups, per-role defaults, resolution order, and per-platform syntax.
+
 ## References
 
 - [Anatomy](./references/anatomy.md)
@@ -164,6 +181,7 @@ See [references/models.md](./references/models.md) for the full resolution order
 - [Templates](./references/templates.md)
 - [Checklists](./references/checklists.md)
 - [Role Models](./references/models.md)
+- [Role Tools](./references/tools.md)
 - [Obsidian Integration](./references/obsidian.md)
 
 ## License & Attribution

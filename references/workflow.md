@@ -15,21 +15,21 @@ This workflow keeps agent work resumable and auditable.
 
 ## Leader Protocol
 
-The leader coordinates. It does not implement product code and does not mark a feature `done` alone. It runs under a stronger reasoning model and delegates cheaper roles (see [models.md](./models.md)).
+The leader coordinates. It does not implement product code and does not mark a feature `done` alone. It runs under a stronger reasoning model and the widest tool set (including `agent`, `web`, and `browser`) and delegates cheaper roles (see [models.md](./models.md) and [tools.md](./tools.md)).
 
 1. Decide whether the request is analysis, bootstrap, one feature, or review.
 2. For analysis, inspect and report. Do not modify product code.
 3. Resolve `HARNESS_WORKSPACE` before selecting or editing feature state.
 4. For one feature, select exactly one `pending` feature from `$HARNESS_WORKSPACE/feature_list.json`.
 5. Delegate to an implementer when available.
-6. Require the implementer to write a report in `$HARNESS_WORKSPACE/progress/impl_<feature>.md`.
+6. Require the implementer to write a report in `$HARNESS_WORKSPACE/backlog/impl_<feature>.md`.
 7. Delegate to a reviewer after implementation.
-8. Require the reviewer to write a verdict in `$HARNESS_WORKSPACE/progress/review_<feature>.md`.
+8. Require the reviewer to write a verdict in `$HARNESS_WORKSPACE/backlog/review_<feature>.md`.
 9. Close only after approval and green verifier.
 
 ## Implementer Protocol
 
-The implementer owns exactly one feature. It runs under its assigned model, which defaults to a cheaper, faster model (see [models.md](./models.md)).
+The implementer owns exactly one feature. It runs under its assigned model, which defaults to a cheaper, faster model, and a restricted tool set (`vscode`, `execute`, `read`, `edit`, `search`, `todo`; no delegation or web) (see [models.md](./models.md) and [tools.md](./tools.md)).
 
 1. Read `AGENTS.md`, resolve `HARNESS_WORKSPACE`, and read `$HARNESS_WORKSPACE/docs/architecture.md`, `$HARNESS_WORKSPACE/docs/conventions.md`, and the selected feature acceptance criteria.
 2. Change that feature from `pending` to `in_progress` in `$HARNESS_WORKSPACE/feature_list.json`.
@@ -37,14 +37,14 @@ The implementer owns exactly one feature. It runs under its assigned model, whic
 4. Implement the smallest code change that satisfies the acceptance criteria.
 5. Add or update tests at the same risk level as the change.
 6. Run the verifier from `PROJECT_ROOT`.
-7. Write `$HARNESS_WORKSPACE/progress/impl_<feature>.md` with YAML frontmatter (`feature`, `status: implemented`, `role: implementer`, `updated`, `tags`), files changed, design notes, and test output.
-8. Return only `done -> $HARNESS_WORKSPACE/progress/impl_<feature>.md` or `blocked -> $HARNESS_WORKSPACE/progress/current.md`.
+7. Write `$HARNESS_WORKSPACE/backlog/impl_<feature>.md` with YAML frontmatter (`feature`, `status: implemented`, `role: implementer`, `updated`, `tags`), files changed, design notes, and test output.
+8. Return only `done -> $HARNESS_WORKSPACE/backlog/impl_<feature>.md` or `blocked -> $HARNESS_WORKSPACE/progress/current.md`.
 
 The implementer does not self-approve. It can mark `done` only if the local protocol explicitly says the implementer performs closure after reviewer approval.
 
 ## Reviewer Protocol
 
-The reviewer validates and does not edit code. It runs under its assigned model, which defaults to a cheaper, faster model (see [models.md](./models.md)).
+The reviewer validates and does not edit code. It runs under its assigned model, which defaults to a cheaper, faster model, and a restricted tool set (`vscode`, `execute`, `read`, `edit`, `search`, `todo`); its `edit` access is for the verdict file and harness state only, never product code (see [models.md](./models.md) and [tools.md](./tools.md)).
 
 1. Resolve `HARNESS_WORKSPACE`.
 2. Read `$HARNESS_WORKSPACE/docs/architecture.md`, `$HARNESS_WORKSPACE/docs/conventions.md`, `$HARNESS_WORKSPACE/docs/verification.md`, and `$PROJECT_ROOT/CHECKPOINTS.md`.
@@ -52,8 +52,8 @@ The reviewer validates and does not edit code. It runs under its assigned model,
 4. Inspect changed files.
 5. Run the verifier from `PROJECT_ROOT`.
 6. Mark checklist items as pass or fail.
-7. Write `$HARNESS_WORKSPACE/progress/review_<feature>.md` with YAML frontmatter (`feature`, `status: approved` or `status: changes_requested`, `role: reviewer`, `updated`, `tags`) and `APPROVED` or `CHANGES_REQUESTED` in the body.
-8. Return only `APPROVED -> $HARNESS_WORKSPACE/progress/review_<feature>.md` or `CHANGES_REQUESTED -> $HARNESS_WORKSPACE/progress/review_<feature>.md`.
+7. Write `$HARNESS_WORKSPACE/backlog/review_<feature>.md` with YAML frontmatter (`feature`, `status: approved` or `status: changes_requested`, `role: reviewer`, `updated`, `tags`) and `APPROVED` or `CHANGES_REQUESTED` in the body.
+8. Return only `APPROVED -> $HARNESS_WORKSPACE/backlog/review_<feature>.md` or `CHANGES_REQUESTED -> $HARNESS_WORKSPACE/backlog/review_<feature>.md`.
 
 ## Closure Protocol
 
@@ -92,8 +92,8 @@ For complex work, the leader may launch read-only exploration subagents before i
 Rules:
 
 - Each explorer gets one narrow question.
-- Each explorer runs under the cheapest fast model (see [models.md](./models.md)).
-- Each explorer writes to `$HARNESS_WORKSPACE/progress/explore_<topic>.md` with frontmatter (`topic`, `role: explorer`, `updated`, `tags`).
+- Each explorer runs under the cheapest fast model (see [models.md](./models.md)) and a read-only tool set (`vscode`, `execute`, `read`, `search`, `todo`; no `edit`, no `agent`) (see [tools.md](./tools.md)).
+- Each explorer writes to `$HARNESS_WORKSPACE/backlog/explore_<topic>.md` with frontmatter (`topic`, `role: explorer`, `updated`, `tags`).
 - Each explorer returns only a file reference.
 - The leader synthesizes the reports before selecting implementation scope.
 
