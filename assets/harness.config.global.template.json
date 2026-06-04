@@ -1,0 +1,19 @@
+{
+  "install_mode": "global",
+  "project_name": "project-name",
+  "project_root": "/absolute/path/to/project-name",
+  "handyman_root": "/Users/any_user/HANDYMAN",
+  "harness_workspace": "/Users/any_user/HANDYMAN/project-name",
+  "models": {
+    "leader": "editor-default",
+    "implementer": "Claude Sonnet 4.6",
+    "reviewer": "Claude Sonnet 4.6",
+    "explorer": "Claude Sonnet 4.6"
+  },
+  "tools": {
+    "leader": ["vscode", "execute", "read", "agent", "edit", "search", "web", "browser", "todo"],
+    "implementer": ["vscode", "execute", "read", "edit", "search", "todo"],
+    "reviewer": ["vscode", "execute", "read", "edit", "search", "todo"],
+    "explorer": ["vscode", "execute", "read", "search", "todo"]
+  }
+}

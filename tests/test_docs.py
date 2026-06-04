@@ -2,9 +2,9 @@
 """Documentation-structure tests for the Handyman skill.
 
 Validates contracts that the skill's markdown promises:
-  T1  Every JSON code fence in references/templates.md is valid JSON.
+  T1  Every assets/*.template.json file is valid JSON.
   T2  Every relative markdown link across the repo resolves to a file.
-  T3  Obsidian frontmatter keys + tag namespace are documented in templates.md.
+  T3  Obsidian frontmatter keys + tag namespace appear in the assets templates.
 
 Exit code 0 when all pass, 1 otherwise.
 """
@@ -43,18 +43,21 @@ def fenced_blocks(text: str, lang: str):
 
 
 def test_json_templates() -> None:
-    path = os.path.join(ROOT, "references", "templates.md")
-    with open(path, encoding="utf-8") as fh:
-        text = fh.read()
-    blocks = fenced_blocks(text, "json")
-    check("templates.md contains JSON examples", len(blocks) > 0,
-          "no ```json fences found")
-    for i, block in enumerate(blocks, 1):
+    assets_dir = os.path.join(ROOT, "assets")
+    json_files = sorted(
+        name for name in os.listdir(assets_dir)
+        if name.endswith(".template.json")
+    )
+    check("assets/ contains JSON templates", len(json_files) > 0,
+          "no *.template.json files found")
+    for name in json_files:
+        with open(os.path.join(assets_dir, name), encoding="utf-8") as fh:
+            block = fh.read()
         try:
             json.loads(block)
-            check(f"JSON template #{i} parses", True)
+            check(f"JSON template '{name}' parses", True)
         except json.JSONDecodeError as exc:
-            check(f"JSON template #{i} parses", False, str(exc))
+            check(f"JSON template '{name}' parses", False, str(exc))
 
 
 _LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
@@ -71,7 +74,10 @@ def strip_code(text: str) -> str:
 def test_markdown_links() -> None:
     md_files = []
     for dirpath, dirnames, filenames in os.walk(ROOT):
-        if ".git" in dirpath.split(os.sep):
+        parts = dirpath.split(os.sep)
+        # Skip VCS internals and the assets/ template bodies, whose relative
+        # links are illustrative and only resolve inside a target repo.
+        if ".git" in parts or "assets" in parts:
             continue
         for name in filenames:
             if name.endswith(".md"):
@@ -100,16 +106,19 @@ def test_markdown_links() -> None:
 
 
 def test_obsidian_contract() -> None:
-    path = os.path.join(ROOT, "references", "templates.md")
-    with open(path, encoding="utf-8") as fh:
-        text = fh.read()
+    assets_dir = os.path.join(ROOT, "assets")
+    text = ""
+    for name in sorted(os.listdir(assets_dir)):
+        if name.endswith((".template.md", ".template")):
+            with open(os.path.join(assets_dir, name), encoding="utf-8") as fh:
+                text += fh.read() + "\n"
     required_frontmatter = ["feature:", "status:", "role:", "updated:", "tags:"]
     for key in required_frontmatter:
-        check(f"templates.md documents frontmatter key '{key}'",
+        check(f"assets templates document frontmatter key '{key}'",
               key in text)
     for tag in ["handyman/session/current", "handyman/history",
                 "handyman/moc"]:
-        check(f"templates.md documents tag '{tag}'", tag in text)
+        check(f"assets templates document tag '{tag}'", tag in text)
 
 
 def main() -> int:
