@@ -3,6 +3,8 @@ name: handyman
 description: 'Use when: install, analyze, create, migrate, or operate a Handyman harness/subagent workflow. Triggers: handyman, HANDYMAN, bootstrap local, bootstrap global, migrate-global, local global harness, .handyman directory, /Users/<user>/HANDYMAN, harness_workspace, feature_list.json, progress/current.md, backlog directory, AGENTS.md, CHECKPOINTS.md, leader implementer reviewer, role models, per-role tools, tool restrictions, least-privilege roles, cheap model implementer reviewer, anti telefono descompuesto, multi-agent harness, subagent workflow, obsidian vault. Handles: local project harness installs under .handyman, global HANDYMAN workspace installs, repo bridge files, per-role model assignment, per-role tool restrictions, backlog reports directory, one-feature lifecycle, disk-based progress, executable verification, Obsidian-friendly frontmatter and MOC. DO NOT USE FOR: generic coding tasks without a harness workflow.'
 argument-hint: 'analyze | bootstrap local|global | run-feature | review | migrate-global'
 user-invocable: true
+metadata:
+  version: 1.2.2
 ---
 
 # Handyman
@@ -80,6 +82,7 @@ Global mode rules:
 - A leader coordinates and does not edit product code. An implementer writes code and tests. A reviewer validates and does not edit code.
 - Assign a model per role. The leader uses a stronger reasoning model; the implementer and reviewer default to cheaper, faster models, preferring a model already configured in the editor and otherwise falling back to `Claude Sonnet 4.6`. See [references/models.md](./references/models.md).
 - Assign a restricted tool set per role following least privilege: the leader gets the widest surface (including `agent`, `web`, `browser`); the implementer and reviewer drop delegation and web; the explorer is read-only with no `edit`. See [references/tools.md](./references/tools.md).
+- Agent/role files always live in the platform-discoverable path (`.github/agents/<role>.agent.md` for VS Code/Copilot, `.claude/agents/<role>.md` for Claude Code), never inside `HARNESS_WORKSPACE`. The host agent system only loads agents from those known paths; placing them under `.handyman/` makes them undiscoverable and uninvocable. This holds for both `local` and `global` scope: install scope changes where mutable state lives, not where agents live.
 - If any required file, command, or path configuration is missing, document the gap before inventing a workaround.
 
 ## Workflow
@@ -103,9 +106,10 @@ Global mode rules:
 6. Keep docs specific to the repo architecture, not generic filler.
 7. Assign a model per role when role files are supported: a stronger model for the leader and cheaper, faster models for the implementer and reviewer, following [references/models.md](./references/models.md).
 8. Assign a restricted tool set per role when role files are supported, following the least-privilege defaults in [references/tools.md](./references/tools.md).
-9. Create the `$HARNESS_WORKSPACE/backlog/` directory for task-detail reports (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`), keeping `progress/` for `current.md` and `history.md`.
-10. Add an executable verifier that checks required files, validates feature state from `HARNESS_WORKSPACE`, and runs tests from the project root.
-11. Use [templates](./references/templates.md).
+9. Place role/agent files in the platform-discoverable path (`.github/agents/<role>.agent.md` or `.claude/agents/<role>.md`), never under `HARNESS_WORKSPACE` or `.handyman/`, in both `local` and `global` scope.
+10. Create the `$HARNESS_WORKSPACE/backlog/` directory for task-detail reports (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`), keeping `progress/` for `current.md` and `history.md`.
+11. Add an executable verifier that checks required files, validates feature state from `HARNESS_WORKSPACE`, and runs tests from the project root.
+12. Use [templates](./references/templates.md).
 
 ### 3. Run One Feature
 

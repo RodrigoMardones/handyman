@@ -1,0 +1,29 @@
+{
+  "project": "project-name",
+  "description": "Short project description.",
+  "config": {
+    "install_mode": "local",
+    "project_name": "project-name",
+    "project_root": ".",
+    "handyman_root": null,
+    "harness_workspace": ".handyman"
+  },
+  "rules": {
+    "one_feature_at_a_time": true,
+    "require_tests_to_close": true,
+    "valid_status": ["pending", "in_progress", "done", "blocked"]
+  },
+  "features": [
+    {
+      "id": 1,
+      "name": "first_feature",
+      "title": "First feature",
+      "description": "What this feature adds.",
+      "acceptance": [
+        "Concrete observable requirement",
+        "Automated tests cover success and failure paths"
+      ],
+      "status": "pending"
+    }
+  ]
+}
