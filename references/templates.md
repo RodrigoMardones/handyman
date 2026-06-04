@@ -117,6 +117,6 @@ Template: [../assets/role-explorer.template.md](../assets/role-explorer.template
 
 ## init.sh Shape
 
-Executable verifier that resolves `HARNESS_WORKSPACE`, checks required files, validates feature state, and runs tests from `PROJECT_ROOT`.
+Executable verifier that resolves `HARNESS_WORKSPACE`, checks required files, validates feature state, and then runs the quality gates `lint -> build -> test` from `PROJECT_ROOT`. A small `run_phase` helper runs every gate and aggregates failures so the summary reports all problems before exiting non-zero. Replace the `run_lint`, `run_build`, and `run_test` placeholders with the project's real commands (e.g. `ruff`, `npm run build`, `pytest`); each placeholder fails by default so an unconfigured gate cannot silently pass.
 
 Template: [../assets/init.template.sh](../assets/init.template.sh)
