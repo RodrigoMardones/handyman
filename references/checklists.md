@@ -21,6 +21,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] `CHECKPOINTS.md` gives objective pass/fail criteria and points to `HARNESS_WORKSPACE` for mutable state.
 - [ ] A verifier such as `./init.sh` exists and can be run.
 - [ ] Role files exist if the project claims multi-agent orchestration.
+- [ ] Role files live in the platform-discoverable path (`.github/agents/` or `.claude/agents/`), not inside `HARNESS_WORKSPACE` or `.handyman/`.
 - [ ] Role files declare a `model` (or rely on a documented default) appropriate to the role: stronger for leader, cheaper for implementer and reviewer.
 - [ ] Role files declare a `tools` set (or rely on the documented default) following least privilege: leader widest; implementer and reviewer without delegation or web; explorer read-only with no `edit`.
 - [ ] Subagent reports live in `$HARNESS_WORKSPACE/backlog/` instead of chat.

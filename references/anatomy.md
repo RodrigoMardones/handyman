@@ -63,6 +63,8 @@ Use role files when the host agent system supports subagents. Adapt the path to 
 | `implementer` | `.claude/agents/implementer.md` or `.github/agents/implementer.agent.md` | Implements exactly one feature, writes tests, self-verifies. |
 | `reviewer` | `.claude/agents/reviewer.md` or `.github/agents/reviewer.agent.md` | Reviews against docs and checkpoints, runs verifier, never edits product code. |
 
+> Rule: agent/role files are bridge files, not harness state. They always live in the platform-discoverable path (`.github/agents/` or `.claude/agents/`), never inside `HARNESS_WORKSPACE`. The host agent system only loads agents from those known paths, so placing them under `.handyman/` (or a global HANDYMAN workspace) makes them undiscoverable and uninvocable. This holds for both `local` and `global` scope: install scope changes where mutable state lives, not where agents live. Each agent's frontmatter must still point at the resolved `HARNESS_WORKSPACE`.
+
 ## Role Models
 
 Each role file may declare a `model` in its frontmatter so roles run under the model that fits their job. The leader uses a stronger reasoning model; the implementer and reviewer default to cheaper, faster models; the explorer uses the cheapest fast model.
