@@ -18,6 +18,7 @@ La idea central es simple: el chat coordina, pero el disco es la fuente de verda
 | Ubicar archivos | [Archivos Principales](#-archivos-principales) | Saber que editar y que revisar. |
 | Usarlo con Obsidian | [Visualizar En Obsidian](#-visualizar-en-obsidian) | Abrir el vault sin commitear metadata local. |
 | Asignar modelos | [Modelos Por Rol](#-modelos-por-rol) | Modelo fuerte para leader, baratos para implementer y reviewer. |
+| Restringir tools | [Tools Por Rol](#-tools-por-rol) | Cada rol recibe solo las capacidades que necesita. |
 | Ejecutar una feature | [Ejemplos De Uso](#-ejemplos-de-uso) | Comandos tipicos para arrancar el flujo. |
 
 > 💡 **Idea guia:** el chat coordina, pero `HARNESS_WORKSPACE` es la fuente de verdad.
@@ -30,9 +31,9 @@ Handyman define un flujo de trabajo para agentes basado en tres roles:
 - 🛠️ **Implementer:** implementa una sola feature, agrega o ajusta tests y deja evidencia en disco. Usa por defecto un modelo mas barato y rapido.
 - ✅ **Reviewer:** valida la implementacion contra arquitectura, convenciones, checkpoints y verificacion. Usa por defecto un modelo mas barato y rapido.
 
-Cada rol puede correr bajo su propio modelo: el leader usa un modelo fuerte, mientras que implementer y reviewer prefieren un modelo barato ya configurado en el editor y, si no hay, caen a `Claude Sonnet 4.6`. Mas detalles en [references/models.md](references/models.md).
+Cada rol puede correr bajo su propio modelo: el leader usa un modelo fuerte, mientras que implementer y reviewer prefieren un modelo barato ya configurado en el editor y, si no hay, caen a `Claude Sonnet 4.6`. Mas detalles en [references/models.md](references/models.md). Ademas cada rol corre con un set de tools restringido segun el principio de menor privilegio; mas detalles en [references/tools.md](references/tools.md).
 
-Este patron evita que el trabajo viva solamente en mensajes largos de chat. Los agentes escriben reportes bajo `progress/`, el backlog vive en `feature_list.json`, las reglas del proyecto viven en `docs/`, y el cierre de una feature depende de una verificacion real, normalmente `./init.sh`.
+Este patron evita que el trabajo viva solamente en mensajes largos de chat. Los agentes escriben reportes de detalle bajo `backlog/`, el estado vivo de la sesion vive en `progress/`, el backlog de features vive en `feature_list.json`, las reglas del proyecto viven en `docs/`, y el cierre de una feature depende de una verificacion real, normalmente `./init.sh`.
 
 ## 🎯 Para Que Sirve
 
@@ -79,7 +80,7 @@ Handyman soporta dos formas de organizar el harness.
 | `local` | En un directorio oculto `.handyman/` dentro del repositorio | Proyectos donde quieres versionar el harness junto al codigo pero manteniendo el root limpio y enfocado en el codigo fuente. |
 | `global` | En `$HOME/HANDYMAN/<project_name>` | Proyectos donde quieres mantener el repo limpio y guardar progreso, reportes y docs operativas fuera del codigo fuente. |
 
-En modo local, el estado mutable y las docs operativas (`feature_list.json`, `progress/`, `docs/`, `index.md`) viven bajo `.handyman/`, y el repo conserva en el root los archivos puente `AGENTS.md`, `CHECKPOINTS.md` e `init.sh`. En modo global, el repositorio conserva archivos puente como `AGENTS.md`, `CHECKPOINTS.md`, `init.sh` y `harness.config.json`, y el estado operativo vive en `HARNESS_WORKSPACE`.
+En modo local, el estado mutable y las docs operativas (`feature_list.json`, `progress/`, `backlog/`, `docs/`, `index.md`) viven bajo `.handyman/`, y el repo conserva en el root los archivos puente `AGENTS.md`, `CHECKPOINTS.md` e `init.sh`. En modo global, el repositorio conserva archivos puente como `AGENTS.md`, `CHECKPOINTS.md`, `init.sh` y `harness.config.json`, y el estado operativo vive en `HARNESS_WORKSPACE`.
 
 > ⚠️ **Guia de decision:** usa `local` si quieres versionar el harness junto al repo sin ensuciar el root; usa `global` si quieres separar codigo fuente de historial operativo.
 
@@ -92,6 +93,7 @@ En modo local, el estado mutable y las docs operativas (`feature_list.json`, `pr
 | `feature_list.json` | Backlog, reglas y estado de cada feature. |
 | `progress/current.md` | Estado vivo de la sesion actual. |
 | `progress/history.md` | Historial append-only de sesiones cerradas. |
+| `backlog/` | Reportes de detalle (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`), separados del estado importante en `progress/`. |
 | `docs/architecture.md` | Limites y principios de arquitectura del proyecto. |
 | `docs/conventions.md` | Convenciones de estilo, estructura, errores y tests. |
 | `docs/verification.md` | Comandos y evidencia requerida para cerrar trabajo. |
@@ -101,7 +103,7 @@ En modo local, el estado mutable y las docs operativas (`feature_list.json`, `pr
 
 > 🧭 **Ruta mental:** `AGENTS.md` orienta, `feature_list.json` decide, `progress/` registra y `init.sh` verifica.
 
-> 📁 **En modo local:** `AGENTS.md`, `CHECKPOINTS.md` e `init.sh` quedan en el root del repo; `feature_list.json`, `progress/`, `docs/` e `index.md` viven bajo `.handyman/`.
+> 📁 **En modo local:** `AGENTS.md`, `CHECKPOINTS.md` e `init.sh` quedan en el root del repo; `feature_list.json`, `progress/`, `backlog/`, `docs/` e `index.md` viven bajo `.handyman/`.
 
 ## 🪨 Visualizar En Obsidian
 
@@ -135,6 +137,23 @@ Mas detalles en [references/models.md](references/models.md).
 
 > 💸 **Idea de costo:** modelo fuerte para coordinar, modelos baratos para implementar y revisar.
 
+## 🧰 Tools Por Rol
+
+Cada rol corre con un set de tools restringido siguiendo el principio de menor privilegio, para que solo tenga las capacidades que su trabajo necesita:
+
+| Rol | Tools por defecto |
+|-----|-------------------|
+| `leader` | `vscode`, `execute`, `read`, `agent`, `edit`, `search`, `web`, `browser`, `todo` |
+| `implementer` | `vscode`, `execute`, `read`, `edit`, `search`, `todo` |
+| `reviewer` | `vscode`, `execute`, `read`, `edit`, `search`, `todo` |
+| `explorer` | `vscode`, `execute`, `read`, `search`, `todo` |
+
+El leader recibe la superficie mas amplia (incluye `agent`, `web` y `browser`); implementer y reviewer pierden delegacion y web; el explorer es de solo lectura, sin `edit` ni `agent`. Los tools se declaran en el frontmatter del archivo de rol (`tools:`) o en un mapa `tools` dentro de `harness.config.json`.
+
+Mas detalles en [references/tools.md](references/tools.md).
+
+> 🔐 **Idea de seguridad:** cada rol obtiene el set de tools mas chico que aun le permite terminar su trabajo.
+
 ##  Casos De Uso
 
 ### 🔎 Analizar Un Harness Existente
@@ -155,7 +174,7 @@ Handyman selecciona una feature `pending`, la marca como `in_progress`, actualiz
 
 ### ✅ Revisar Trabajo Terminado
 
-Handyman puede revisar una implementacion usando `CHECKPOINTS.md`, los docs del harness y los reportes en `progress/`. El resultado esperado es un veredicto claro: `APPROVED` o `CHANGES_REQUESTED`.
+Handyman puede revisar una implementacion usando `CHECKPOINTS.md`, los docs del harness y los reportes en `backlog/`. El resultado esperado es un veredicto claro: `APPROVED` o `CHANGES_REQUESTED`.
 
 ### 🔁 Migrar De Local A Global
 
@@ -182,7 +201,7 @@ handyman run-feature: toma la primera feature pending, implementala con tests, r
 ```
 
 ```text
-handyman review la feature cli_recent y deja el veredicto en progress/review_cli_recent.md
+handyman review la feature cli_recent y deja el veredicto en backlog/review_cli_recent.md
 ```
 
 ```text
@@ -204,17 +223,18 @@ Ejemplo de flujo completo:
 - 🎯 Trabajar una sola feature a la vez.
 - 🧭 Resolver `HARNESS_WORKSPACE` antes de leer o escribir estado.
 - ✅ No marcar una feature como `done` sin tests, verificacion y revision.
-- 📝 Guardar reportes de implementacion y revision bajo `progress/`.
+- 📝 Guardar reportes de implementacion y revision bajo `backlog/`.
 - 🕰️ Mantener `progress/history.md` como historial append-only.
 - 🚧 Documentar bloqueos en `progress/current.md` antes de improvisar soluciones.
 - 🧪 Hacer que `./init.sh` falle cuando el estado del harness sea incoherente.
 - 🧠 Asignar un modelo por rol: fuerte para el leader, barato para implementer y reviewer.
+- 🔐 Asignar un set de tools por rol con menor privilegio: leader amplio, implementer y reviewer sin web ni delegacion, explorer de solo lectura.
 
 ## ✅ Checklist Express
 
 - [ ] `HARNESS_WORKSPACE` esta resuelto antes de tocar estado.
 - [ ] Hay como maximo una feature `in_progress`.
-- [ ] Los reportes largos viven en `progress/`, no en el chat.
+- [ ] Los reportes largos viven en `backlog/`, no en el chat.
 - [ ] `./init.sh` corre y deja evidencia antes del cierre.
 - [ ] El reviewer aprueba antes de marcar `done`.
 
@@ -225,6 +245,7 @@ Ejemplo de flujo completo:
 - [Templates](references/templates.md)
 - [Checklists](references/checklists.md)
 - [Modelos por rol](references/models.md)
+- [Tools por rol](references/tools.md)
 - [Integracion con Obsidian](references/obsidian.md)
 
 ## 📜 Licencia Y Atribucion

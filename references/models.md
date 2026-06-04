@@ -2,7 +2,7 @@
 
 Handyman roles are not interchangeable, so their models should not be either. A leader reasons and orchestrates, an implementer writes code and tests, and a reviewer validates against contracts. Assigning a model per role keeps cost under control without hurting the parts that need stronger reasoning.
 
-This reference documents how Handyman picks a model for each role, the recommended defaults, and how to override them per platform.
+This reference documents how Handyman picks a model for each role, the recommended defaults, and how to override them per platform. For the complementary per-role tool restrictions, see [tools.md](./tools.md).
 
 ## Why Per-Role Models
 

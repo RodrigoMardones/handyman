@@ -39,6 +39,8 @@ In local mode the harness workspace is `PROJECT_ROOT/.handyman`. Read and write 
 | `feature_list.json` | `$HARNESS_WORKSPACE/feature_list.json` | Feature backlog and status | Always at start |
 | `progress/current.md` | `$HARNESS_WORKSPACE/progress/current.md` | Active session state | Always at start |
 | `progress/history.md` | `$HARNESS_WORKSPACE/progress/history.md` | Append-only session history | For historical context |
+| `backlog/impl_<feature>.md` | `$HARNESS_WORKSPACE/backlog/impl_<feature>.md` | Implementer report | When reviewing or resuming |
+| `backlog/review_<feature>.md` | `$HARNESS_WORKSPACE/backlog/review_<feature>.md` | Reviewer verdict | When closing a feature |
 | `docs/architecture.md` | `$HARNESS_WORKSPACE/docs/architecture.md` | Definition of good architecture | Before implementation |
 | `docs/conventions.md` | `$HARNESS_WORKSPACE/docs/conventions.md` | Naming, style, structure | Before editing code |
 | `docs/verification.md` | `$HARNESS_WORKSPACE/docs/verification.md` | Required verification | Before closing work |
@@ -51,7 +53,7 @@ In local mode the harness workspace is `PROJECT_ROOT/.handyman`. Read and write 
 - One feature at a time.
 - Do not mark a feature `done` without green verifier output.
 - Update `$HARNESS_WORKSPACE/progress/current.md` while working.
-- Write subagent reports under `$HARNESS_WORKSPACE/progress/`.
+- Write subagent reports under `$HARNESS_WORKSPACE/backlog/` (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`).
 - Leave the repo clean before closing.
 - If blocked, document the blocker instead of improvising around it.
 ```
@@ -92,7 +94,7 @@ In local mode the harness workspace is `PROJECT_ROOT/.handyman`. Read and write 
 
 ## harness.config.json
 
-Create this bridge file in the project root. In local mode it records the `.handyman` workspace; in global mode it points to the external HANDYMAN workspace. The optional `models` map assigns a model per role (see [models.md](./models.md)).
+Create this bridge file in the project root. In local mode it records the `.handyman` workspace; in global mode it points to the external HANDYMAN workspace. The optional `models` map assigns a model per role (see [models.md](./models.md)) and the optional `tools` map assigns a tool set per role (see [tools.md](./tools.md)).
 
 Local install:
 
@@ -108,6 +110,12 @@ Local install:
     "implementer": "Claude Sonnet 4.6",
     "reviewer": "Claude Sonnet 4.6",
     "explorer": "Claude Sonnet 4.6"
+  },
+  "tools": {
+    "leader": ["vscode", "execute", "read", "agent", "edit", "search", "web", "browser", "todo"],
+    "implementer": ["vscode", "execute", "read", "edit", "search", "todo"],
+    "reviewer": ["vscode", "execute", "read", "edit", "search", "todo"],
+    "explorer": ["vscode", "execute", "read", "search", "todo"]
   }
 }
 ```
@@ -126,11 +134,17 @@ Global install:
     "implementer": "Claude Sonnet 4.6",
     "reviewer": "Claude Sonnet 4.6",
     "explorer": "Claude Sonnet 4.6"
+  },
+  "tools": {
+    "leader": ["vscode", "execute", "read", "agent", "edit", "search", "web", "browser", "todo"],
+    "implementer": ["vscode", "execute", "read", "edit", "search", "todo"],
+    "reviewer": ["vscode", "execute", "read", "edit", "search", "todo"],
+    "explorer": ["vscode", "execute", "read", "search", "todo"]
   }
 }
 ```
 
-Use `"editor-default"` (or omit a key) to follow the model configured in the host editor.
+Use `"editor-default"` (or omit a key) to follow the model configured in the host editor. Omit the `tools` map (or a role key) to fall back to the Handyman per-role tool defaults.
 
 ## progress/current.md
 
@@ -188,7 +202,7 @@ Append-only. Do not edit earlier entries during normal work.
 - **Closure:** final feature status
 ```
 
-## progress/impl_<feature>.md
+## backlog/impl_<feature>.md
 
 ```markdown
 ---
@@ -216,7 +230,7 @@ tags: [handyman/role/implementer, handyman/feature/<feature_name>]
 ```
 ```
 
-## progress/review_<feature>.md
+## backlog/review_<feature>.md
 
 Use `status: approved` with `handyman/review/approved`, or `status: changes_requested` with `handyman/review/changes_requested`.
 
@@ -273,6 +287,11 @@ tags: [handyman/moc]
 
 - [[progress/current]]
 - [[progress/history]]
+
+## Backlog
+
+- Task-detail reports live in `backlog/`: `impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`.
+- Link specific reports as needed, e.g. `[[backlog/impl_<feature>]]`.
 
 ## Bridge Files
 
@@ -415,13 +434,14 @@ Resolve `HARNESS_WORKSPACE` before checking state. In local mode it is the proje
 
 ## Role: leader
 
-The leader uses a stronger reasoning model. Set `model` to the editor default or the strongest available model. See [models.md](./models.md).
+The leader uses a stronger reasoning model and the widest tool set. Set `model` to the editor default or the strongest available model. See [models.md](./models.md) and [tools.md](./tools.md).
 
 ```markdown
 ---
 name: leader
 description: Orchestrates work, delegates to subagents, and never edits product code directly.
 model: editor-default
+tools: [vscode, execute, read, agent, edit, search, web, browser, todo]
 ---
 
 # Leader
@@ -434,18 +454,19 @@ model: editor-default
 6. Delegate review.
 7. Close only after approval and green verifier.
 
-Never pass long diffs through chat. Require subagents to write files under `$HARNESS_WORKSPACE/progress/`.
+Never pass long diffs through chat. Require subagents to write files under `$HARNESS_WORKSPACE/backlog/`.
 ```
 
 ## Role: implementer
 
-The implementer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `Claude Sonnet 4.6`. See [models.md](./models.md).
+The implementer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `Claude Sonnet 4.6`. See [models.md](./models.md) and [tools.md](./tools.md).
 
 ```markdown
 ---
 name: implementer
 description: Implements exactly one feature with tests and self-verification.
 model: Claude Sonnet 4.6
+tools: [vscode, execute, read, edit, search, todo]
 ---
 
 # Implementer
@@ -457,19 +478,20 @@ model: Claude Sonnet 4.6
 5. Implement only the selected acceptance criteria.
 6. Add tests.
 7. Run `./init.sh` from `PROJECT_ROOT`.
-8. Write `$HARNESS_WORKSPACE/progress/impl_<feature>.md`.
+8. Write `$HARNESS_WORKSPACE/backlog/impl_<feature>.md`.
 9. Return only a file reference.
 ```
 
 ## Role: reviewer
 
-The reviewer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `Claude Sonnet 4.6`. See [models.md](./models.md).
+The reviewer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `Claude Sonnet 4.6`. See [models.md](./models.md) and [tools.md](./tools.md).
 
 ```markdown
 ---
 name: reviewer
 description: Reviews implementation against architecture, conventions, verification, and checkpoints. Does not edit code.
 model: Claude Sonnet 4.6
+tools: [vscode, execute, read, edit, search, todo]
 ---
 
 # Reviewer
@@ -478,8 +500,29 @@ model: Claude Sonnet 4.6
 2. Read docs from `$HARNESS_WORKSPACE/docs/` and checkpoints from `PROJECT_ROOT`.
 3. Inspect changed files and implementation report.
 4. Run `./init.sh` from `PROJECT_ROOT`.
-5. Write `$HARNESS_WORKSPACE/progress/review_<feature>.md` with APPROVED or CHANGES_REQUESTED.
+5. Write `$HARNESS_WORKSPACE/backlog/review_<feature>.md` with APPROVED or CHANGES_REQUESTED.
 6. Return only a file reference.
+```
+
+## Role: explorer
+
+The explorer uses the cheapest fast model and a read-only tool set (no `edit`, no `agent`). See [models.md](./models.md) and [tools.md](./tools.md).
+
+```markdown
+---
+name: explorer
+description: Answers one narrow, read-only question and writes findings to a report. Never edits code.
+model: Claude Sonnet 4.6
+tools: [vscode, execute, read, search, todo]
+---
+
+# Explorer
+
+1. Resolve `HARNESS_WORKSPACE`.
+2. Read only what the assigned question requires.
+3. Do not edit product code or harness state other than the report.
+4. Write `$HARNESS_WORKSPACE/backlog/explore_<topic>.md` with frontmatter (`topic`, `role: explorer`, `updated`, `tags`).
+5. Return only a file reference.
 ```
 
 ## init.sh Shape

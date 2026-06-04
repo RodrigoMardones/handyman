@@ -19,9 +19,9 @@ Minimal frontmatter per file:
 |------|---------------|
 | `progress/current.md` | `feature`, `status`, `role`, `updated`, `tags` |
 | `progress/history.md` | `tags` (typically `[handyman/history]`) |
-| `progress/impl_<feature>.md` | `feature`, `status`, `role: implementer`, `updated`, `tags` |
-| `progress/review_<feature>.md` | `feature`, `status` (`approved` or `changes_requested`), `role: reviewer`, `updated`, `tags` |
-| `progress/explore_<topic>.md` | `topic`, `role: explorer`, `updated`, `tags` |
+| `backlog/impl_<feature>.md` | `feature`, `status`, `role: implementer`, `updated`, `tags` |
+| `backlog/review_<feature>.md` | `feature`, `status` (`approved` or `changes_requested`), `role: reviewer`, `updated`, `tags` |
+| `backlog/explore_<topic>.md` | `topic`, `role: explorer`, `updated`, `tags` |
 | `index.md` (MOC) | `tags: [handyman/moc]` |
 
 Tag namespace:
@@ -46,6 +46,7 @@ Wikilinks (`[[docs/architecture]]`, `[[progress/current]]`) are optional and coe
 | `feature_list.json` | `PROJECT_ROOT/.handyman/feature_list.json` | `HARNESS_WORKSPACE/feature_list.json` | Backlog and state machine. It lists features and valid statuses. |
 | `progress/current.md` | `PROJECT_ROOT/.handyman/progress/current.md` | `HARNESS_WORKSPACE/progress/current.md` | Live session state. It records the active feature, plan, log, and next step. |
 | `progress/history.md` | `PROJECT_ROOT/.handyman/progress/history.md` | `HARNESS_WORKSPACE/progress/history.md` | Append-only history of closed sessions. |
+| `backlog/` | `PROJECT_ROOT/.handyman/backlog/` | `HARNESS_WORKSPACE/backlog/` | Task-detail reports (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`), kept separate from the important harness state in `progress/`. |
 | `docs/architecture.md` | `PROJECT_ROOT/.handyman/docs/architecture.md` | `HARNESS_WORKSPACE/docs/architecture.md` | Project-specific definition of good architecture. |
 | `docs/conventions.md` | `PROJECT_ROOT/.handyman/docs/conventions.md` | `HARNESS_WORKSPACE/docs/conventions.md` | Style, naming, layout, and error-handling rules. |
 | `docs/verification.md` | `PROJECT_ROOT/.handyman/docs/verification.md` | `HARNESS_WORKSPACE/docs/verification.md` | Commands and evidence required before a feature can close. |
@@ -75,6 +76,25 @@ Resolution order for a role's model:
 
 See [models.md](./models.md) for defaults, per-platform syntax, and what to document per project.
 
+## Role Tools
+
+Each role file may declare a `tools` list in its frontmatter so roles run with only the capabilities their job needs (least privilege). The leader gets the widest surface, including `agent`, `web`, and `browser`; the implementer and reviewer drop delegation and web; the explorer is read-only with no `edit` and no `agent`.
+
+Recommended per-role tool sets:
+
+- `leader`: `vscode`, `execute`, `read`, `agent`, `edit`, `search`, `web`, `browser`, `todo`
+- `implementer`: `vscode`, `execute`, `read`, `edit`, `search`, `todo`
+- `reviewer`: `vscode`, `execute`, `read`, `edit`, `search`, `todo`
+- `explorer`: `vscode`, `execute`, `read`, `search`, `todo`
+
+Resolution order for a role's tools:
+
+1. The `tools` list in the role frontmatter.
+2. A `tools` map in `harness.config.json` keyed by role.
+3. The Handyman default for that role.
+
+See [tools.md](./tools.md) for capability-group definitions, per-platform syntax, and what to document per project.
+
 ## Optional Support Files
 
 | Path | Purpose |
@@ -83,15 +103,15 @@ See [models.md](./models.md) for defaults, per-platform syntax, and what to docu
 | `.github/instructions/*.instructions.md` | VS Code/Copilot instruction files for project-specific behavior. |
 | `.github/prompts/*.prompt.md` | Reusable prompts for recurring tasks. |
 | `scripts/validate_harness.*` | Optional automated structure validator. |
-| `$HARNESS_WORKSPACE/progress/impl_<feature>.md` | Implementer report with files changed and test output. |
-| `$HARNESS_WORKSPACE/progress/review_<feature>.md` | Reviewer verdict with checklist and required changes. |
+| `$HARNESS_WORKSPACE/backlog/impl_<feature>.md` | Implementer report with files changed and test output. |
+| `$HARNESS_WORKSPACE/backlog/review_<feature>.md` | Reviewer verdict with checklist and required changes. |
 
 ## Feature List Contract
 
 A minimal `feature_list.json` lives in `HARNESS_WORKSPACE` and contains:
 
 - Project metadata.
-- Optional config for `install_mode`, `project_name`, `project_root`, `handyman_root`, `harness_workspace`, and a `models` map keyed by role.
+- Optional config for `install_mode`, `project_name`, `project_root`, `handyman_root`, `harness_workspace`, a `models` map keyed by role, and a `tools` map keyed by role.
 - Global rules such as `one_feature_at_a_time` and `require_tests_to_close`.
 - `valid_status`: usually `pending`, `in_progress`, `done`, `blocked`.
 - A `features` array with `id`, `name`, `title`, `description`, `acceptance`, and `status`.
@@ -116,6 +136,16 @@ Rules:
 
 `$HARNESS_WORKSPACE/progress/history.md` should be append-only. Never rewrite old sessions during normal work. Add a closing entry with changed files, verification result, review result, and final feature state.
 
+## Backlog Contract
+
+`$HARNESS_WORKSPACE/backlog/` holds task-detail reports so the important harness state in `progress/` stays focused on the live session and history:
+
+- `backlog/impl_<feature>.md`: implementer report with files changed, design notes, and test output.
+- `backlog/review_<feature>.md`: reviewer verdict with checklist and required changes.
+- `backlog/explore_<topic>.md`: read-only exploration findings.
+
+Reports carry the same YAML frontmatter described above. Subagents write here and return only a one-line reference such as `done -> $HARNESS_WORKSPACE/backlog/impl_<feature>.md`. Legacy harnesses that still keep these reports under `progress/` remain valid; prefer `backlog/` for new work.
+
 ## Verification Contract
 
 The verifier should be executable and should fail loudly. Typical checks:
@@ -134,8 +164,8 @@ Subagents must not return full code, diffs, long research notes, or review repor
 Good:
 
 ```text
-done -> $HARNESS_WORKSPACE/progress/impl_cli_recent.md
-APPROVED -> $HARNESS_WORKSPACE/progress/review_cli_recent.md
+done -> $HARNESS_WORKSPACE/backlog/impl_cli_recent.md
+APPROVED -> $HARNESS_WORKSPACE/backlog/review_cli_recent.md
 blocked -> $HARNESS_WORKSPACE/progress/current.md
 ```
 
