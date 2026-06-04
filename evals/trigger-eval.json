@@ -1,0 +1,23 @@
+[
+  {"query": "bootstrap a local handyman harness in my python notes-cli repo, it uses pytest and i want the mutable state in a .handyman folder", "should_trigger": true},
+  {"query": "set up a leader/implementer/reviewer subagent workflow for this repo so agents work one feature at a time with a feature_list.json and a verifier", "should_trigger": true},
+  {"query": "migra el estado del harness de mi proyecto a un workspace global en $HOME/HANDYMAN porque ya no quiero versionar progress/ junto al codigo", "should_trigger": true},
+  {"query": "analiza este repo y dime si la estructura del harness esta completa: AGENTS.md, CHECKPOINTS.md, progress/current.md, docs/ y un init.sh que valide el estado", "should_trigger": true},
+  {"query": "i want each role to run under a different model and restricted tools - leader strong with browser, implementer and reviewer cheap with no web. can you wire up the per-role config?", "should_trigger": true},
+  {"query": "quiero que el progreso de mis agentes se vea como un vault de obsidian, con frontmatter, tags #handyman y un MOC index.md, sin commitear la metadata local", "should_trigger": true},
+  {"query": "necesito evitar el telefono descompuesto entre subagentes: que escriban reportes en disco bajo backlog/ y solo devuelvan una referencia en el chat", "should_trigger": true},
+  {"query": "run the next pending feature through the controlled lifecycle: mark it in_progress, implement with tests, run the verifier, review, and close it", "should_trigger": true},
+  {"query": "add a reviewer role file in .github/agents that validates against CHECKPOINTS.md and never edits product code, only writes the verdict file", "should_trigger": true},
+  {"query": "create an AGENTS.md entrypoint that resolves HARNESS_WORKSPACE and points agents to feature_list.json and progress/current.md before they start", "should_trigger": true},
+
+  {"query": "just implement a recent-notes subcommand in src/notes/cli.py and add a couple of pytest tests, nothing fancy", "should_trigger": false},
+  {"query": "refactor this 300-line python module to reduce duplication and add type hints", "should_trigger": false},
+  {"query": "set up a github actions workflow that runs pytest and ruff on every push to main", "should_trigger": false},
+  {"query": "i have a multi-agent langgraph app, help me debug why the supervisor node isn't routing to the worker agents correctly", "should_trigger": false},
+  {"query": "write me a CONTRIBUTING.md and a CHECKPOINTS section for code review standards in my team's repo", "should_trigger": false},
+  {"query": "open my obsidian vault notes and summarize the meeting notes from last week into action items", "should_trigger": false},
+  {"query": "my init.sh is failing because pytest isn't installed in the venv, can you fix the script and the dependency?", "should_trigger": false},
+  {"query": "generate a postman collection from my express routes in src/api", "should_trigger": false},
+  {"query": "i need a json schema for a feature_list config that my own internal tool will consume, unrelated to any agent harness", "should_trigger": false},
+  {"query": "explain the difference between a git worktree and a branch, and when i'd use each", "should_trigger": false}
+]

@@ -1,10 +1,10 @@
 ---
 name: handyman
-description: 'Use when: install, analyze, create, migrate, or operate a Handyman harness/subagent workflow. Triggers: handyman, HANDYMAN, bootstrap local, bootstrap global, migrate-global, local global harness, .handyman directory, /Users/<user>/HANDYMAN, harness_workspace, feature_list.json, progress/current.md, backlog directory, AGENTS.md, CHECKPOINTS.md, leader implementer reviewer, role models, per-role tools, tool restrictions, least-privilege roles, cheap model implementer reviewer, anti telefono descompuesto, multi-agent harness, subagent workflow, obsidian vault. Handles: local project harness installs under .handyman, global HANDYMAN workspace installs, repo bridge files, per-role model assignment, per-role tool restrictions, backlog reports directory, one-feature lifecycle, disk-based progress, executable verification, Obsidian-friendly frontmatter and MOC. DO NOT USE FOR: generic coding tasks without a harness workflow.'
+description: 'Install, analyze, bootstrap, run, review, or migrate a Handyman agent harness: a disk-backed operating layer around a repo where a leader, implementer, and reviewer work one feature at a time with executable verification. Use this whenever the user mentions a harness, a subagent/multi-agent workflow, leader/implementer/reviewer roles, feature_list.json, progress/current.md, AGENTS.md, CHECKPOINTS.md, a .handyman directory, a global $HOME/HANDYMAN workspace, per-role models or tool restrictions, the anti-telefono-descompuesto pattern, or wants an Obsidian-vault-friendly harness, even if they do not say "handyman" explicitly. Handyman is the superset and successor of the older harness-subagents (Foreman) skill; prefer Handyman when both could match, since it adds local vs. global install scope, per-role model and tool assignment, a backlog reports directory, and Obsidian frontmatter/MOC. DO NOT USE FOR generic coding, single-file edits, or feature work where the user does not want the formal harness workflow.'
 argument-hint: 'analyze | bootstrap local|global | run-feature | review | migrate-global'
 user-invocable: true
 metadata:
-  version: 1.2.2
+  version: 1.3.0
 ---
 
 # Handyman
@@ -19,6 +19,16 @@ Task-detail reports (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic
 
 The `HARNESS_WORKSPACE` is designed to also work as an [Obsidian](https://obsidian.md) vault: reports use YAML frontmatter, an `index.md` MOC links the main files, and tags follow a `#handyman/...` namespace. See [references/obsidian.md](./references/obsidian.md).
 
+## Quick Start
+
+1. Pick a mode from the request: `analyze`, `bootstrap`, `run-feature`, `review`, or `migrate-global`. If unclear, start with `analyze`.
+2. Resolve `HARNESS_WORKSPACE`: `harness.config.json`, then `feature_list.json` config, then a `PROJECT_ROOT/.handyman/` directory, then the legacy `PROJECT_ROOT` fallback.
+3. To create a harness, scaffold the skeleton deterministically: `scripts/scaffold.sh <local|global> <project_root>`, then fill the copied templates with project-specific content.
+4. To do work, run one feature: select the lowest-id `pending` feature, mark it `in_progress`, delegate implement then review, and close only after a green verifier.
+5. Keep agent reports in `$HARNESS_WORKSPACE/backlog/`; the chat carries only short file references.
+
+For a concrete bootstrap and run-feature walkthrough, see [references/examples.md](./references/examples.md).
+
 ## When To Use
 
 Use this skill when the user asks to:
@@ -31,6 +41,8 @@ Use this skill when the user asks to:
 - Preserve subagent outputs in files instead of passing long diffs through chat.
 
 Do not use it for ordinary feature implementation unless the user explicitly wants the harness workflow.
+
+> Relationship to `harness-subagents`: Handyman is the successor of that skill (previously named Foreman). It keeps the same leader/implementer/reviewer flow and adds local vs. global install scope, per-role model and tool assignment, a `backlog/` reports directory, and Obsidian vault support. When both skills could match a request, prefer Handyman.
 
 ## Operating Modes
 
@@ -100,7 +112,7 @@ Global mode rules:
 
 1. Confirm the target repo, install scope, and whether existing files may be modified.
 2. If the scope is unclear, ask the user to choose `local` or `global`.
-3. Create only missing or approved files.
+3. Create the directory skeleton and copy starter templates deterministically with the bundled scaffold, which never overwrites existing files: `scripts/scaffold.sh <local|global> <project_root>`. Then create or adjust only missing or approved files.
 4. In `local` mode, keep bridge files in the repo root (`AGENTS.md`, `CHECKPOINTS.md`, `init.sh`, and role definitions if supported) and place mutable state and operational docs under `PROJECT_ROOT/.handyman`: `feature_list.json`, `progress/`, `docs/`, and the optional `index.md`.
 5. In `global` mode, add local bridge files in the repo root and add operational state under `$HOME/HANDYMAN/<project_name>`.
 6. Keep docs specific to the repo architecture, not generic filler.
@@ -183,6 +195,7 @@ See [references/tools.md](./references/tools.md) for capability groups, per-role
 - [Anatomy](./references/anatomy.md)
 - [Workflow](./references/workflow.md)
 - [Templates](./references/templates.md)
+- [Examples](./references/examples.md)
 - [Checklists](./references/checklists.md)
 - [Role Models](./references/models.md)
 - [Role Tools](./references/tools.md)

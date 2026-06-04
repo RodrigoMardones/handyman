@@ -108,15 +108,14 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 | Project name collision | Two repos share the same basename under `$HOME/HANDYMAN` | Ask before reusing; consider a disambiguated name. |
 | Split state | Some reports are in the repo and some are under HANDYMAN | Move the reports to the resolved workspace or document a migration before continuing. |
 
-## Dry Run Expected Findings For The Example Repo
+## Expected Findings For A Healthy Harness
 
-When run against the `ejemplo-harness-subagentes` reference repo, a correct analysis should notice:
+A correct `analyze` pass on a well-formed harness should be able to confirm each of the following. Use it as the shape of a good analysis report, independent of the host project. For a concrete walkthrough, see [examples.md](./examples.md).
 
-- Core files exist in the resolved mode: `AGENTS.md`, `feature_list.json`, `progress/`, `docs/`, `CHECKPOINTS.md`, `init.sh`.
-- Role files exist under `.claude/agents/`.
-- `./init.sh` runs Python unittest from `PROJECT_ROOT` and validates feature state from `HARNESS_WORKSPACE`.
-- `$HARNESS_WORKSPACE/feature_list.json` has a pending `cli_recent` feature.
-- `$HARNESS_WORKSPACE/progress/current.md` is a clean template.
-- `$HARNESS_WORKSPACE/progress/history.md` records earlier sessions up to `cli_edit`.
-- The app itself is a small notes CLI; the important part is the harness around it.
-- `AGENTS.md` may reference `scripts/demo_orchestration.py`; report it if the file is absent.
+- Core files exist in the resolved mode: `AGENTS.md`, `feature_list.json`, `progress/`, `docs/`, `CHECKPOINTS.md`, and a verifier such as `init.sh`.
+- Role files, if present, live in the platform-discoverable path (`.github/agents/` or `.claude/agents/`), not inside `HARNESS_WORKSPACE`.
+- The verifier runs the project tests from `PROJECT_ROOT` and validates feature state from `HARNESS_WORKSPACE`.
+- `$HARNESS_WORKSPACE/feature_list.json` parses, declares valid statuses, and has at most one `in_progress` feature.
+- `$HARNESS_WORKSPACE/progress/current.md` is either a clean template or a coherent active session.
+- `$HARNESS_WORKSPACE/progress/history.md` is append-only and consistent with the closed features in `feature_list.json`.
+- Any file the entrypoint references (scripts, docs, role files) actually exists; report it as a gap if it is absent.

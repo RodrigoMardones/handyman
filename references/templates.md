@@ -4,6 +4,8 @@ Use these as starting points. Adjust them to the project language, test runner, 
 
 The full template bodies live as standalone files under [`../assets/`](../assets/) so they can be copied directly into a target repo. Each section below explains a template and links to its asset file.
 
+To create the skeleton and copy these templates deterministically, run the bundled scaffold from the skill directory: `scripts/scaffold.sh <local|global> <project_root>`. It creates `progress/`, `backlog/`, and `docs/`, copies the mutable-state and bridge templates into the right locations, and never overwrites existing files. Then fill the copied templates with project-specific content. See [examples.md](./examples.md) for a full walkthrough.
+
 Path placeholders used below:
 
 - `PROJECT_ROOT`: the repo where product code and verifier commands run.
