@@ -101,6 +101,28 @@ run_test() {
   return 1
 }
 
+# --- Advisory checks (non-blocking) -----------------------------------------
+# graphify provides a persistent knowledge-graph context layer for agents.
+# It is optional infrastructure: a missing or stale graph warns but never
+# changes EXIT_CODE. See references/graphify.md.
+check_graphify_context() {
+  if ! command -v graphify >/dev/null 2>&1; then
+    echo "NOTE: graphify not installed - agent context graph disabled." >&2
+    echo "      install: uv tool install graphifyy  (or: pip install graphifyy)" >&2
+    return 0
+  fi
+  graph="$PROJECT_ROOT/graphify-out/graph.json"
+  if [ ! -f "$graph" ]; then
+    echo "NOTE: no context graph yet - run /graphify to build graphify-out/graph.json" >&2
+  elif [ -n "$(find "$PROJECT_ROOT" -type f \
+        -not -path '*/graphify-out/*' -not -path '*/.git/*' \
+        -not -path '*/.handyman/*' -not -path '*/node_modules/*' \
+        -newer "$graph" -print 2>/dev/null | head -n 1)" ]; then
+    echo "NOTE: context graph may be stale - rebuild with /graphify --update" >&2
+    echo "      (or install the post-commit hook: graphify hook install)" >&2
+  fi
+}
+
 # --- Execution --------------------------------------------------------------
 if [ "$EXIT_CODE" -eq 0 ]; then
   cd "$PROJECT_ROOT" || exit 1
@@ -117,5 +139,8 @@ if [ "$EXIT_CODE" -eq 0 ]; then
 else
   echo "VERIFIER: one or more gates failed" >&2
 fi
+
+# Advisory: report graphify context status without affecting EXIT_CODE.
+check_graphify_context
 
 exit $EXIT_CODE

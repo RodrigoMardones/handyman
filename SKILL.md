@@ -4,7 +4,7 @@ description: 'Install, analyze, bootstrap, run, review, or migrate a Handyman ag
 argument-hint: 'analyze | bootstrap local|global | run-feature | review | migrate-global'
 user-invocable: true
 metadata:
-  version: 1.3.0
+  version: 1.4.0
 ---
 
 # Handyman
@@ -95,6 +95,7 @@ Global mode rules:
 - Assign a model per role. The leader uses a stronger reasoning model; the implementer and reviewer default to cheaper, faster models, preferring a model already configured in the editor and otherwise falling back to `Claude Sonnet 4.6`. See [references/models.md](./references/models.md).
 - Assign a restricted tool set per role following least privilege: the leader gets the widest surface (including `agent`, `web`, `browser`); the implementer and reviewer drop delegation and web; the explorer is read-only with no `edit`. See [references/tools.md](./references/tools.md).
 - Agent/role files always live in the platform-discoverable path (`.github/agents/<role>.agent.md` for VS Code/Copilot, `.claude/agents/<role>.md` for Claude Code), never inside `HARNESS_WORKSPACE`. The host agent system only loads agents from those known paths; placing them under `.handyman/` makes them undiscoverable and uninvocable. This holds for both `local` and `global` scope: install scope changes where mutable state lives, not where agents live.
+- Install graphify and treat its knowledge graph as the harness context layer: build it with `/graphify`, query it before exploring code, and keep it fresh with the post-commit hook or `/graphify --update`. See [references/graphify.md](./references/graphify.md).
 - If any required file, command, or path configuration is missing, document the gap before inventing a workaround.
 
 ## Workflow
@@ -200,6 +201,7 @@ See [references/tools.md](./references/tools.md) for capability groups, per-role
 - [Role Models](./references/models.md)
 - [Role Tools](./references/tools.md)
 - [Obsidian Integration](./references/obsidian.md)
+- [Graphify Context](./references/graphify.md)
 
 ## License & Attribution
 
