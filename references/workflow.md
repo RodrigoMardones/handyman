@@ -92,6 +92,7 @@ For complex work, the leader may launch read-only exploration subagents before i
 Rules:
 
 - Each explorer gets one narrow question.
+- If a graphify context graph exists (`graphify-out/graph.json`), each explorer runs `graphify query "<question>"` first and starts from the returned `source_location`s; if it is missing, it falls back to a normal read. See [graphify.md](./graphify.md).
 - Each explorer runs under the cheapest fast model (see [models.md](./models.md)) and a read-only tool set (`vscode`, `execute`, `read`, `search`, `todo`; no `edit`, no `agent`) (see [tools.md](./tools.md)).
 - Each explorer writes to `$HARNESS_WORKSPACE/backlog/explore_<topic>.md` with frontmatter (`topic`, `role: explorer`, `updated`, `tags`).
 - Each explorer returns only a file reference.

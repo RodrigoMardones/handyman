@@ -18,6 +18,7 @@ In local mode the harness workspace is `PROJECT_ROOT/.handyman`. Read and write 
 3. Read `$HARNESS_WORKSPACE/progress/current.md`.
 4. Read `$HARNESS_WORKSPACE/feature_list.json` and choose one `pending` feature, normally the lowest id.
 5. Work on only one feature at a time.
+6. For codebase questions, query the context graph first when `graphify-out/graph.json` exists: `graphify query "<question>"`. If graphify is not installed, install it (`uv tool install graphifyy`).
 
 ## Repository Map
 
@@ -41,5 +42,6 @@ In local mode the harness workspace is `PROJECT_ROOT/.handyman`. Read and write 
 - Do not mark a feature `done` without green verifier output.
 - Update `$HARNESS_WORKSPACE/progress/current.md` while working.
 - Write subagent reports under `$HARNESS_WORKSPACE/backlog/` (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`).
+- Install graphify and keep its context graph fresh: query it before exploring code and rebuild after code changes (`graphify hook install` for commits, `/graphify --update` for docs).
 - Leave the repo clean before closing.
 - If blocked, document the blocker instead of improvising around it.
