@@ -1,47 +1,34 @@
 # AGENTS.md - Agent Navigation Map
 
-This file is the entrypoint for any agent working in this repo. It is a map, not a full rulebook. Read only what you need when you need it.
+A map, not a rulebook: read only what you need.
 
 ## Harness Location
 
-- **Install scope:** local
-- **Project root:** `.`
-- **Handyman root:** _not used_
-- **Harness workspace:** `.handyman`
-
-In local mode the harness workspace is `PROJECT_ROOT/.handyman`. Read and write mutable harness state there, not in the repo root, so the root stays focused on product code. If install scope is `global`, the harness workspace must be `$HOME/HANDYMAN/<project_name>` instead. Product code, tests, and verifier commands still run from the project root in both modes.
+- **Install scope:** local · **Project root:** `.` · **Harness workspace:** `.handyman`
+- Mutable harness state lives in the harness workspace, never in the repo root (global mode uses `$HOME/HANDYMAN/<project_name>`). Code, tests, and the verifier run from the project root.
 
 ## Before Starting
 
-1. Run `./init.sh` and verify it exits 0. If it fails, stop and fix the environment before code changes.
-2. Resolve `HARNESS_WORKSPACE` from `harness.config.json`, `feature_list.json` config, a `.handyman/` directory, or the legacy project-root fallback.
-3. Read `$HARNESS_WORKSPACE/progress/current.md`.
-4. Read `$HARNESS_WORKSPACE/feature_list.json` and choose one `pending` feature, normally the lowest id.
-5. Work on only one feature at a time.
-6. For codebase questions, query the context graph first when `graphify-out/graph.json` exists: `graphify query "<question>"`. If graphify is not installed, install it (`uv tool install graphifyy`).
+1. Run `./init.sh`; if it fails, stop and fix the environment first.
+2. Resolve `HARNESS_WORKSPACE`: `harness.config.json`, then `feature_list.json` config, then `.handyman/`, then the legacy fallback.
+3. Read `$HARNESS_WORKSPACE/progress/current.md` and `feature_list.json`; work one `pending` feature at a time (lowest id).
+4. Query the context graph first when `graphify-out/graph.json` exists: `graphify query "<question>"`; if missing, install graphify (`uv tool install graphifyy`).
 
 ## Repository Map
 
-| Logical path | Actual location | Purpose | When to read |
-|--------------|-----------------|---------|--------------|
-| `feature_list.json` | `$HARNESS_WORKSPACE/feature_list.json` | Feature backlog and status | Always at start |
-| `progress/current.md` | `$HARNESS_WORKSPACE/progress/current.md` | Active session state | Always at start |
-| `progress/history.md` | `$HARNESS_WORKSPACE/progress/history.md` | Append-only session history | For historical context |
-| `backlog/impl_<feature>.md` | `$HARNESS_WORKSPACE/backlog/impl_<feature>.md` | Implementer report | When reviewing or resuming |
-| `backlog/review_<feature>.md` | `$HARNESS_WORKSPACE/backlog/review_<feature>.md` | Reviewer verdict | When closing a feature |
-| `docs/architecture.md` | `$HARNESS_WORKSPACE/docs/architecture.md` | Definition of good architecture | Before implementation |
-| `docs/conventions.md` | `$HARNESS_WORKSPACE/docs/conventions.md` | Naming, style, structure | Before editing code |
-| `docs/verification.md` | `$HARNESS_WORKSPACE/docs/verification.md` | Required verification | Before closing work |
-| `CHECKPOINTS.md` | `$PROJECT_ROOT/CHECKPOINTS.md` | Final-state checklist | Before review or close |
-| `src/` | `$PROJECT_ROOT/src/` | Product code | During implementation |
-| `tests/` | `$PROJECT_ROOT/tests/` | Automated tests | During verification |
+| Path | Location | Read when |
+|------|----------|-----------|
+| `feature_list.json` | `$HARNESS_WORKSPACE` | always at start |
+| `progress/current.md`, `progress/history.md` | `$HARNESS_WORKSPACE/progress/` | always / for history |
+| `backlog/impl_<feature>.md`, `backlog/review_<feature>.md` | `$HARNESS_WORKSPACE/backlog/` | reviewing or resuming |
+| `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md` | `$HARNESS_WORKSPACE/docs/` | before editing / closing |
+| `CHECKPOINTS.md` | `$PROJECT_ROOT` | before review or close |
+| `src/`, `tests/` | `$PROJECT_ROOT` | implementation |
 
 ## Hard Rules
 
-- One feature at a time.
-- Do not mark a feature `done` without green verifier output.
-- Update `$HARNESS_WORKSPACE/progress/current.md` while working.
-- Write subagent reports under `$HARNESS_WORKSPACE/backlog/` (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`).
-- Install graphify and keep its context graph fresh: query it before exploring code and rebuild after code changes (`graphify hook install` for commits, `/graphify --update` for docs).
-- Leave the repo clean before closing.
-- If blocked, document the blocker instead of improvising around it.
+- One feature at a time; never mark `done` without green verifier output.
+- Keep `$HARNESS_WORKSPACE/progress/current.md` updated while working.
+- Write reports under `$HARNESS_WORKSPACE/backlog/` (`impl_`, `review_`, `explore_`).
+- Keep the graphify graph fresh: `graphify hook install` for commits, `/graphify --update` for docs.
+- Leave the repo clean; document blockers instead of improvising.

@@ -5,6 +5,8 @@ Validates contracts that the skill's markdown promises:
   T1  Every assets/*.template.json file is valid JSON.
   T2  Every relative markdown link across the repo resolves to a file.
   T3  Obsidian frontmatter keys + tag namespace appear in the assets templates.
+  T4  Token budgets: SKILL.md word count, frontmatter description length,
+      and AGENTS.template.md word count stay within their caps.
 
 Exit code 0 when all pass, 1 otherwise.
 """
@@ -121,11 +123,34 @@ def test_obsidian_contract() -> None:
         check(f"assets templates document tag '{tag}'", tag in text)
 
 
+def test_token_budgets() -> None:
+    """Guard against token-budget regressions on always-loaded surfaces."""
+    budgets = [
+        ("SKILL.md", "words", 1000),
+        (os.path.join("assets", "AGENTS.template.md"), "words", 250),
+    ]
+    for rel_path, unit, cap in budgets:
+        with open(os.path.join(ROOT, rel_path), encoding="utf-8") as fh:
+            count = len(fh.read().split())
+        check(f"{rel_path} stays within {cap} {unit} ({count})",
+              count <= cap, f"{count} {unit} > {cap}")
+    with open(os.path.join(ROOT, "SKILL.md"), encoding="utf-8") as fh:
+        skill = fh.read()
+    match = re.search(r"^description:\s*'(.*)'\s*$", skill, re.MULTILINE)
+    check("SKILL.md frontmatter has a single-line description",
+          match is not None)
+    if match:
+        length = len(match.group(1))
+        check(f"description stays within 500 chars ({length})",
+              length <= 500, f"{length} chars > 500")
+
+
 def main() -> int:
     print("Doc-structure suite (test_docs.py)")
     test_json_templates()
     test_markdown_links()
     test_obsidian_contract()
+    test_token_budgets()
     print(f"\n  {_run} run, {_run - _failures} passed, {_failures} failed")
     return 1 if _failures else 0
 

@@ -94,6 +94,22 @@ Before falling back to a fixed default, try to use a model the user already conf
 
 If the host platform cannot be queried programmatically, prefer the documented role default and record which model was actually used in the session log.
 
+## Updating Models In An Existing Harness
+
+Model names rotate (new versions ship, old ones are retired), and a stale name in one surface while another is updated causes drift between `harness.config.json` and the role frontmatter. Use the bundled updater instead of editing by hand:
+
+```bash
+# Audit what each surface currently declares
+scripts/update_harness.py --root <project_root> --list
+
+# Preview, then apply a cheap-tier bump everywhere it is declared
+scripts/update_harness.py --root <project_root> --dry-run --model implementer="New Model"
+scripts/update_harness.py --root <project_root> \
+  --model implementer="New Model" --model reviewer="New Model" --model explorer="New Model"
+```
+
+The updater edits the `models` map in `harness.config.json` and the `model:` frontmatter in every discovered role file (`.github/agents/*.agent.md`, `.claude/agents/*.md`) in the same run. Pointed at the Handyman skill repo itself, it updates the distributed templates in `assets/` instead. It also supports `--tools ROLE=t1,t2` (see [tools.md](./tools.md)) and `--set KEY=VALUE` for top-level config keys. After updating, confirm the new identifier exists in the host platform and run the verifier.
+
 ## What To Document Per Project
 
 When bootstrapping or migrating a harness, document the model decisions so they are auditable:
