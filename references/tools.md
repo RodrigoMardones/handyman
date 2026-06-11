@@ -107,6 +107,17 @@ A `tools` map centralizes the assignment so role files can stay generic. This is
 }
 ```
 
+## Updating Tools In An Existing Harness
+
+To change a role's tool set after bootstrap without drift between the config map and the role frontmatter, use the bundled updater (shared with [models.md](./models.md)):
+
+```bash
+scripts/update_harness.py --root <project_root> --dry-run --tools reviewer=vscode,read,search,todo
+scripts/update_harness.py --root <project_root> --tools reviewer=vscode,read,search,todo
+```
+
+It rewrites the `tools` map in `harness.config.json` and the `tools:` frontmatter line in every discovered role file in the same run.
+
 ## What To Document Per Project
 
 When bootstrapping or migrating a harness, document the tool decisions so they are auditable:
