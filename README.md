@@ -120,39 +120,18 @@ Mas detalles en [references/obsidian.md](references/obsidian.md).
 
 > 🧹 **Ayuda de versionado:** `.obsidian/` y `.trash/` son metadata local; frontmatter, tags, MOC y wikilinks son parte del contrato del harness.
 
-## � Modelos Por Rol
+## 🧠 Modelos Y Tools Por Rol
 
-Cada rol puede correr bajo su propio modelo para gastar el presupuesto de razonamiento donde se toman las decisiones:
+Cada rol corre con su propio modelo y un set de tools restringido (menor privilegio):
 
-| Rol | Tier por defecto | Modelo sugerido |
-|-----|------------------|-----------------|
-| `leader` | Razonamiento de alta capacidad | Modelo por defecto del editor o el mas fuerte disponible. |
-| `implementer` | Codigo barato y rapido | Modelo barato del editor; si no hay, `Claude Sonnet 4.6`. |
-| `reviewer` | Validacion barata | Modelo barato del editor; si no hay, `Claude Sonnet 4.6`. |
-| `explorer` | El mas barato y rapido | Modelo rapido del editor; si no hay, `Claude Sonnet 4.6`. |
+| Rol | Modelo | Tools |
+|-----|--------|-------|
+| `leader` | Razonamiento fuerte (default del editor) | Superficie amplia: incluye `agent`, `web`, `browser` |
+| `implementer` | Barato y rapido (fallback `Claude Sonnet 4.6`) | Sin delegacion ni web |
+| `reviewer` | Barato y rapido (fallback `Claude Sonnet 4.6`) | Sin delegacion ni web |
+| `explorer` | El mas barato | Solo lectura: sin `edit` ni `agent` |
 
-El modelo se declara en el frontmatter del archivo de rol (`model:`) o en un mapa `models` dentro de `harness.config.json`. El identificador `Claude Sonnet 4.6` es un valor por defecto: reemplazalo por el nombre o alias exacto que exponga la plataforma (por ejemplo `sonnet` en Claude Code, o el nombre del selector de modelos de VS Code). Documenta cualquier sustitucion en `progress/current.md`.
-
-Mas detalles en [references/models.md](references/models.md).
-
-> 💸 **Idea de costo:** modelo fuerte para coordinar, modelos baratos para implementar y revisar.
-
-## 🧰 Tools Por Rol
-
-Cada rol corre con un set de tools restringido siguiendo el principio de menor privilegio, para que solo tenga las capacidades que su trabajo necesita:
-
-| Rol | Tools por defecto |
-|-----|-------------------|
-| `leader` | `vscode`, `execute`, `read`, `agent`, `edit`, `search`, `web`, `browser`, `todo` |
-| `implementer` | `vscode`, `execute`, `read`, `edit`, `search`, `todo` |
-| `reviewer` | `vscode`, `execute`, `read`, `edit`, `search`, `todo` |
-| `explorer` | `vscode`, `execute`, `read`, `search`, `todo` |
-
-El leader recibe la superficie mas amplia (incluye `agent`, `web` y `browser`); implementer y reviewer pierden delegacion y web; el explorer es de solo lectura, sin `edit` ni `agent`. Los tools se declaran en el frontmatter del archivo de rol (`tools:`) o en un mapa `tools` dentro de `harness.config.json`.
-
-Mas detalles en [references/tools.md](references/tools.md).
-
-> 🔐 **Idea de seguridad:** cada rol obtiene el set de tools mas chico que aun le permite terminar su trabajo.
+Se declaran en el frontmatter del archivo de rol (`model:`, `tools:`) o en los mapas `models`/`tools` de `harness.config.json`. Detalles: [references/models.md](references/models.md) y [references/tools.md](references/tools.md).
 
 ##  Casos De Uso
 
@@ -220,23 +199,12 @@ Ejemplo de flujo completo:
 
 ## 📏 Reglas Operativas
 
-- 🎯 Trabajar una sola feature a la vez.
-- 🧭 Resolver `HARNESS_WORKSPACE` antes de leer o escribir estado.
-- ✅ No marcar una feature como `done` sin tests, verificacion y revision.
-- 📝 Guardar reportes de implementacion y revision bajo `backlog/`.
-- 🕰️ Mantener `progress/history.md` como historial append-only.
-- 🚧 Documentar bloqueos en `progress/current.md` antes de improvisar soluciones.
-- 🧪 Hacer que `./init.sh` falle cuando el estado del harness sea incoherente.
-- 🧠 Asignar un modelo por rol: fuerte para el leader, barato para implementer y reviewer.
-- 🔐 Asignar un set de tools por rol con menor privilegio: leader amplio, implementer y reviewer sin web ni delegacion, explorer de solo lectura.
+Las reglas duras del harness viven en [SKILL.md](SKILL.md) (Core Rules) y en `CHECKPOINTS.md` de cada proyecto. Las esenciales:
 
-## ✅ Checklist Express
-
-- [ ] `HARNESS_WORKSPACE` esta resuelto antes de tocar estado.
-- [ ] Hay como maximo una feature `in_progress`.
-- [ ] Los reportes largos viven en `backlog/`, no en el chat.
-- [ ] `./init.sh` corre y deja evidencia antes del cierre.
-- [ ] El reviewer aprueba antes de marcar `done`.
+- 🎯 Una sola feature a la vez, con `HARNESS_WORKSPACE` resuelto antes de tocar estado.
+- ✅ Nada se marca `done` sin tests, verificador verde (`./init.sh`) y revision aprobada.
+- 📝 Los reportes largos viven en `backlog/`; el chat solo devuelve referencias.
+- 🚧 Los bloqueos se documentan en `progress/current.md` antes de improvisar.
 
 ## 🔗 Referencias Internas
 
