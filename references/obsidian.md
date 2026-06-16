@@ -27,7 +27,7 @@ Handyman files carry minimal YAML frontmatter so Obsidian can index them by feat
 | `backlog/review_<feature>.md` | `feature`, `status: approved` or `status: changes_requested`, `role: reviewer`, `updated`, `tags` | Written by the reviewer. |
 | `backlog/explore_<topic>.md` | `topic`, `role: explorer`, `updated`, `tags` | Written by read-only exploration subagents. |
 | `index.md` | `tags: [handyman/moc]` | Optional MOC at the workspace root. |
-| `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md` | `tags: [handyman/docs]` (optional) | Plain markdown otherwise. |
+| `docs/business.md`, `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md` | `tags: [handyman/docs]` (optional) | Plain markdown otherwise. |
 
 See [templates.md](./templates.md) for ready-to-copy frontmatter blocks.
 
@@ -90,14 +90,16 @@ TABLE feature, role, updated FROM "progress" WHERE status = "in_progress"
 
 ## Version Control
 
-Keep Obsidian's local cache out of git. Add to `.gitignore`:
+Keep the local harness abstract from the repo: ignore the operational state under `.handyman/` and version only the conceptual docs layer. Add to `.gitignore`:
 
 ```text
+.handyman/*
+!.handyman/docs/
 .obsidian/
 .trash/
 ```
 
-Frontmatter, tags, MOC and wikilinks are part of the harness contract. Commit them when `HARNESS_WORKSPACE` is versioned with the project; in global installs, keep them in the external workspace and back them up according to the team's policy.
+The docs layer (`business`, `architecture`, `conventions`, `verification`) is the part of the harness worth versioning with the project. Frontmatter, tags, MOC and wikilinks remain part of the harness contract; in global installs the mutable state lives outside the repo, so back it up according to the team's policy.
 
 ## Migration From Plain Markdown
 
@@ -105,5 +107,5 @@ If you adopt Obsidian on an existing Handyman workspace:
 
 1. Add frontmatter blocks to `progress/current.md` and historical reports as you touch them. No need to rewrite history.
 2. Drop in an `index.md` at the workspace root.
-3. Append `.obsidian/` and `.trash/` to `.gitignore`.
+3. Append `.handyman/*`, `!.handyman/docs/`, `.obsidian/`, and `.trash/` to `.gitignore`.
 4. Run `./init.sh` to confirm the verifier still passes; presence of `.obsidian/` or `index.md` must not break it.

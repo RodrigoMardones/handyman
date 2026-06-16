@@ -47,7 +47,8 @@ done
 
 # 3. Required harness files in HARNESS_WORKSPACE.
 for f in feature_list.json progress/current.md progress/history.md \
-         docs/architecture.md docs/conventions.md docs/verification.md; do
+         docs/business.md docs/architecture.md docs/conventions.md \
+         docs/verification.md; do
   if [ ! -f "$HARNESS_WORKSPACE/$f" ]; then
     echo "missing harness file: $f" >&2
     EXIT_CODE=1

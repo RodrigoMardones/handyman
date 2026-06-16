@@ -21,7 +21,7 @@ A map, not a rulebook: read only what you need.
 | `feature_list.json` | `$HARNESS_WORKSPACE` | always at start |
 | `progress/current.md`, `progress/history.md` | `$HARNESS_WORKSPACE/progress/` | always / for history |
 | `backlog/impl_<feature>.md`, `backlog/review_<feature>.md` | `$HARNESS_WORKSPACE/backlog/` | reviewing or resuming |
-| `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md` | `$HARNESS_WORKSPACE/docs/` | before editing / closing |
+| `docs/business.md`, `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md` | `$HARNESS_WORKSPACE/docs/` | before editing / closing |
 | `CHECKPOINTS.md` | `$PROJECT_ROOT` | before review or close |
 | `src/`, `tests/` | `$PROJECT_ROOT` | implementation |
 

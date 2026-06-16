@@ -22,6 +22,7 @@ Read this alongside [workflow.md](./workflow.md) for the full protocols and [tem
    ```
 
 3. Fill the copied templates with project-specific content instead of generic placeholders:
+   - `.handyman/docs/business.md`: the domain and use cases the notes CLI serves.
    - `.handyman/docs/architecture.md`: the CLI's module boundaries.
    - `.handyman/docs/conventions.md`: Python style, `pytest` layout, error policy.
    - `.handyman/docs/verification.md`: `pytest -q` as the test gate.
@@ -51,6 +52,7 @@ notes-cli/
 │   ├── backlog/                   # task-detail reports land here
 │   ├── docs/
 │   │   ├── architecture.md
+│   │   ├── business.md
 │   │   ├── conventions.md
 │   │   └── verification.md
 │   └── index.md                   # optional Obsidian MOC

@@ -20,6 +20,7 @@ write_workspace_files() {
   mkdir -p "$ws/progress" "$ws/docs"
   : > "$ws/progress/current.md"
   : > "$ws/progress/history.md"
+  : > "$ws/docs/business.md"
   : > "$ws/docs/architecture.md"
   : > "$ws/docs/conventions.md"
   : > "$ws/docs/verification.md"

@@ -31,7 +31,7 @@ The leader coordinates. It does not implement product code and does not mark a f
 
 The implementer owns exactly one feature. It runs under its assigned model, which defaults to a cheaper, faster model, and a restricted tool set (`vscode`, `execute`, `read`, `edit`, `search`, `todo`; no delegation or web) (see [models.md](./models.md) and [tools.md](./tools.md)).
 
-1. Read `AGENTS.md`, resolve `HARNESS_WORKSPACE`, and read `$HARNESS_WORKSPACE/docs/architecture.md`, `$HARNESS_WORKSPACE/docs/conventions.md`, and the selected feature acceptance criteria.
+1. Read `AGENTS.md`, resolve `HARNESS_WORKSPACE`, and read `$HARNESS_WORKSPACE/docs/business.md` (domain and use cases), `$HARNESS_WORKSPACE/docs/architecture.md`, `$HARNESS_WORKSPACE/docs/conventions.md`, and the selected feature acceptance criteria.
 2. Change that feature from `pending` to `in_progress` in `$HARNESS_WORKSPACE/feature_list.json`.
 3. Update `$HARNESS_WORKSPACE/progress/current.md` with feature, start time, plan, and live log.
 4. Implement the smallest code change that satisfies the acceptance criteria.
@@ -47,7 +47,7 @@ The implementer does not self-approve. It can mark `done` only if the local prot
 The reviewer validates and does not edit code. It runs under its assigned model, which defaults to a cheaper, faster model, and a restricted tool set (`vscode`, `execute`, `read`, `edit`, `search`, `todo`); its `edit` access is for the verdict file and harness state only, never product code (see [models.md](./models.md) and [tools.md](./tools.md)).
 
 1. Resolve `HARNESS_WORKSPACE`.
-2. Read `$HARNESS_WORKSPACE/docs/architecture.md`, `$HARNESS_WORKSPACE/docs/conventions.md`, `$HARNESS_WORKSPACE/docs/verification.md`, and `$PROJECT_ROOT/CHECKPOINTS.md`.
+2. Read `$HARNESS_WORKSPACE/docs/business.md`, `$HARNESS_WORKSPACE/docs/architecture.md`, `$HARNESS_WORKSPACE/docs/conventions.md`, `$HARNESS_WORKSPACE/docs/verification.md`, and `$PROJECT_ROOT/CHECKPOINTS.md`.
 3. Read `$HARNESS_WORKSPACE/progress/current.md` and the implementation report.
 4. Inspect changed files.
 5. Run the verifier from `PROJECT_ROOT`.

@@ -10,6 +10,7 @@ tags: [handyman/moc]
 
 ## Docs
 
+- [[docs/business]]
 - [[docs/architecture]]
 - [[docs/conventions]]
 - [[docs/verification]]

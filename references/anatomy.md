@@ -35,7 +35,7 @@ Tag namespace:
 - `#handyman/blocked` for any blocker note.
 - `#handyman/moc` for the index.
 
-Wikilinks (`[[docs/architecture]]`, `[[progress/current]]`) are optional and coexist with regular markdown links. Only wikilink files that exist inside the opened vault; in global mode, repo-root bridge files such as `AGENTS.md` and `CHECKPOINTS.md` live outside `HARNESS_WORKSPACE` unless mirrored intentionally. The `.obsidian/` directory must stay out of version control.
+Wikilinks (`[[docs/architecture]]`, `[[progress/current]]`) are optional and coexist with regular markdown links. Only wikilink files that exist inside the opened vault; in global mode, repo-root bridge files such as `AGENTS.md` and `CHECKPOINTS.md` live outside `HARNESS_WORKSPACE` unless mirrored intentionally. The `.obsidian/` directory must stay out of version control. In local mode, keep the operational state under `.handyman/` out of version control and version only `.handyman/docs/`, so the repo stays abstract from work history.
 
 ## Required Core Files
 
@@ -47,6 +47,7 @@ Wikilinks (`[[docs/architecture]]`, `[[progress/current]]`) are optional and coe
 | `progress/current.md` | `PROJECT_ROOT/.handyman/progress/current.md` | `HARNESS_WORKSPACE/progress/current.md` | Live session state. It records the active feature, plan, log, and next step. |
 | `progress/history.md` | `PROJECT_ROOT/.handyman/progress/history.md` | `HARNESS_WORKSPACE/progress/history.md` | Append-only history of closed sessions. |
 | `backlog/` | `PROJECT_ROOT/.handyman/backlog/` | `HARNESS_WORKSPACE/backlog/` | Task-detail reports (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`), kept separate from the important harness state in `progress/`. |
+| `docs/business.md` | `PROJECT_ROOT/.handyman/docs/business.md` | `HARNESS_WORKSPACE/docs/business.md` | Business domain and the use cases the project serves. |
 | `docs/architecture.md` | `PROJECT_ROOT/.handyman/docs/architecture.md` | `HARNESS_WORKSPACE/docs/architecture.md` | Project-specific definition of good architecture. |
 | `docs/conventions.md` | `PROJECT_ROOT/.handyman/docs/conventions.md` | `HARNESS_WORKSPACE/docs/conventions.md` | Style, naming, layout, and error-handling rules. |
 | `docs/verification.md` | `PROJECT_ROOT/.handyman/docs/verification.md` | `HARNESS_WORKSPACE/docs/verification.md` | Commands and evidence required before a feature can close. |

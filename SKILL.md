@@ -42,8 +42,8 @@ During `bootstrap`, choose one scope; if the user did not specify it, ask `local
 | `local` | Bridge files: `AGENTS.md`, `CHECKPOINTS.md`, `init.sh`, role files | `PROJECT_ROOT/.handyman` |
 | `global` | Bridge files plus `harness.config.json` | `$HOME/HANDYMAN/<project_name>` |
 
-- Mutable state always lives in the harness workspace: `feature_list.json`, `progress/`, `backlog/`, operational `docs/`, optional `index.md`.
-- Local: add `.handyman/.obsidian/` and `.handyman/.trash/` to `.gitignore`; commit the rest to version harness state. Legacy harnesses without `.handyman/` keep resolving to `PROJECT_ROOT`.
+- Mutable state always lives in the harness workspace: `feature_list.json`, `progress/`, `backlog/`, `docs/`, optional `index.md`.
+- Local: gitignore `.handyman/*` except `.handyman/docs/`, keeping the repo abstract from operational state. Legacy harnesses without `.handyman/` keep resolving to `PROJECT_ROOT`.
 - Global: set `HANDYMAN_ROOT=$HOME/HANDYMAN`; derive `project_name` from the repo basename. `init.sh` runs from the project root but validates state from `HARNESS_WORKSPACE`. Ask before reusing a workspace that belongs to another `project_root`. Harnesses without a config default to `local`.
 
 ## Core Rules
@@ -70,7 +70,7 @@ Role protocols: [references/workflow.md](./references/workflow.md).
 
 **Run one feature.** Verifier green before changes; pick the lowest-id `pending` feature unless told otherwise; mark exactly one `in_progress` and update `progress/current.md`; delegate implementation (or follow the implementer protocol); require tests proving acceptance criteria; verifier green; delegate review (or use `CHECKPOINTS.md`); only after approval mark `done`, append to `progress/history.md`, reset `progress/current.md`.
 
-**Review.** Read the implementation report in `backlog/`; compare changed files against `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md`, `CHECKPOINTS.md`; run the verifier; write `backlog/review_<feature>.md`; return only `APPROVED -> <file>` or `CHANGES_REQUESTED -> <file>`.
+**Review.** Read the implementation report in `backlog/`; compare changed files against `docs/business.md`, `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md`, `CHECKPOINTS.md`; run the verifier; write `backlog/review_<feature>.md`; return only `APPROVED -> <file>` or `CHANGES_REQUESTED -> <file>`.
 
 **Migrate local to global.** Never migrate an active session without explicit approval. Create `$HOME/HANDYMAN/<project_name>`; move `feature_list.json`, `progress/`, `backlog/`, operational `docs/`; write `harness.config.json`; repoint `AGENTS.md`, `CHECKPOINTS.md`, role files, `init.sh`; run the verifier and document drift.
 
