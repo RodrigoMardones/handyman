@@ -15,6 +15,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] Pending features are identifiable.
 - [ ] `$HARNESS_WORKSPACE/progress/current.md` exists and is either a clean template or an active session.
 - [ ] `$HARNESS_WORKSPACE/progress/history.md` exists and is append-only in practice.
+- [ ] `$HARNESS_WORKSPACE/docs/business.md` describes the business domain and use cases.
 - [ ] `$HARNESS_WORKSPACE/docs/architecture.md` defines project-specific boundaries.
 - [ ] `$HARNESS_WORKSPACE/docs/conventions.md` defines style and error handling.
 - [ ] `$HARNESS_WORKSPACE/docs/verification.md` defines required commands.
@@ -38,7 +39,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] Create `$HARNESS_WORKSPACE/progress/` before any agent work starts.
 - [ ] Create `$HARNESS_WORKSPACE/backlog/` for task-detail reports (`impl_`, `review_`, `explore_`).
 - [ ] Add a starter `$HARNESS_WORKSPACE/feature_list.json` with at least one concrete feature.
-- [ ] Add `.obsidian/` and `.trash/` to the relevant project or workspace `.gitignore` when the workspace will be opened in Obsidian.
+- [ ] In local mode, gitignore the operational harness state (`.handyman/*`) but keep `.handyman/docs/` versioned; also ignore `.obsidian/` and `.trash/`.
 - [ ] Write docs that match the actual repo, not generic placeholders.
 - [ ] Make the verifier executable.
 - [ ] Ensure the verifier fails on invalid feature state.
@@ -88,7 +89,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] `backlog/explore_<topic>.md` reports carry frontmatter with `topic`, `role`, `updated`, `tags`.
 - [ ] Tags use the documented `#handyman/...` namespace, including `feature`, `role`, `review`, `session/current`, `history`, `docs`, `blocked`, and `moc` as applicable.
 - [ ] An `index.md` MOC at the workspace root links `feature_list.json`, `docs/`, `progress/current`, and `progress/history`; it links `AGENTS` or `CHECKPOINTS` only when those files exist inside the same vault.
-- [ ] `.obsidian/` and `.trash/` are in the relevant `.gitignore` and not committed (in local installs also ignore `.handyman/.obsidian/` and `.handyman/.trash/`).
+- [ ] `.obsidian/` and `.trash/` are gitignored and not committed; in local installs the operational state (`.handyman/*`) is ignored while `.handyman/docs/` stays versioned.
 - [ ] Wikilinks (`[[...]]`) used in markdown still resolve to existing files.
 
 ## Common Risks

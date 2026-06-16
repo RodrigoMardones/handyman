@@ -77,12 +77,12 @@ Handyman soporta dos formas de organizar el harness.
 
 | Modo | Donde vive el estado mutable | Cuando conviene |
 |------|-------------------------------|-----------------|
-| `local` | En un directorio oculto `.handyman/` dentro del repositorio | Proyectos donde quieres versionar el harness junto al codigo pero manteniendo el root limpio y enfocado en el codigo fuente. |
+| `local` | En un directorio oculto `.handyman/` dentro del repositorio | Proyectos donde quieres mantener el root limpio y versionar solo la capa de docs junto al codigo, dejando el estado operativo fuera de git. |
 | `global` | En `$HOME/HANDYMAN/<project_name>` | Proyectos donde quieres mantener el repo limpio y guardar progreso, reportes y docs operativas fuera del codigo fuente. |
 
 En modo local, el estado mutable y las docs operativas (`feature_list.json`, `progress/`, `backlog/`, `docs/`, `index.md`) viven bajo `.handyman/`, y el repo conserva en el root los archivos puente `AGENTS.md`, `CHECKPOINTS.md` e `init.sh`. En modo global, el repositorio conserva archivos puente como `AGENTS.md`, `CHECKPOINTS.md`, `init.sh` y `harness.config.json`, y el estado operativo vive en `HARNESS_WORKSPACE`.
 
-> ⚠️ **Guia de decision:** usa `local` si quieres versionar el harness junto al repo sin ensuciar el root; usa `global` si quieres separar codigo fuente de historial operativo.
+> ⚠️ **Guia de decision:** usa `local` si quieres versionar la capa de docs junto al repo sin ensuciar el root y dejar el estado operativo fuera de git; usa `global` si quieres separar codigo fuente de historial operativo.
 
 ## 🗂️ Archivos Principales
 
@@ -94,6 +94,7 @@ En modo local, el estado mutable y las docs operativas (`feature_list.json`, `pr
 | `progress/current.md` | Estado vivo de la sesion actual. |
 | `progress/history.md` | Historial append-only de sesiones cerradas. |
 | `backlog/` | Reportes de detalle (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`), separados del estado importante en `progress/`. |
+| `docs/business.md` | Detalle del negocio y los casos de uso que aborda el proyecto. |
 | `docs/architecture.md` | Limites y principios de arquitectura del proyecto. |
 | `docs/conventions.md` | Convenciones de estilo, estructura, errores y tests. |
 | `docs/verification.md` | Comandos y evidencia requerida para cerrar trabajo. |
@@ -114,11 +115,11 @@ El `HARNESS_WORKSPACE` esta disenado para abrirse directamente como vault de Obs
 3. El archivo `index.md` actua como MOC con enlaces a `feature_list.json`, `docs/`, `progress/current` y `progress/history`. Los archivos puente `AGENTS.md` y `CHECKPOINTS.md` viven en el root del repo, fuera del vault, en ambos modos.
 4. Los tags siguen el namespace `#handyman/...` (ej: `#handyman/feature/in_progress`, `#handyman/review/approved`).
 5. Plugins recomendados: **Outline**, **Backlinks** y **Tags** (todos core). Opcionales: **Dataview** y **Templater**.
-6. Agrega `.obsidian/` y `.trash/` al `.gitignore` (en modo local incluye tambien `.handyman/.obsidian/` y `.handyman/.trash/`) antes de commitear metadata local de Obsidian; usa el snippet de [references/templates.md](references/templates.md#gitignore-obsidian).
+6. Manten el harness abstracto del repo: en modo local ignora el estado operativo con `.handyman/*` y versiona solo la capa de docs con `!.handyman/docs/` (incluye `business.md`); el mismo snippet deja fuera `.obsidian/` y `.trash/`. Usa el de [references/templates.md](references/templates.md#gitignore-harness).
 
 Mas detalles en [references/obsidian.md](references/obsidian.md).
 
-> 🧹 **Ayuda de versionado:** `.obsidian/` y `.trash/` son metadata local; frontmatter, tags, MOC y wikilinks son parte del contrato del harness.
+> 🧹 **Ayuda de versionado:** en modo local solo `.handyman/docs/` se versiona; el estado operativo (`feature_list.json`, `progress/`, `backlog/`, cache de Obsidian) queda fuera para mantener el repo abstracto.
 
 ## 🧠 Modelos Y Tools Por Rol
 

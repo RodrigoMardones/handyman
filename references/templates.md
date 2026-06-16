@@ -63,11 +63,17 @@ Optional but recommended at the root of the `HARNESS_WORKSPACE` to make the vaul
 
 Template: [../assets/index.template.md](../assets/index.template.md)
 
-## .gitignore (Obsidian)
+## .gitignore (Harness)
 
-Append to the project or workspace `.gitignore` so Obsidian's local cache stays out of version control. In local installs the vault lives in `.handyman/`, so ignore the cache there too.
+Append to the project `.gitignore` so the local harness stays abstract from the repo: ignore the operational state under `.handyman/` and keep only the conceptual docs layer (`business`, `architecture`, `conventions`, `verification`) versioned. The same snippet also drops Obsidian's local cache (`.obsidian/`, `.trash/`). Global installs hold mutable state outside the repo, so only the cache lines apply there.
 
-Template: [../assets/obsidian.gitignore.template](../assets/obsidian.gitignore.template)
+Template: [../assets/harness.gitignore.template](../assets/harness.gitignore.template)
+
+## docs/business.md
+
+Business domain and the use cases the project serves, filled from the business context provided at setup. Implementers and reviewers read it for the *why* behind a feature.
+
+Template: [../assets/docs-business.template.md](../assets/docs-business.template.md)
 
 ## docs/architecture.md
 
