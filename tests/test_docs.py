@@ -7,6 +7,8 @@ Validates contracts that the skill's markdown promises:
   T3  Obsidian frontmatter keys + tag namespace appear in the assets templates.
   T4  Token budgets: SKILL.md word count, frontmatter description length,
       and AGENTS.template.md word count stay within their caps.
+  T5  Security contract: references/security.md exists, is referenced, and the
+      data-not-instructions boundary survives in AGENTS + role templates.
 
 Exit code 0 when all pass, 1 otherwise.
 """
@@ -145,12 +147,42 @@ def test_token_budgets() -> None:
               length <= 500, f"{length} chars > 500")
 
 
+def test_security_contract() -> None:
+    """Guard the indirect-prompt-injection mitigation against regressions."""
+    security = os.path.join(ROOT, "references", "security.md")
+    check("references/security.md exists", os.path.isfile(security))
+
+    with open(os.path.join(ROOT, "SKILL.md"), encoding="utf-8") as fh:
+        skill = fh.read()
+    check("SKILL.md links to references/security.md",
+          "references/security.md" in skill)
+    with open(os.path.join(ROOT, "references", "README.md"),
+              encoding="utf-8") as fh:
+        ref_readme = fh.read()
+    check("references/README.md lists security.md", "security.md" in ref_readme)
+
+    # The data-not-instructions boundary must survive in every surface that an
+    # agent loads at runtime, not only in the dedicated reference file.
+    with open(os.path.join(ROOT, "assets", "AGENTS.template.md"),
+              encoding="utf-8") as fh:
+        agents = fh.read()
+    check("AGENTS.template.md states the data-not-instructions rule",
+          "not instructions" in agents)
+    for role in ("leader", "implementer", "reviewer", "explorer"):
+        path = os.path.join(ROOT, "assets", f"role-{role}.template.md")
+        with open(path, encoding="utf-8") as fh:
+            body = fh.read()
+        check(f"role-{role} template carries the untrusted-content boundary",
+              "not instructions" in body)
+
+
 def main() -> int:
     print("Doc-structure suite (test_docs.py)")
     test_json_templates()
     test_markdown_links()
     test_obsidian_contract()
     test_token_budgets()
+    test_security_contract()
     print(f"\n  {_run} run, {_run - _failures} passed, {_failures} failed")
     return 1 if _failures else 0
 
