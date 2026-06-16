@@ -11,3 +11,4 @@ Progressive-loading references for the `handyman` skill. Read only the file need
 - `tools.md` - per-role tool restrictions, capability groups, per-platform syntax.
 - `obsidian.md` - vault setup, plugins, frontmatter, tags, wikilinks.
 - `graphify.md` - knowledge-graph context layer: install, freshness, role queries.
+- `security.md` - untrusted content and indirect prompt-injection contract per role.
