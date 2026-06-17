@@ -24,6 +24,12 @@ Feature backlog and status, stored in `HARNESS_WORKSPACE`.
 
 Template: [../assets/feature_list.template.json](../assets/feature_list.template.json)
 
+## feature-request.md
+
+Optional intake form the user fills to frame one new feature before it becomes a `feature_list.json` entry. Scaffolded into the `HARNESS_WORKSPACE` root; the leader offers it during `run-feature` and turns the filled form into the feature. It is a convenience, not a verifier gate.
+
+Template: [../assets/feature-request.template.md](../assets/feature-request.template.md)
+
 ## harness.config.json
 
 Create this bridge file in the project root. In local mode it records the `.handyman` workspace; in global mode it points to the external HANDYMAN workspace. The optional `models` map assigns a model per role (see [models.md](./models.md)) and the optional `tools` map assigns a tool set per role (see [tools.md](./tools.md)).
