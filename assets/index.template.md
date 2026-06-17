@@ -7,6 +7,7 @@ tags: [handyman/moc]
 ## State
 
 - [feature_list.json](feature_list.json)
+- [feature-request.md](feature-request.md)
 
 ## Docs
 

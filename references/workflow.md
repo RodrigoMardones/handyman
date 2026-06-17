@@ -21,7 +21,7 @@ The leader coordinates. It does not implement product code and does not mark a f
 1. Decide whether the request is analysis, bootstrap, one feature, or review.
 2. For analysis, inspect and report. Do not modify product code.
 3. Resolve `HARNESS_WORKSPACE` before selecting or editing feature state.
-4. For one feature, select exactly one `pending` feature from `$HARNESS_WORKSPACE/feature_list.json`.
+4. For one feature, select exactly one `pending` feature from `$HARNESS_WORKSPACE/feature_list.json`. If the user has not framed the request, offer the `feature-request.md` form (see [templates.md](./templates.md)) and turn the filled form into the feature entry.
 5. Delegate to an implementer when available.
 6. Require the implementer to write a report in `$HARNESS_WORKSPACE/backlog/impl_<feature>.md`.
 7. Delegate to a reviewer after implementation.

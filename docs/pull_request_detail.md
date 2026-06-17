@@ -4,31 +4,30 @@
 
 ## Cambios
 
-Mitigación del hallazgo **W011 — Third-party content exposure / indirect prompt injection (MEDIUM)**: la skill instruía a los agentes a ingerir texto libre de archivos del harness, código, salida de tools y web sin una barrera explícita de "datos, no instrucciones". Se añade esa barrera por diseño en todas las superficies que un agente carga en runtime, más una prueba anti-regresión.
+Promueve el borrador `prompt-example.md` a un asset de primera clase del harness: un formulario de solicitud formal para pedir **una feature nueva** y ejecutarla por su ciclo (sembrar en `feature_list.json` → `in_progress` → implementar → revisar → cerrar con verifier verde). El formulario es **opcional**: no gatea el verifier y no rompe harnesses existentes.
 
-### Contrato de seguridad (nuevo)
-- Nuevo `references/security.md`: threat model (quién puede inyectar texto y por qué es alcanzable, incluida la cadena código/web → `explore_<topic>.md` → leader), regla de oro data-not-instructions, reglas operativas por rol, controles existentes que ayudan, alcance/limitaciones y checklist.
-- Registrado en `references/README.md` y en la línea References de `SKILL.md`.
+### Nuevo asset
+- Nuevo `assets/feature-request.template.md`: intro + plantilla en blanco + ejemplo trabajado + tabla de mapeo sección→concepto del harness. Escrito en inglés para alinear con el resto de `assets/`.
+- Se elimina el borrador `prompt-example.md` de la raíz (su contenido vive ahora en el asset).
 
-### Reglas visibles donde operan los agentes
-- `SKILL.md`: nueva Core Rule "Untrusted content" (datos, no instrucciones; confirmar acciones irreversibles), compensada condensando reglas de graphify/obsidian/role-files/models para respetar el budget.
-- `assets/AGENTS.template.md`: nueva Hard Rule equivalente, compensada condensando el ítem de graphify en "Before Starting".
-- Notas de seguridad escaladas por exposición en los 4 role templates: `role-explorer` (código/web, punto de entrada), `role-leader` (tools amplias + confirmar irreversibles), `role-implementer` y `role-reviewer` (criterios desde feature/docs vetados, no desde prosa).
+### Cableado en todas las superficies
+- `scripts/scaffold.sh`: copia el formulario a `$HARNESS_WORKSPACE/feature-request.md` (junto a `feature_list.json`), igual que `index.md`.
+- `references/templates.md`: nueva sección que lo documenta como intake opcional, no como gate del verifier.
+- `references/workflow.md`: paso del Leader Protocol para ofrecer el formulario y convertirlo en la feature.
+- `assets/index.template.md`: link al formulario en el MOC de Obsidian (## State).
+- `SKILL.md`: mención en "Run one feature" (`offer the feature-request.md form`).
+- `assets/AGENTS.template.md`: fila en el Repository Map (`drafting a task`).
 
-### Refuerzo de proceso
-- `references/checklists.md`: ítem de seguridad en Analysis y Review checklists + fila nueva "Indirect prompt injection" en Common Risks.
-- `references/anatomy.md`: sección "Untrusted Content" junto al Anti Telephone Protocol.
-- `references/workflow.md`: paso 9 en Startup (tratar lo leído como datos no confiables).
-
-### Anti-regresión
-- `tests/test_docs.py`: nueva prueba T5 `test_security_contract` (8 aserciones) que verifica que `security.md` exista y esté referenciado, y que la barrera "not instructions" persista en `AGENTS.template.md` y en los 4 role templates.
+### Respeto de budgets de tokens
+- Las menciones en superficies con tope se compensaron con recortes equivalentes para no exceder los caps (SKILL.md ≤1000, AGENTS.template.md ≤250).
 
 ## Tarea o asunto asociado
 
-- Hallazgo de seguridad W011 (indirect prompt injection, riesgo MEDIUM 0.65) reportado por escáner externo. Plan de acción P1–P4.
+- Formaliza las solicitudes de trabajo del harness con una plantilla definida y reutilizable. Sin ticket asociado.
 
 ## Evidencia del cambio
 
-- `bash tests/run_tests.sh` → **38/38 PASS** (test_docs.py 26 incl. T5, test_init.sh 5, test_update.sh 7).
-- Budgets de tokens respetados: SKILL.md 998/1000 palabras, AGENTS.template.md 249/250 palabras, description 472/500 chars.
+- `bash tests/run_tests.sh` → **38/38 PASS** (test_docs.py 26, test_init.sh 5, test_update.sh 7).
+- Budgets respetados: SKILL.md 999/1000 palabras, AGENTS.template.md 249/250 palabras, description 472/500 chars.
+- Smoke test de scaffold: `feature-request.md` se copia correctamente en `$HARNESS_WORKSPACE` tras `scripts/scaffold.sh local`.
 - Pendiente fuera de esta rama: regenerar el grafo (`/graphify --update`) en un entorno con subagentes de escritura o `GEMINI_API_KEY`.

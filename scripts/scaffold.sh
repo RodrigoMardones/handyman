@@ -102,6 +102,7 @@ copy_template "$ASSETS_DIR/docs-architecture.template.md" "$HARNESS_WORKSPACE/do
 copy_template "$ASSETS_DIR/docs-conventions.template.md"  "$HARNESS_WORKSPACE/docs/conventions.md"
 copy_template "$ASSETS_DIR/docs-verification.template.md" "$HARNESS_WORKSPACE/docs/verification.md"
 copy_template "$ASSETS_DIR/index.template.md"             "$HARNESS_WORKSPACE/index.md"
+copy_template "$ASSETS_DIR/feature-request.template.md"   "$HARNESS_WORKSPACE/feature-request.md"
 
 # --- Bridge files in the repo root ------------------------------------------
 echo "==> copying repo-root bridge files"
