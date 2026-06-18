@@ -191,4 +191,23 @@ else
 fi
 rm -rf "$T11"
 
+# --- T12: scaffold stamps harness_version from SKILL.md --------------------
+start_case "scaffold stamps harness_version from SKILL.md into new state"
+T12="$(mktemp -d)"
+SKILL_MD="$SUITE_DIR/../SKILL.md"
+WANT="$(awk '
+  /^---[[:space:]]*$/ { f++; if (f == 2) exit; next }
+  f == 1 && /^[[:space:]]+version:[[:space:]]*/ {
+    sub(/^[[:space:]]+version:[[:space:]]*/, ""); sub(/[[:space:]]*$/, ""); print; exit
+  }' "$SKILL_MD")"
+"$SUITE_DIR/../scripts/scaffold.sh" local "$T12" demo >/dev/null 2>&1
+GOT_CFG="$(jq -r '.harness_version // empty' "$T12/harness.config.json" 2>/dev/null)"
+GOT_FL="$(jq -r '.config.harness_version // empty' "$T12/.handyman/feature_list.json" 2>/dev/null)"
+if [ -n "$WANT" ] && [ "$GOT_CFG" = "$WANT" ] && [ "$GOT_FL" = "$WANT" ]; then
+  pass
+else
+  fail "want=$WANT config=$GOT_CFG feature_list=$GOT_FL"
+fi
+rm -rf "$T12"
+
 summary

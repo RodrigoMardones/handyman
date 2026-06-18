@@ -6,7 +6,8 @@
     "project_name": "project-name",
     "project_root": ".",
     "handyman_root": null,
-    "harness_workspace": ".handyman"
+    "harness_workspace": ".handyman",
+    "harness_version": "0.0.0"
   },
   "rules": {
     "one_feature_at_a_time": true,
