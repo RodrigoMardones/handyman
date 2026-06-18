@@ -107,7 +107,7 @@ See [tools.md](./tools.md) for capability-group definitions, per-platform syntax
 | `.github/prompts/*.prompt.md` | Reusable prompts for recurring tasks. |
 | `scripts/validate_harness.*` | Optional automated structure validator. |
 | `scripts/feature.py` | Optional CLI for atomic feature_list.json transitions (add/start/block/done). |
-| `scripts/upgrade_harness.py` | Optional read-only detector of harness version drift from the current skill (`--check`). |
+| `scripts/upgrade_harness.py` | Optional version-upgrade tool: `--check` reports drift; running it applies idempotent migrations (managed files + re-seal), `--dry-run` previews. |
 | `assets/schemas/*.schema.json` | JSON Schema (draft-07) contracts for `feature_list.json` and `harness.config.json`. |
 | `$HARNESS_WORKSPACE/backlog/impl_<feature>.md` | Implementer report with files changed and test output. |
 | `$HARNESS_WORKSPACE/backlog/review_<feature>.md` | Reviewer verdict with checklist and required changes. |

@@ -87,16 +87,93 @@ else
 fi
 rm -rf "$U4"
 
-# --- U5: missing --check is a usage error (exit 2) -------------------------
-start_case "invocation without --check is a usage error (exit 2)"
+# --- U5: apply on an up-to-date harness is a no-op (exit 0) ----------------
+start_case "apply on an up-to-date harness is a no-op (exit 0)"
 U5="$(mktemp -d)"
 make_harness "$U5" "$CUR"
-python3 "$UPGRADE" --root "$U5" >/dev/null 2>&1; CODE=$?
-if [ "$CODE" -eq 2 ]; then
+OUT="$(python3 "$UPGRADE" --root "$U5" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "nothing to apply"; then
   pass
 else
-  fail "expected exit 2, got $CODE"
+  fail "exit=$CODE output: $OUT"
 fi
 rm -rf "$U5"
+
+# --- U6: apply migrates an outdated harness (managed file + re-seal) -------
+start_case "apply migrates an outdated harness: creates managed file + re-seals"
+U6="$(mktemp -d)"
+make_harness "$U6" "1.5.0"
+OUT="$(python3 "$UPGRADE" --root "$U6" 2>&1)"; CODE=$?
+NEWVER="$(jq -r '.harness_version' "$U6/harness.config.json")"
+if [ "$CODE" -eq 0 ] && [ -f "$U6/.handyman/docs/business.md" ] \
+   && [ "$NEWVER" = "$CUR" ] \
+   && printf '%s' "$OUT" | grep -q "created: docs/business.md" \
+   && printf '%s' "$OUT" | grep -q "re-sealed harness_version -> $CUR"; then
+  pass
+else
+  fail "exit=$CODE ver=$NEWVER output: $OUT"
+fi
+rm -rf "$U6"
+
+# --- U7: dry-run previews without writing -----------------------------------
+start_case "dry-run previews without writing (no file, version unchanged)"
+U7="$(mktemp -d)"
+make_harness "$U7" "1.5.0"
+OUT="$(python3 "$UPGRADE" --dry-run --root "$U7" 2>&1)"; CODE=$?
+VER="$(jq -r '.harness_version' "$U7/harness.config.json")"
+if [ "$CODE" -eq 0 ] && [ ! -f "$U7/.handyman/docs/business.md" ] \
+   && [ "$VER" = "1.5.0" ] \
+   && printf '%s' "$OUT" | grep -q "would create: docs/business.md" \
+   && printf '%s' "$OUT" | grep -q "would re-seal"; then
+  pass
+else
+  fail "exit=$CODE ver=$VER output: $OUT"
+fi
+rm -rf "$U7"
+
+# --- U8: apply backs up before migrating ------------------------------------
+start_case "apply backs up harness.config.json before migrating"
+U8="$(mktemp -d)"
+make_harness "$U8" "1.5.0"
+python3 "$UPGRADE" --root "$U8" >/dev/null 2>&1
+backups=("$U8"/.handyman/.upgrade-backups/*/harness.config.json)
+if [ -e "${backups[0]}" ]; then
+  pass
+else
+  fail "no backup created under .upgrade-backups/"
+fi
+rm -rf "$U8"
+
+# --- U9: apply is idempotent ------------------------------------------------
+start_case "apply is idempotent: a second run is a no-op"
+U9="$(mktemp -d)"
+make_harness "$U9" "1.5.0"
+python3 "$UPGRADE" --root "$U9" >/dev/null 2>&1
+OUT="$(python3 "$UPGRADE" --root "$U9" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "nothing to apply"; then
+  pass
+else
+  fail "second run not a no-op: exit=$CODE output: $OUT"
+fi
+rm -rf "$U9"
+
+# --- U10: project-owned state is never overwritten --------------------------
+start_case "apply never overwrites project-owned state (custom docs + feature_list)"
+U10="$(mktemp -d)"
+make_harness "$U10" "1.5.0"
+mkdir -p "$U10/.handyman/docs"
+printf 'CUSTOM BUSINESS CONTENT\n' > "$U10/.handyman/docs/business.md"
+cat > "$U10/.handyman/feature_list.json" <<'JSON'
+{ "project": "t", "config": { "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman" }, "features": [ { "id": 1, "name": "keep_me", "status": "in_progress" } ] }
+JSON
+python3 "$UPGRADE" --root "$U10" >/dev/null 2>&1
+BIZ="$(cat "$U10/.handyman/docs/business.md")"
+FEAT="$(jq -r '.features[0].name' "$U10/.handyman/feature_list.json")"
+if [ "$BIZ" = "CUSTOM BUSINESS CONTENT" ] && [ "$FEAT" = "keep_me" ]; then
+  pass
+else
+  fail "business=$BIZ feature=$FEAT"
+fi
+rm -rf "$U10"
 
 summary
