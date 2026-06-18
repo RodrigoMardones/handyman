@@ -1,1 +1,8 @@
 graphify-out/*
+
+.github/
+.handyman/
+AGENTS.md
+CHECKPOINTS.md
+harness.config.json
+init.sh
