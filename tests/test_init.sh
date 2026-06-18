@@ -138,4 +138,57 @@ else
 fi
 rm -rf "$T7"
 
+# --- validate_harness.py: deterministic structure validator ----------------
+VALIDATOR="$SUITE_DIR/../scripts/validate_harness.py"
+
+# --- T8: validator exits 0 on a well-formed local harness ------------------
+start_case "validate_harness: exits 0 on a well-formed local harness"
+T8="$(mktemp -d)"
+write_workspace_files "$T8/.handyman" 1
+OUT="$(python3 "$VALIDATOR" --root "$T8" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "OK"; then
+  pass
+else
+  fail "exit=$CODE output: $OUT"
+fi
+rm -rf "$T8"
+
+# --- T9: validator fails and reports a gap when a core file is missing -----
+start_case "validate_harness: missing core file fails with a gap report"
+T9="$(mktemp -d)"
+write_workspace_files "$T9/.handyman" 1
+rm "$T9/.handyman/progress/history.md"
+OUT="$(python3 "$VALIDATOR" --root "$T9" 2>&1)"; CODE=$?
+if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "missing harness file"; then
+  pass
+else
+  fail "expected failure, exit=$CODE output: $OUT"
+fi
+rm -rf "$T9"
+
+# --- T10: validator fails when >1 feature is in_progress -------------------
+start_case "validate_harness: >1 in_progress feature fails (exit != 0)"
+T10="$(mktemp -d)"
+write_workspace_files "$T10/.handyman" 2
+OUT="$(python3 "$VALIDATOR" --root "$T10" 2>&1)"; CODE=$?
+if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "in_progress"; then
+  pass
+else
+  fail "expected failure, exit=$CODE output: $OUT"
+fi
+rm -rf "$T10"
+
+# --- T11: validator flags a role file living inside the workspace ----------
+start_case "validate_harness: role file inside workspace is flagged"
+T11="$(mktemp -d)"
+write_workspace_files "$T11/.handyman" 1
+: > "$T11/.handyman/leader.agent.md"
+OUT="$(python3 "$VALIDATOR" --root "$T11" 2>&1)"; CODE=$?
+if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "role file inside HARNESS_WORKSPACE"; then
+  pass
+else
+  fail "expected failure, exit=$CODE output: $OUT"
+fi
+rm -rf "$T11"
+
 summary

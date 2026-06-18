@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/RodrigoMardones/handyman/assets/schemas/harness.config.schema.json",
+  "title": "Handyman harness.config.json",
+  "description": "Bridge file recording install scope, paths, and per-role model/tool maps.",
+  "type": "object",
+  "required": ["install_mode", "project_name", "project_root", "harness_workspace"],
+  "additionalProperties": false,
+  "properties": {
+    "install_mode": { "type": "string", "enum": ["local", "global"] },
+    "project_name": { "type": "string", "minLength": 1 },
+    "project_root": { "type": "string", "minLength": 1 },
+    "handyman_root": { "type": ["string", "null"] },
+    "harness_workspace": { "type": "string", "minLength": 1 },
+    "models": { "$ref": "#/definitions/role_models" },
+    "tools": { "$ref": "#/definitions/role_tools" }
+  },
+  "definitions": {
+    "role_models": {
+      "type": "object",
+      "required": ["leader", "implementer", "reviewer", "explorer"],
+      "additionalProperties": false,
+      "properties": {
+        "leader": { "type": "string", "minLength": 1 },
+        "implementer": { "type": "string", "minLength": 1 },
+        "reviewer": { "type": "string", "minLength": 1 },
+        "explorer": { "type": "string", "minLength": 1 }
+      }
+    },
+    "role_tools": {
+      "type": "object",
+      "required": ["leader", "implementer", "reviewer", "explorer"],
+      "additionalProperties": false,
+      "properties": {
+        "leader": { "$ref": "#/definitions/tool_list" },
+        "implementer": { "$ref": "#/definitions/tool_list" },
+        "reviewer": { "$ref": "#/definitions/tool_list" },
+        "explorer": { "$ref": "#/definitions/tool_list" }
+      }
+    },
+    "tool_list": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  }
+}

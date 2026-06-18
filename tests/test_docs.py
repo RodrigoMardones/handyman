@@ -19,6 +19,12 @@ import os
 import re
 import sys
 
+try:
+    from jsonschema import Draft7Validator
+    _HAVE_JSONSCHEMA = True
+except ImportError:
+    _HAVE_JSONSCHEMA = False
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 PASS = "\033[32mPASS\033[0m" if sys.stdout.isatty() else "PASS"
@@ -176,9 +182,69 @@ def test_security_contract() -> None:
               "not instructions" in body)
 
 
+# Each schema file maps to the templates that must validate against it.
+_SCHEMA_TARGETS = {
+    "feature_list.schema.json": ["feature_list.template.json"],
+    "harness.config.schema.json": [
+        "harness.config.local.template.json",
+        "harness.config.global.template.json",
+    ],
+}
+
+
+def test_json_schemas() -> None:
+    """Schemas exist, are valid draft-07, and the templates conform to them."""
+    schemas_dir = os.path.join(ROOT, "assets", "schemas")
+    assets_dir = os.path.join(ROOT, "assets")
+    loaded = {}
+    for schema_name in sorted(_SCHEMA_TARGETS):
+        path = os.path.join(schemas_dir, schema_name)
+        exists = os.path.isfile(path)
+        check(f"schema '{schema_name}' exists", exists)
+        if not exists:
+            continue
+        with open(path, encoding="utf-8") as fh:
+            try:
+                schema = json.load(fh)
+            except json.JSONDecodeError as exc:
+                check(f"schema '{schema_name}' parses", False, str(exc))
+                continue
+        check(f"schema '{schema_name}' parses", True)
+        check(f"schema '{schema_name}' declares draft-07",
+              "draft-07" in str(schema.get("$schema", "")))
+        loaded[schema_name] = schema
+
+    if not _HAVE_JSONSCHEMA:
+        print("       NOTE: jsonschema not installed - template conformance "
+              "checked in CI. Run `pip install jsonschema` for full local "
+              "validation.")
+        return
+
+    for schema_name, schema in loaded.items():
+        try:
+            Draft7Validator.check_schema(schema)
+            check(f"schema '{schema_name}' is valid draft-07", True)
+        except Exception as exc:  # noqa: BLE001 - report any schema defect
+            check(f"schema '{schema_name}' is valid draft-07", False, str(exc))
+            continue
+        validator = Draft7Validator(schema)
+        for template_name in _SCHEMA_TARGETS[schema_name]:
+            with open(os.path.join(assets_dir, template_name),
+                      encoding="utf-8") as fh:
+                instance = json.load(fh)
+            errors = sorted(validator.iter_errors(instance), key=lambda e: e.path)
+            detail = "; ".join(
+                f"{'/'.join(map(str, e.path)) or '<root>'}: {e.message}"
+                for e in errors
+            )
+            check(f"template '{template_name}' validates against "
+                  f"'{schema_name}'", not errors, detail)
+
+
 def main() -> int:
     print("Doc-structure suite (test_docs.py)")
     test_json_templates()
+    test_json_schemas()
     test_markdown_links()
     test_obsidian_contract()
     test_token_budgets()

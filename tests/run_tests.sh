@@ -21,6 +21,7 @@ run_suite() {
 run_suite python3 "$SUITE_DIR/test_docs.py"
 run_suite bash "$SUITE_DIR/test_init.sh"
 run_suite bash "$SUITE_DIR/test_update.sh"
+run_suite bash "$SUITE_DIR/test_feature.sh"
 
 echo "=============================================="
 if [ "$FAILED" -eq 0 ]; then

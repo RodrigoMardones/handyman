@@ -25,6 +25,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install test dependencies
+        run: python -m pip install --upgrade jsonschema
+
       - name: Run test suite
         run: bash tests/run_tests.sh
 
