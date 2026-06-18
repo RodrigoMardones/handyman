@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/RodrigoMardones/handyman/assets/schemas/feature_list.schema.json",
+  "title": "Handyman feature_list.json",
+  "description": "Backlog and state machine for a Handyman harness.",
+  "type": "object",
+  "required": ["project", "features"],
+  "additionalProperties": false,
+  "properties": {
+    "project": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+    "config": { "$ref": "#/definitions/config" },
+    "rules": { "$ref": "#/definitions/rules" },
+    "features": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/feature" }
+    }
+  },
+  "definitions": {
+    "config": {
+      "type": "object",
+      "required": ["install_mode", "project_name", "project_root", "harness_workspace"],
+      "additionalProperties": false,
+      "properties": {
+        "install_mode": { "type": "string", "enum": ["local", "global"] },
+        "project_name": { "type": "string", "minLength": 1 },
+        "project_root": { "type": "string", "minLength": 1 },
+        "handyman_root": { "type": ["string", "null"] },
+        "harness_workspace": { "type": "string", "minLength": 1 }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "one_feature_at_a_time": { "type": "boolean" },
+        "require_tests_to_close": { "type": "boolean" },
+        "valid_status": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["pending", "in_progress", "done", "blocked"] },
+          "uniqueItems": true
+        }
+      }
+    },
+    "feature": {
+      "type": "object",
+      "required": ["id", "name", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "acceptance": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "status": { "type": "string", "enum": ["pending", "in_progress", "done", "blocked"] }
+      }
+    }
+  }
+}
