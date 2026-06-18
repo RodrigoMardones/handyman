@@ -55,7 +55,8 @@
           "type": "array",
           "items": { "type": "string" }
         },
-        "status": { "type": "string", "enum": ["pending", "in_progress", "done", "blocked"] }
+        "status": { "type": "string", "enum": ["pending", "in_progress", "done", "blocked"] },
+        "blocked_reason": { "type": "string" }
       }
     }
   }
