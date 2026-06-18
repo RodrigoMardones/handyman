@@ -4,30 +4,35 @@
 
 ## Cambios
 
-Promueve el borrador `prompt-example.md` a un asset de primera clase del harness: un formulario de solicitud formal para pedir **una feature nueva** y ejecutarla por su ciclo (sembrar en `feature_list.json` → `in_progress` → implementar → revisar → cerrar con verifier verde). El formulario es **opcional**: no gatea el verifier y no rompe harnesses existentes.
+Rama `feat/investigation`: implementa las tres herramientas deterministas priorizadas en `docs/analisis-iteraciones.md` (ejes A1, A4 y A2), que sacan a Handyman de depender 100% del LLM para validar estructura, contrato y transiciones de estado.
 
-### Nuevo asset
-- Nuevo `assets/feature-request.template.md`: intro + plantilla en blanco + ejemplo trabajado + tabla de mapeo sección→concepto del harness. Escrito en inglés para alinear con el resto de `assets/`.
-- Se elimina el borrador `prompt-example.md` de la raíz (su contenido vive ahora en el asset).
+### Validador de estructura determinista (A1)
+- Agrega `scripts/validate_harness.py`: resuelve `HARNESS_WORKSPACE`, verifica archivos núcleo, parsea `feature_list.json`, exige ≤1 feature `in_progress`, valida estados y detecta role files que viven dentro del workspace.
+- Cablea `init.sh` con un gate bloqueante `run_phase "validate"`.
+- Suma los casos T8–T11 en `tests/test_init.sh`.
 
-### Cableado en todas las superficies
-- `scripts/scaffold.sh`: copia el formulario a `$HARNESS_WORKSPACE/feature-request.md` (junto a `feature_list.json`), igual que `index.md`.
-- `references/templates.md`: nueva sección que lo documenta como intake opcional, no como gate del verifier.
-- `references/workflow.md`: paso del Leader Protocol para ofrecer el formulario y convertirlo en la feature.
-- `assets/index.template.md`: link al formulario en el MOC de Obsidian (## State).
-- `SKILL.md`: mención en "Run one feature" (`offer the feature-request.md form`).
-- `assets/AGENTS.template.md`: fila en el Repository Map (`drafting a task`).
+### Contrato formal con JSON Schema (A4)
+- Agrega `assets/schemas/feature_list.schema.json` y `assets/schemas/harness.config.schema.json` (draft-07, `additionalProperties: false`, enums de `install_mode`/`status`/`valid_status`, mapas `models`/`tools` con los cuatro roles).
+- `tests/test_docs.py` valida los templates contra sus schemas; degrada con NOTE si falta `jsonschema` para no romper el verifier local.
+- CI (`.github/workflows/ci.yml`) instala `jsonschema` para correr la validación completa.
 
-### Respeto de budgets de tokens
-- Las menciones en superficies con tope se compensaron con recortes equivalentes para no exceder los caps (SKILL.md ≤1000, AGENTS.template.md ≤250).
+### CLI de transiciones de estado atómicas (A2)
+- Agrega `scripts/feature.py` con `add | start | block | done`: `start` fuerza la invariante de un solo `in_progress`, `block --reason` registra `blocked_reason`, `done` cierra solo con verifier verde (append a `history.md` + reset de `current.md`).
+- Suma `blocked_reason` opcional al schema de `feature_list`.
+- Nuevo `tests/test_feature.sh` (F1–F9) cableado en `tests/run_tests.sh`.
+
+### Análisis e infraestructura
+- Agrega `docs/analisis-iteraciones.md`: informe investigativo de próximas iteraciones (herramientas, etapas y mejoras).
+- Actualiza `references/anatomy.md` (Optional Support Files) con los nuevos artefactos.
+- Ajusta `.gitignore` para mantener el estado operativo del harness local fuera de git.
 
 ## Tarea o asunto asociado
 
-- Formaliza las solicitudes de trabajo del harness con una plantilla definida y reutilizable. Sin ticket asociado.
+- Sin ticket asociado. Deriva de `docs/analisis-iteraciones.md` (ejes A1 validate_harness, A4 JSON Schema, A2 feature CLI).
 
 ## Evidencia del cambio
 
-- `bash tests/run_tests.sh` → **38/38 PASS** (test_docs.py 26, test_init.sh 5, test_update.sh 7).
-- Budgets respetados: SKILL.md 999/1000 palabras, AGENTS.template.md 249/250 palabras, description 472/500 chars.
-- Smoke test de scaffold: `feature-request.md` se copia correctamente en `$HARNESS_WORKSPACE` tras `scripts/scaffold.sh local`.
-- Pendiente fuera de esta rama: regenerar el grafo (`/graphify --update`) en un entorno con subagentes de escritura o `GEMINI_API_KEY`.
+- `bash tests/run_tests.sh`: **62 checks PASS** (test_docs.py 37, test_init.sh 9, test_update.sh 7, test_feature.sh 9).
+- `./init.sh`: `VERIFIER: all gates passed` (incluye el nuevo gate `validate`).
+- `shellcheck -S warning` sobre `scripts/` + `tests/`: sin advertencias.
+- Ruta degradada sin `jsonschema` verificada verde (test_docs.py 32 PASS + NOTE).
