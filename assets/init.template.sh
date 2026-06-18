@@ -102,6 +102,23 @@ run_test() {
 }
 
 # --- Advisory checks (non-blocking) -----------------------------------------
+# A harness with no version stamp predates harness versioning; flag it so the
+# user can seal and update it. A sealed harness stays silent here - explicit
+# drift detection is scripts/upgrade_harness.py --check. Never changes EXIT_CODE.
+check_harness_version() {
+  ver=""
+  if [ -f "$PROJECT_ROOT/harness.config.json" ] && command -v jq >/dev/null 2>&1; then
+    ver="$(jq -r '.harness_version // empty' "$PROJECT_ROOT/harness.config.json")"
+  fi
+  if [ -z "$ver" ] && [ -f "$HARNESS_WORKSPACE/feature_list.json" ] && command -v jq >/dev/null 2>&1; then
+    ver="$(jq -r '.config.harness_version // empty' "$HARNESS_WORKSPACE/feature_list.json")"
+  fi
+  if [ -z "$ver" ]; then
+    echo "NOTE: harness has no version stamp - created before harness versioning." >&2
+    echo "      run scripts/upgrade_harness.py --check (or re-scaffold) to seal and update it." >&2
+  fi
+}
+
 # graphify provides a persistent knowledge-graph context layer for agents.
 # It is optional infrastructure: a missing or stale graph warns but never
 # changes EXIT_CODE. See references/graphify.md.
@@ -141,6 +158,7 @@ else
 fi
 
 # Advisory: report graphify context status without affecting EXIT_CODE.
+check_harness_version
 check_graphify_context
 
 exit $EXIT_CODE

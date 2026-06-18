@@ -4,6 +4,7 @@
   "project_root": ".",
   "handyman_root": null,
   "harness_workspace": ".handyman",
+  "harness_version": "0.0.0",
   "models": {
     "leader": "editor-default",
     "implementer": "Claude Sonnet 4.6",

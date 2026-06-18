@@ -85,6 +85,50 @@ make_dir() {
   fi
 }
 
+# get_skill_version SKILL_MD   Echo metadata.version from the skill frontmatter
+# (the line `  version: X.Y.Z` inside the first --- fenced block).
+get_skill_version() {
+  skill_md="$1"
+  [ -f "$skill_md" ] || return 0
+  awk '
+    /^---[[:space:]]*$/ { fence++; if (fence == 2) exit; next }
+    fence == 1 && /^[[:space:]]+version:[[:space:]]*/ {
+      sub(/^[[:space:]]+version:[[:space:]]*/, "")
+      sub(/[[:space:]]*$/, "")
+      print
+      exit
+    }
+  ' "$skill_md"
+}
+
+# stamp_version FILE VERSION   Replace the harness_version placeholder in FILE.
+stamp_version() {
+  file="$1"; version="$2"
+  [ -f "$file" ] || return 0
+  tmp="$(mktemp)"
+  sed -E "s/(\"harness_version\"[[:space:]]*:[[:space:]]*\")[^\"]*(\")/\\1${version}\\2/" \
+    "$file" > "$tmp" && mv "$tmp" "$file"
+}
+
+# copy_and_stamp SRC DEST VERSION   Copy a template, then stamp the version,
+# but only when DEST was newly created so live state is never rewritten.
+copy_and_stamp() {
+  src="$1"; dest="$2"; version="$3"
+  existed=0
+  [ -e "$dest" ] && existed=1
+  copy_template "$src" "$dest"
+  if [ "$existed" -eq 0 ] && [ -f "$dest" ]; then
+    stamp_version "$dest" "$version"
+    echo "    STAMP harness_version=$version: $dest"
+  fi
+}
+
+# Resolve the current skill version to stamp into freshly created state files.
+SKILL_MD="$(cd "$SCRIPT_DIR/.." && pwd)/SKILL.md"
+HARNESS_VERSION="$(get_skill_version "$SKILL_MD")"
+[ -n "$HARNESS_VERSION" ] || HARNESS_VERSION="0.0.0"
+echo "==> harness_version:   $HARNESS_VERSION"
+
 # --- Workspace skeleton -----------------------------------------------------
 echo "==> creating workspace skeleton"
 make_dir "$HARNESS_WORKSPACE"
@@ -94,7 +138,7 @@ make_dir "$HARNESS_WORKSPACE/docs"
 
 # --- Mutable state templates ------------------------------------------------
 echo "==> copying harness state templates"
-copy_template "$ASSETS_DIR/feature_list.template.json"   "$HARNESS_WORKSPACE/feature_list.json"
+copy_and_stamp "$ASSETS_DIR/feature_list.template.json"  "$HARNESS_WORKSPACE/feature_list.json" "$HARNESS_VERSION"
 copy_template "$ASSETS_DIR/progress-current.template.md" "$HARNESS_WORKSPACE/progress/current.md"
 copy_template "$ASSETS_DIR/progress-history.template.md" "$HARNESS_WORKSPACE/progress/history.md"
 copy_template "$ASSETS_DIR/docs-business.template.md"     "$HARNESS_WORKSPACE/docs/business.md"
@@ -109,7 +153,7 @@ echo "==> copying repo-root bridge files"
 copy_template "$ASSETS_DIR/AGENTS.template.md"      "$PROJECT_ROOT/AGENTS.md"
 copy_template "$ASSETS_DIR/CHECKPOINTS.template.md" "$PROJECT_ROOT/CHECKPOINTS.md"
 copy_template "$ASSETS_DIR/init.template.sh"        "$PROJECT_ROOT/init.sh"
-copy_template "$CONFIG_TEMPLATE"                    "$PROJECT_ROOT/harness.config.json"
+copy_and_stamp "$CONFIG_TEMPLATE"                  "$PROJECT_ROOT/harness.config.json" "$HARNESS_VERSION"
 [ -f "$PROJECT_ROOT/init.sh" ] && chmod +x "$PROJECT_ROOT/init.sh"
 
 cat <<EOF

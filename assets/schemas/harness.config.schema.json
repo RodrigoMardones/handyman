@@ -12,6 +12,7 @@
     "project_root": { "type": "string", "minLength": 1 },
     "handyman_root": { "type": ["string", "null"] },
     "harness_workspace": { "type": "string", "minLength": 1 },
+    "harness_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
     "models": { "$ref": "#/definitions/role_models" },
     "tools": { "$ref": "#/definitions/role_tools" }
   },

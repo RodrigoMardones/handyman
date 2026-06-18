@@ -52,6 +52,14 @@ def fenced_blocks(text: str, lang: str):
     return [m.group(1) for m in pattern.finditer(text)]
 
 
+def _skill_version() -> str:
+    """Extract metadata.version from SKILL.md frontmatter (the stamp source)."""
+    with open(os.path.join(ROOT, "SKILL.md"), encoding="utf-8") as fh:
+        text = fh.read()
+    match = re.search(r"^\s+version:\s*(.+)$", text, re.MULTILINE)
+    return match.group(1).strip() if match else ""
+
+
 def test_json_templates() -> None:
     assets_dir = os.path.join(ROOT, "assets")
     json_files = sorted(
@@ -241,10 +249,66 @@ def test_json_schemas() -> None:
                   f"'{schema_name}'", not errors, detail)
 
 
+def test_harness_version() -> None:
+    """Phase-0 contract: the harness can carry a stamped skill version."""
+    schemas_dir = os.path.join(ROOT, "assets", "schemas")
+    assets_dir = os.path.join(ROOT, "assets")
+    semver = re.compile(r"^\d+\.\d+\.\d+$")
+
+    with open(os.path.join(schemas_dir, "harness.config.schema.json"),
+              encoding="utf-8") as fh:
+        cfg_schema = json.load(fh)
+    check("harness.config schema declares harness_version",
+          "harness_version" in cfg_schema.get("properties", {}))
+    check("harness_version stays optional in harness.config schema",
+          "harness_version" not in cfg_schema.get("required", []))
+
+    with open(os.path.join(schemas_dir, "feature_list.schema.json"),
+              encoding="utf-8") as fh:
+        fl_schema = json.load(fh)
+    config_props = (fl_schema.get("definitions", {})
+                    .get("config", {}).get("properties", {}))
+    check("feature_list config schema declares harness_version",
+          "harness_version" in config_props)
+
+    for name in ("harness.config.local.template.json",
+                 "harness.config.global.template.json"):
+        with open(os.path.join(assets_dir, name), encoding="utf-8") as fh:
+            data = json.load(fh)
+        check(f"template '{name}' carries harness_version",
+              "harness_version" in data)
+    with open(os.path.join(assets_dir, "feature_list.template.json"),
+              encoding="utf-8") as fh:
+        fl_template = json.load(fh)
+    check("feature_list template config carries harness_version",
+          "harness_version" in fl_template.get("config", {}))
+
+    version = _skill_version()
+    check("SKILL.md metadata.version parses as semver",
+          bool(semver.match(version)), version)
+
+
+def test_upgrade_advisory() -> None:
+    """Phase-1 contract: init.template.sh carries a non-blocking version advisory."""
+    with open(os.path.join(ROOT, "assets", "init.template.sh"),
+              encoding="utf-8") as fh:
+        body = fh.read()
+    check("init.template.sh defines check_harness_version",
+          "check_harness_version()" in body)
+    check("init.template.sh calls check_harness_version",
+          re.search(r"^\s*check_harness_version\s*$", body, re.MULTILINE) is not None)
+    match = re.search(r"check_harness_version\(\)\s*\{(.*?)\n\}", body, re.DOTALL)
+    advisory_body = match.group(1) if match else ""
+    check("check_harness_version is advisory (does not set EXIT_CODE)",
+          bool(match) and "EXIT_CODE=" not in advisory_body)
+
+
 def main() -> int:
     print("Doc-structure suite (test_docs.py)")
     test_json_templates()
     test_json_schemas()
+    test_harness_version()
+    test_upgrade_advisory()
     test_markdown_links()
     test_obsidian_contract()
     test_token_budgets()

@@ -4,6 +4,7 @@
   "project_root": "/absolute/path/to/project-name",
   "handyman_root": "/Users/any_user/HANDYMAN",
   "harness_workspace": "/Users/any_user/HANDYMAN/project-name",
+  "harness_version": "0.0.0",
   "models": {
     "leader": "editor-default",
     "implementer": "Claude Sonnet 4.6",
