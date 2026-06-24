@@ -101,6 +101,57 @@ def check_feature_list(workspace: Path, gaps: list[str]) -> None:
             gaps.append(f"feature '{ident}' has invalid status '{status}'")
 
 
+def _feature_list_schema_path() -> Path:
+    """Locate the bundled feature_list JSON Schema.
+
+    The schema ships with the Handyman skill repo under assets/schemas/. In an
+    installed target repo it may be absent; callers degrade to a skip then.
+    """
+    return (
+        Path(__file__).resolve().parent.parent
+        / "assets" / "schemas" / "feature_list.schema.json"
+    )
+
+
+def check_schema(workspace: Path, gaps: list[str]) -> None:
+    """Validate the live feature_list.json against its JSON Schema.
+
+    This is the gate that catches keys the contract does not define (the schema
+    sets additionalProperties:false), e.g. invented start_date / close_date
+    fields on a feature. It degrades gracefully: when jsonschema is missing or
+    the schema file is unreachable it prints a NOTE and skips instead of
+    failing, so installed target repos without the schema are not blocked.
+    """
+    list_path = workspace / "feature_list.json"
+    if not list_path.is_file():
+        return  # already reported by check_required_files / check_feature_list
+    try:
+        import jsonschema  # type: ignore
+    except ImportError:
+        print(
+            "NOTE: jsonschema not installed - skipping feature_list schema validation.",
+            file=sys.stderr,
+        )
+        return
+    schema_path = _feature_list_schema_path()
+    if not schema_path.is_file():
+        print(
+            f"NOTE: feature_list schema not found at {schema_path} - skipping schema validation.",
+            file=sys.stderr,
+        )
+        return
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        data = json.loads(list_path.read_text(encoding="utf-8"))
+    except (ValueError, OSError) as exc:
+        gaps.append(f"could not load schema or feature_list for validation: {exc}")
+        return
+    validator = jsonschema.Draft7Validator(schema)
+    for error in sorted(validator.iter_errors(data), key=lambda e: list(e.path)):
+        location = "/".join(str(p) for p in error.path) or "(root)"
+        gaps.append(f"feature_list.json schema violation at {location}: {error.message}")
+
+
 def check_role_files(root: Path, workspace: Path, gaps: list[str]) -> None:
     """Role files must live in a platform path, never inside the workspace."""
     if not workspace.exists():
@@ -121,6 +172,7 @@ def validate(root: Path) -> list[str]:
     workspace = resolve_workspace(root)
     check_required_files(workspace, gaps)
     check_feature_list(workspace, gaps)
+    check_schema(workspace, gaps)
     check_role_files(root, workspace, gaps)
     return gaps
 

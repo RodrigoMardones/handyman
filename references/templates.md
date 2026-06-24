@@ -6,6 +6,8 @@ The full template bodies live as standalone files under [`../assets/`](../assets
 
 To create the skeleton and copy these templates deterministically, run the bundled scaffold from the skill directory: `scripts/scaffold.sh <local|global> <project_root>`. It creates `progress/`, `backlog/`, and `docs/`, copies the mutable-state and bridge templates into the right locations, and never overwrites existing files. Then fill the copied templates with project-specific content. See [examples.md](./examples.md) for a full walkthrough.
 
+`scaffold.sh` is the canonical way to lay down the file set, and it writes `harness.config.json` in both `local` and `global` scopes. Do not hand-create these files from the snippets below: the snippets exist for filling in content and per-file customization, while re-creating the layout by hand is the main cause of cross-model drift (for example `harness.config.json` appearing in one bootstrap and not another). See the Bootstrap Protocol in [workflow.md](./workflow.md).
+
 Path placeholders used below:
 
 - `PROJECT_ROOT`: the repo where product code and verifier commands run.

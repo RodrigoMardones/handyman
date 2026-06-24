@@ -210,4 +210,69 @@ else
 fi
 rm -rf "$T12"
 
+# --- T13: validator rejects an out-of-contract feature field ---------------
+# The schema sets additionalProperties:false, so an invented field such as the
+# start_date the docs warn about must fail validation. Guarded by jsonschema
+# availability: validate_harness degrades to a skip when it is absent.
+if python3 -c "import jsonschema" >/dev/null 2>&1; then
+  start_case "validate_harness: extra feature field rejected by schema"
+  T13="$(mktemp -d)"
+  write_workspace_files "$T13/.handyman" 1
+  cat > "$T13/.handyman/feature_list.json" <<'JSON'
+{
+  "project": "t",
+  "features": [
+    { "id": 1, "name": "a", "status": "in_progress", "start_date": "2026-01-01" }
+  ]
+}
+JSON
+  OUT="$(python3 "$VALIDATOR" --root "$T13" 2>&1)"; CODE=$?
+  if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "schema violation"; then
+    pass
+  else
+    fail "expected schema failure, exit=$CODE output: $OUT"
+  fi
+  rm -rf "$T13"
+else
+  echo "  NOTE jsonschema not installed - skipping schema rejection test (T13)"
+fi
+
+# --- T14: validator accepts a contract-complete feature_list ---------------
+if python3 -c "import jsonschema" >/dev/null 2>&1; then
+  start_case "validate_harness: contract-complete feature_list passes schema"
+  T14="$(mktemp -d)"
+  write_workspace_files "$T14/.handyman" 1
+  cat > "$T14/.handyman/feature_list.json" <<'JSON'
+{
+  "project": "t",
+  "description": "d",
+  "config": {
+    "install_mode": "local",
+    "project_name": "t",
+    "project_root": ".",
+    "handyman_root": null,
+    "harness_workspace": ".handyman",
+    "harness_version": "1.0.0"
+  },
+  "rules": {
+    "one_feature_at_a_time": true,
+    "require_tests_to_close": true,
+    "valid_status": ["pending", "in_progress", "done", "blocked"]
+  },
+  "features": [
+    { "id": 1, "name": "a", "title": "A", "description": "x", "acceptance": ["y"], "status": "in_progress" }
+  ]
+}
+JSON
+  OUT="$(python3 "$VALIDATOR" --root "$T14" 2>&1)"; CODE=$?
+  if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "OK"; then
+    pass
+  else
+    fail "expected pass, exit=$CODE output: $OUT"
+  fi
+  rm -rf "$T14"
+else
+  echo "  NOTE jsonschema not installed - skipping schema acceptance test (T14)"
+fi
+
 summary

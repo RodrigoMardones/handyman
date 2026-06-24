@@ -40,8 +40,8 @@ During `bootstrap`, choose one scope; if the user did not specify it, ask `local
 
 | Scope | Project root | Harness workspace |
 |-------|--------------|-------------------|
-| `local` | Bridge files: `AGENTS.md`, `CHECKPOINTS.md`, `init.sh`, role files | `PROJECT_ROOT/.handyman` |
-| `global` | Bridge files plus `harness.config.json` | `$HOME/HANDYMAN/<project_name>` |
+| `local` | Bridge files: `AGENTS.md`, `CHECKPOINTS.md`, `init.sh`, `harness.config.json`, role files | `PROJECT_ROOT/.handyman` |
+| `global` | Same files, absolute paths | `$HOME/HANDYMAN/<project_name>` |
 
 - Mutable state always lives in the harness workspace: `feature_list.json`, `progress/`, `backlog/`, `docs/`, optional `index.md`.
 - Local: gitignore `.handyman/*` except `.handyman/docs/`. Legacy harnesses without `.handyman/` keep resolving to `PROJECT_ROOT`.
