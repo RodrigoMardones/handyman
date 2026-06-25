@@ -6,6 +6,8 @@ The full template bodies live as standalone files under [`../assets/`](../assets
 
 To create the skeleton and copy these templates deterministically, run the bundled scaffold from the skill directory: `scripts/scaffold.sh <local|global> <project_root>`. It creates `progress/`, `backlog/`, and `docs/`, copies the mutable-state and bridge templates into the right locations, and never overwrites existing files. Then fill the copied templates with project-specific content. See [examples.md](./examples.md) for a full walkthrough.
 
+`scaffold.sh` is the canonical way to lay down the file set, and it writes `harness.config.json` in both `local` and `global` scopes. Do not hand-create these files from the snippets below: the snippets exist for filling in content and per-file customization, while re-creating the layout by hand is the main cause of cross-model drift (for example `harness.config.json` appearing in one bootstrap and not another). See the Bootstrap Protocol in [workflow.md](./workflow.md).
+
 Path placeholders used below:
 
 - `PROJECT_ROOT`: the repo where product code and verifier commands run.
@@ -27,6 +29,10 @@ Template: [../assets/feature_list.template.json](../assets/feature_list.template
 ## feature-request.md
 
 Optional intake form the user fills to frame one new feature before it becomes a `feature_list.json` entry. Scaffolded into the `HARNESS_WORKSPACE` root; the leader offers it during `run-feature` and turns the filled form into the feature. It is a convenience, not a verifier gate.
+
+The form encodes two format contracts. First, only `name`, `title`, `description`, and `acceptance` become the `feature_list.json` entry (via `scripts/feature.py add`); the `Verification`, `Considerations`, `Tools`, and `Post-feature` sections are process guidance for the leader and the human, not stored keys. Second, the green gate (`./init.sh` or `bash tests/run_tests.sh`) is always the last Acceptance bullet, mirroring how every closed feature ends its acceptance.
+
+The template is organized as a **CORE** block (filled every time: Feature, Context, Scope > Includes, Acceptance, Verification, Tools > skills) and an **OPTIONAL** block (filled only when it applies, otherwise deleted: Scope extensions, Functional check, Considerations, Post-feature, sub-agents, Questions). It carries two worked examples, one per request archetype: a **Research** request (investigate and leave a plan under `docs/`) and an **Implementation** request (change code plus tests). The heavy guidance lives here and in the template; `SKILL.md` keeps only a short pointer that offers the `feature-request.md` form.
 
 Template: [../assets/feature-request.template.md](../assets/feature-request.template.md)
 
@@ -53,6 +59,8 @@ Template: [../assets/progress-history.template.md](../assets/progress-history.te
 
 ## backlog/impl_<feature>.md
 
+Backlog reports are created with the bundled generator `scripts/backlog.py` (`impl` / `review` / `explore`), which stamps the per-type frontmatter and never overwrites an existing entry; fill the body afterward. The templates below document the shape it produces.
+
 Implementer report. Lives in `HARNESS_WORKSPACE/backlog/`.
 
 Template: [../assets/backlog-impl.template.md](../assets/backlog-impl.template.md)
@@ -62,6 +70,12 @@ Template: [../assets/backlog-impl.template.md](../assets/backlog-impl.template.m
 Reviewer verdict. Lives in `HARNESS_WORKSPACE/backlog/`. Use `status: approved` with `handyman/review/approved`, or `status: changes_requested` with `handyman/review/changes_requested`.
 
 Template: [../assets/backlog-review.template.md](../assets/backlog-review.template.md)
+
+## backlog/explore_<topic>.md
+
+Read-only exploration findings. Lives in `HARNESS_WORKSPACE/backlog/`. Carries `topic`, `role: explorer`, `updated`, `tags`.
+
+Template: [../assets/backlog-explore.template.md](../assets/backlog-explore.template.md)
 
 ## index.md (Obsidian MOC)
 

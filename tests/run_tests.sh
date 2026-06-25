@@ -22,6 +22,8 @@ run_suite python3 "$SUITE_DIR/test_docs.py"
 run_suite bash "$SUITE_DIR/test_init.sh"
 run_suite bash "$SUITE_DIR/test_update.sh"
 run_suite bash "$SUITE_DIR/test_feature.sh"
+run_suite bash "$SUITE_DIR/test_backlog.sh"
+run_suite bash "$SUITE_DIR/test_index.sh"
 run_suite bash "$SUITE_DIR/test_upgrade.sh"
 
 echo "=============================================="

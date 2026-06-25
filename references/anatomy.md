@@ -42,12 +42,12 @@ Wikilinks (`[[docs/architecture]]`, `[[progress/current]]`) are optional and coe
 | Logical path | Local mode location | Global mode location | Purpose |
 |--------------|---------------------|----------------------|---------|
 | `AGENTS.md` | `PROJECT_ROOT/AGENTS.md` | `PROJECT_ROOT/AGENTS.md` | Entrypoint map for agents. It explains what to read first and where rules live. |
-| `harness.config.json` | Recommended (`PROJECT_ROOT/harness.config.json`) | `PROJECT_ROOT/harness.config.json` | Bridge file that records `install_mode`, `project_root`, `handyman_root`, `harness_workspace`, and the optional `models` map. |
+| `harness.config.json` | Recommended (`PROJECT_ROOT/harness.config.json`) | `PROJECT_ROOT/harness.config.json` | Canonical bridge file that records `install_mode`, `project_root`, `handyman_root`, `harness_workspace`, and the optional `models`/`tools` maps. The `config` block in `feature_list.json` mirrors it. |
 | `feature_list.json` | `PROJECT_ROOT/.handyman/feature_list.json` | `HARNESS_WORKSPACE/feature_list.json` | Backlog and state machine. It lists features and valid statuses. |
 | `progress/current.md` | `PROJECT_ROOT/.handyman/progress/current.md` | `HARNESS_WORKSPACE/progress/current.md` | Live session state. It records the active feature, plan, log, and next step. |
 | `progress/history.md` | `PROJECT_ROOT/.handyman/progress/history.md` | `HARNESS_WORKSPACE/progress/history.md` | Append-only history of closed sessions. |
 | `backlog/` | `PROJECT_ROOT/.handyman/backlog/` | `HARNESS_WORKSPACE/backlog/` | Task-detail reports (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`), kept separate from the important harness state in `progress/`. |
-| `docs/business.md` | `PROJECT_ROOT/.handyman/docs/business.md` | `HARNESS_WORKSPACE/docs/business.md` | Business domain and the use cases the project serves. |
+| `docs/business.md` | `PROJECT_ROOT/.handyman/docs/business.md` | `HARNESS_WORKSPACE/docs/business.md` | Business domain and the use cases the project serves. It is **populated through a mandatory user interview during bootstrap**, not inferred from code: unlike architecture, conventions, and verification, the domain lives in the user's head, so the leader must ask for it. See the Bootstrap Protocol in [workflow.md](./workflow.md). |
 | `docs/architecture.md` | `PROJECT_ROOT/.handyman/docs/architecture.md` | `HARNESS_WORKSPACE/docs/architecture.md` | Project-specific definition of good architecture. |
 | `docs/conventions.md` | `PROJECT_ROOT/.handyman/docs/conventions.md` | `HARNESS_WORKSPACE/docs/conventions.md` | Style, naming, layout, and error-handling rules. |
 | `docs/verification.md` | `PROJECT_ROOT/.handyman/docs/verification.md` | `HARNESS_WORKSPACE/docs/verification.md` | Commands and evidence required before a feature can close. |
@@ -107,6 +107,8 @@ See [tools.md](./tools.md) for capability-group definitions, per-platform syntax
 | `.github/prompts/*.prompt.md` | Reusable prompts for recurring tasks. |
 | `scripts/validate_harness.*` | Optional automated structure validator. |
 | `scripts/feature.py` | Optional CLI for atomic feature_list.json transitions (add/start/block/done). |
+| `scripts/backlog.py` | Optional generator for backlog reports (`impl`/`review`/`explore`) that stamps the per-type frontmatter from the bundled templates and never overwrites an existing entry. |
+| `scripts/index_md.py` | Optional regenerator for the `index.md` Obsidian MOC: rebuilds State/Docs/Progress/Features/Backlog/Tags from live state and preserves a `## Notes` block. |
 | `scripts/upgrade_harness.py` | Optional version-upgrade tool: `--check` reports drift; running it applies idempotent migrations (managed files + re-seal), `--dry-run` previews. |
 | `assets/schemas/*.schema.json` | JSON Schema (draft-07) contracts for `feature_list.json` and `harness.config.json`. |
 | `$HARNESS_WORKSPACE/backlog/impl_<feature>.md` | Implementer report with files changed and test output. |
@@ -117,15 +119,16 @@ See [tools.md](./tools.md) for capability-group definitions, per-platform syntax
 A minimal `feature_list.json` lives in `HARNESS_WORKSPACE` and contains:
 
 - Project metadata.
-- Optional config for `install_mode`, `project_name`, `project_root`, `handyman_root`, `harness_workspace`, a `models` map keyed by role, and a `tools` map keyed by role.
+- Optional config for `install_mode`, `project_name`, `project_root`, `handyman_root`, `harness_workspace`, a `models` map keyed by role, and a `tools` map keyed by role. This block is an optional **mirror** of `harness.config.json` (the canonical bridge file); keep the two in sync. Resolution prefers `harness.config.json`, then this `config`, then a `PROJECT_ROOT/.handyman/` directory, then the legacy `PROJECT_ROOT` fallback (as `scripts/validate_harness.py` implements).
 - Global rules such as `one_feature_at_a_time` and `require_tests_to_close`.
 - `valid_status`: usually `pending`, `in_progress`, `done`, `blocked`.
-- A `features` array with `id`, `name`, `title`, `description`, `acceptance`, and `status`.
+- A `features` array. Each feature carries exactly `id`, `name`, `title`, `description`, `acceptance`, `status`, and — only when blocked — `blocked_reason`. A feature carries **no dates**: the schema sets `additionalProperties: false`, so any other key (for example an invented `start_date` / `close_date`) is rejected by the verifier.
 
 Rules:
 
 - At most one feature may be `in_progress`.
 - Pick the lowest-id `pending` feature by default.
+- A feature record is a state machine, not a timeline. Chronology lives in `progress/`: the start in `progress/current.md` (`Start`) and the closing date in `progress/history.md` (`## YYYY-MM-DD ...` headings). Do not add date fields to a feature; add features through `scripts/feature.py add`, which only writes the contract keys.
 - A feature can move to `done` only after implementation, tests, verifier, and review.
 - If blocked, record the blocker in `$HARNESS_WORKSPACE/progress/current.md` and set status to `blocked` only when the repo policy allows it.
 
@@ -160,8 +163,10 @@ The verifier should be executable and should fail loudly. Typical checks:
 2. Required project bridge files exist.
 3. Required harness files exist in `HARNESS_WORKSPACE`.
 4. `$HARNESS_WORKSPACE/feature_list.json` parses and has no more than one `in_progress` feature.
-5. Tests run and pass from `PROJECT_ROOT`.
-6. Optional checks detect suspicious temporary files, broken docs, or missing reports.
+5. `$HARNESS_WORKSPACE/feature_list.json` validates against the feature_list JSON Schema (`assets/schemas/feature_list.schema.json`), so keys outside the contract — for example invented `start_date` / `close_date` fields on a feature — are rejected. The schema sets `additionalProperties: false`; `scripts/validate_harness.py` runs this check and degrades to a non-blocking skip when `jsonschema` or the schema file is unavailable.
+6. Tests run and pass from `PROJECT_ROOT`.
+7. Optional checks detect suspicious temporary files, broken docs, or missing reports.
+8. Optional advisory checks surface non-blocking gaps with a `NOTE:` and never change the exit code: a missing version stamp, a stale context graph, a `docs/business.md` that still matches the starter template (a signal that the mandatory bootstrap business interview was skipped and the doc was never filled with real context), or a `progress/`/`backlog/` report whose frontmatter is missing required keys or the `#handyman/` tag namespace (`scripts/validate_harness.py` runs this last check).
 
 ## Anti Telephone Protocol
 

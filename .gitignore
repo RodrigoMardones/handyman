@@ -2,6 +2,8 @@ graphify-out/*
 
 .github/
 .handyman/
+
+CLAUDE.md
 AGENTS.md
 CHECKPOINTS.md
 harness.config.json

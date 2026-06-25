@@ -303,6 +303,35 @@ def test_upgrade_advisory() -> None:
           bool(match) and "EXIT_CODE=" not in advisory_body)
 
 
+def test_business_intake_prompts() -> None:
+    """Mitigación A: the business doc template is an active interview script."""
+    with open(os.path.join(ROOT, "assets", "docs-business.template.md"),
+              encoding="utf-8") as fh:
+        body = fh.read()
+    prompts = body.count("**Interview prompts (ask the user):**")
+    check("docs-business.template.md carries Interview prompts",
+          prompts >= 3, f"found {prompts} prompt blocks")
+    check("docs-business.template.md tells the leader to interview, not guess",
+          "interviewing the user" in body and "do not guess" in body)
+
+
+def test_business_context_advisory() -> None:
+    """Mitigación D: init.template.sh carries a non-blocking business-context advisory."""
+    with open(os.path.join(ROOT, "assets", "init.template.sh"),
+              encoding="utf-8") as fh:
+        body = fh.read()
+    check("init.template.sh defines check_business_context",
+          "check_business_context()" in body)
+    check("init.template.sh calls check_business_context",
+          re.search(r"^\s*check_business_context\s*$", body, re.MULTILINE) is not None)
+    match = re.search(r"check_business_context\(\)\s*\{(.*?)\n\}", body, re.DOTALL)
+    advisory_body = match.group(1) if match else ""
+    check("check_business_context is advisory (does not set EXIT_CODE)",
+          bool(match) and "EXIT_CODE=" not in advisory_body)
+    check("check_business_context inspects docs/business.md",
+          "docs/business.md" in advisory_body)
+
+
 def main() -> int:
     print("Doc-structure suite (test_docs.py)")
     test_json_templates()
@@ -311,6 +340,8 @@ def main() -> int:
     test_upgrade_advisory()
     test_markdown_links()
     test_obsidian_contract()
+    test_business_intake_prompts()
+    test_business_context_advisory()
     test_token_budgets()
     test_security_contract()
     print(f"\n  {_run} run, {_run - _failures} passed, {_failures} failed")

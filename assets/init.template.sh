@@ -140,6 +140,18 @@ check_graphify_context() {
   fi
 }
 
+# A docs/business.md that still matches the starter template means the mandatory
+# bootstrap business interview was skipped. The business domain cannot be inferred
+# from code, so flag it for the user to fill. Never changes EXIT_CODE.
+check_business_context() {
+  biz="$HARNESS_WORKSPACE/docs/business.md"
+  [ -f "$biz" ] || return 0
+  if grep -qE 'Describe the business, the problem it solves|Define domain terms so code' "$biz"; then
+    echo "NOTE: docs/business.md still matches the starter template - the bootstrap business interview looks skipped." >&2
+    echo "      interview the user and fill it with real domain context (see references/workflow.md Bootstrap Protocol)." >&2
+  fi
+}
+
 # --- Execution --------------------------------------------------------------
 if [ "$EXIT_CODE" -eq 0 ]; then
   cd "$PROJECT_ROOT" || exit 1
@@ -160,5 +172,6 @@ fi
 # Advisory: report graphify context status without affecting EXIT_CODE.
 check_harness_version
 check_graphify_context
+check_business_context
 
 exit $EXIT_CODE
