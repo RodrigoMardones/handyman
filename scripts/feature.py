@@ -11,7 +11,9 @@ Operations:
          invariant, and refresh progress/current.md.
   block  Mark a feature blocked and record the reason.
   done   Run the verifier; only on exit 0 mark the feature done, append a
-         progress/history.md entry, and reset progress/current.md.
+         rich progress/history.md entry, and reset progress/current.md.
+  log    Append a bullet to the Log section of progress/current.md.
+  next   Set the Next Step section of progress/current.md.
 
 Usage:
   scripts/feature.py [--root PATH] add --name NAME [--title T] [--description D]
@@ -19,6 +21,8 @@ Usage:
   scripts/feature.py [--root PATH] start NAME
   scripts/feature.py [--root PATH] block NAME --reason WHY
   scripts/feature.py [--root PATH] done NAME [--verifier PATH] [--date YYYY-MM-DD]
+  scripts/feature.py [--root PATH] log LINE
+  scripts/feature.py [--root PATH] next STEP
 
 Exit codes: 0 ok, 1 error, 2 usage.
 """
@@ -109,6 +113,97 @@ def _write_current(workspace: Path, *, feature: str, status: str,
     )
 
 
+def _current_text(workspace: Path):
+    current = workspace / "progress" / "current.md"
+    if not current.is_file():
+        return None, None
+    return current, current.read_text(encoding="utf-8")
+
+
+def _bump_updated(text: str, today: str) -> str:
+    """Set `updated:` in the leading YAML frontmatter to today."""
+    lines = text.split("\n")
+    in_fm = False
+    for i, line in enumerate(lines):
+        if i == 0 and line.strip() == "---":
+            in_fm = True
+            continue
+        if in_fm and line.strip() == "---":
+            break
+        if in_fm and line.startswith("updated:"):
+            lines[i] = f"updated: {today}"
+            break
+    return "\n".join(lines)
+
+
+def _section_bounds(lines: list, heading: str):
+    """Return (heading_index, section_end) for a `## <heading>` block."""
+    try:
+        start = next(i for i, l in enumerate(lines) if l.strip() == heading)
+    except StopIteration:
+        return None, None
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        if lines[j].startswith("## "):
+            end = j
+            break
+    return start, end
+
+
+def _append_log(text: str, bullet: str):
+    """Append a bullet to the `## Log` section, replacing the `- ...` stub."""
+    lines = text.split("\n")
+    start, end = _section_bounds(lines, "## Log")
+    if start is None:
+        return None
+    new_bullet = f"- {bullet}"
+    for k in range(start + 1, end):
+        if lines[k].strip() == "- ...":
+            lines[k] = new_bullet
+            return "\n".join(lines)
+    insert = end
+    while insert - 1 > start and lines[insert - 1].strip() == "":
+        insert -= 1
+    lines.insert(insert, new_bullet)
+    return "\n".join(lines)
+
+
+def _set_next_step(text: str, step: str):
+    """Replace the body of the `## Next Step` section with a single step."""
+    lines = text.split("\n")
+    start, end = _section_bounds(lines, "## Next Step")
+    if start is None:
+        return None
+    rebuilt = lines[:start] + [lines[start], "", step, ""] + lines[end:]
+    return "\n".join(rebuilt)
+
+
+def cmd_log(args, workspace: Path) -> int:
+    current, text = _current_text(workspace)
+    if text is None:
+        return err("progress/current.md not found")
+    today = args.date or date.today().isoformat()
+    updated = _append_log(_bump_updated(text, today), args.line)
+    if updated is None:
+        return err("no '## Log' section in progress/current.md")
+    current.write_text(updated, encoding="utf-8")
+    print(f"logged to {current}")
+    return 0
+
+
+def cmd_next(args, workspace: Path) -> int:
+    current, text = _current_text(workspace)
+    if text is None:
+        return err("progress/current.md not found")
+    today = args.date or date.today().isoformat()
+    updated = _set_next_step(_bump_updated(text, today), args.step)
+    if updated is None:
+        return err("no '## Next Step' section in progress/current.md")
+    current.write_text(updated, encoding="utf-8")
+    print(f"next step set in {current}")
+    return 0
+
+
 def cmd_add(args, workspace: Path) -> int:
     data, path = _load(workspace)
     features = data.setdefault("features", [])
@@ -197,7 +292,11 @@ def cmd_done(args, workspace: Path, root: Path) -> int:
     if history.is_file():
         entry = (
             f"\n## {today} - Feature {feature.get('id')}: {args.name}\n"
+            f"- **Agent:** leader -> implementer -> reviewer\n"
+            f"- **Plan:** ...\n"
+            f"- **Changes:** ...\n"
             f"- **Verification:** verifier exit 0\n"
+            f"- **Review:** APPROVED -> backlog/review_{args.name}.md\n"
             f"- **Closure:** done\n"
         )
         with history.open("a", encoding="utf-8") as fh:
@@ -236,6 +335,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_done.add_argument("--verifier", default=None,
                         help="Verifier script (default: <root>/init.sh).")
     p_done.add_argument("--date", default=None, help=argparse.SUPPRESS)
+
+    p_log = sub.add_parser("log", help="Append a bullet to current.md's Log.")
+    p_log.add_argument("line")
+    p_log.add_argument("--date", default=None, help=argparse.SUPPRESS)
+
+    p_next = sub.add_parser("next", help="Set current.md's Next Step.")
+    p_next.add_argument("step")
+    p_next.add_argument("--date", default=None, help=argparse.SUPPRESS)
     return parser
 
 
@@ -254,6 +361,10 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_block(args, workspace)
         if args.command == "done":
             return cmd_done(args, workspace, root)
+        if args.command == "log":
+            return cmd_log(args, workspace)
+        if args.command == "next":
+            return cmd_next(args, workspace)
     except FileNotFoundError as exc:
         return err(f"feature_list.json not found: {exc}")
     except (ValueError, OSError) as exc:

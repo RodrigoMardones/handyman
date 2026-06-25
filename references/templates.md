@@ -55,6 +55,8 @@ Template: [../assets/progress-history.template.md](../assets/progress-history.te
 
 ## backlog/impl_<feature>.md
 
+Backlog reports are created with the bundled generator `scripts/backlog.py` (`impl` / `review` / `explore`), which stamps the per-type frontmatter and never overwrites an existing entry; fill the body afterward. The templates below document the shape it produces.
+
 Implementer report. Lives in `HARNESS_WORKSPACE/backlog/`.
 
 Template: [../assets/backlog-impl.template.md](../assets/backlog-impl.template.md)
@@ -64,6 +66,12 @@ Template: [../assets/backlog-impl.template.md](../assets/backlog-impl.template.m
 Reviewer verdict. Lives in `HARNESS_WORKSPACE/backlog/`. Use `status: approved` with `handyman/review/approved`, or `status: changes_requested` with `handyman/review/changes_requested`.
 
 Template: [../assets/backlog-review.template.md](../assets/backlog-review.template.md)
+
+## backlog/explore_<topic>.md
+
+Read-only exploration findings. Lives in `HARNESS_WORKSPACE/backlog/`. Carries `topic`, `role: explorer`, `updated`, `tags`.
+
+Template: [../assets/backlog-explore.template.md](../assets/backlog-explore.template.md)
 
 ## index.md (Obsidian MOC)
 

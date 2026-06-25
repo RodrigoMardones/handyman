@@ -155,4 +155,52 @@ python3 "$FEATURE" --root "$F9" start nope >/dev/null 2>&1; CODE=$?
 if [ "$CODE" -ne 0 ]; then pass; else fail "expected non-zero exit"; fi
 rm -rf "$F9"
 
+# --- F10: log appends a bullet and bumps updated ----------------------------
+start_case "log: appends a bullet to current.md Log and bumps updated"
+F10="$(mktemp -d)"
+write_harness "$F10"
+python3 "$FEATURE" --root "$F10" start a >/dev/null 2>&1
+python3 "$FEATURE" --root "$F10" log "did the thing" --date 2026-02-02 >/dev/null 2>&1; CODE=$?
+CUR="$F10/.handyman/progress/current.md"
+if [ "$CODE" -eq 0 ] && grep -q "^- did the thing$" "$CUR" \
+  && grep -q "^updated: 2026-02-02$" "$CUR"; then
+  pass
+else
+  fail "exit=$CODE current.md did not get the log line / updated bump"
+fi
+rm -rf "$F10"
+
+# --- F11: next sets the Next Step section ------------------------------------
+start_case "next: sets the Next Step section of current.md"
+F11="$(mktemp -d)"
+write_harness "$F11"
+python3 "$FEATURE" --root "$F11" start a >/dev/null 2>&1
+python3 "$FEATURE" --root "$F11" next "run the verifier" --date 2026-02-02 >/dev/null 2>&1; CODE=$?
+CUR="$F11/.handyman/progress/current.md"
+if [ "$CODE" -eq 0 ] && grep -q "run the verifier" "$CUR" \
+  && ! grep -q "the next session starts here" "$CUR"; then
+  pass
+else
+  fail "exit=$CODE Next Step section not set"
+fi
+rm -rf "$F11"
+
+# --- F12: done writes a rich history entry ----------------------------------
+start_case "done: history entry carries the rich headed fields"
+F12="$(mktemp -d)"
+write_harness "$F12"
+write_verifier "$F12/pass.sh" 0
+python3 "$FEATURE" --root "$F12" start a >/dev/null 2>&1
+python3 "$FEATURE" --root "$F12" "done" a --verifier "$F12/pass.sh" --date 2026-02-02 >/dev/null 2>&1
+HIST="$F12/.handyman/progress/history.md"
+if grep -q "Feature 1: a" "$HIST" \
+  && grep -q "[*][*]Agent:[*][*]" "$HIST" \
+  && grep -q "[*][*]Changes:[*][*]" "$HIST" \
+  && grep -q "[*][*]Closure:[*][*] done" "$HIST"; then
+  pass
+else
+  fail "history entry is not the rich form"
+fi
+rm -rf "$F12"
+
 summary

@@ -107,6 +107,8 @@ See [tools.md](./tools.md) for capability-group definitions, per-platform syntax
 | `.github/prompts/*.prompt.md` | Reusable prompts for recurring tasks. |
 | `scripts/validate_harness.*` | Optional automated structure validator. |
 | `scripts/feature.py` | Optional CLI for atomic feature_list.json transitions (add/start/block/done). |
+| `scripts/backlog.py` | Optional generator for backlog reports (`impl`/`review`/`explore`) that stamps the per-type frontmatter from the bundled templates and never overwrites an existing entry. |
+| `scripts/index_md.py` | Optional regenerator for the `index.md` Obsidian MOC: rebuilds State/Docs/Progress/Features/Backlog/Tags from live state and preserves a `## Notes` block. |
 | `scripts/upgrade_harness.py` | Optional version-upgrade tool: `--check` reports drift; running it applies idempotent migrations (managed files + re-seal), `--dry-run` previews. |
 | `assets/schemas/*.schema.json` | JSON Schema (draft-07) contracts for `feature_list.json` and `harness.config.json`. |
 | `$HARNESS_WORKSPACE/backlog/impl_<feature>.md` | Implementer report with files changed and test output. |
@@ -164,7 +166,7 @@ The verifier should be executable and should fail loudly. Typical checks:
 5. `$HARNESS_WORKSPACE/feature_list.json` validates against the feature_list JSON Schema (`assets/schemas/feature_list.schema.json`), so keys outside the contract — for example invented `start_date` / `close_date` fields on a feature — are rejected. The schema sets `additionalProperties: false`; `scripts/validate_harness.py` runs this check and degrades to a non-blocking skip when `jsonschema` or the schema file is unavailable.
 6. Tests run and pass from `PROJECT_ROOT`.
 7. Optional checks detect suspicious temporary files, broken docs, or missing reports.
-8. Optional advisory checks surface non-blocking gaps with a `NOTE:` and never change the exit code: a missing version stamp, a stale context graph, or a `docs/business.md` that still matches the starter template — a signal that the mandatory bootstrap business interview was skipped and the doc was never filled with real context.
+8. Optional advisory checks surface non-blocking gaps with a `NOTE:` and never change the exit code: a missing version stamp, a stale context graph, a `docs/business.md` that still matches the starter template (a signal that the mandatory bootstrap business interview was skipped and the doc was never filled with real context), or a `progress/`/`backlog/` report whose frontmatter is missing required keys or the `#handyman/` tag namespace (`scripts/validate_harness.py` runs this last check).
 
 ## Anti Telephone Protocol
 

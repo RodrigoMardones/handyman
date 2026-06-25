@@ -48,11 +48,11 @@ The implementer owns exactly one feature. It runs under its assigned model, whic
 
 1. Read `AGENTS.md`, resolve `HARNESS_WORKSPACE`, and read `$HARNESS_WORKSPACE/docs/business.md` (domain and use cases), `$HARNESS_WORKSPACE/docs/architecture.md`, `$HARNESS_WORKSPACE/docs/conventions.md`, and the selected feature acceptance criteria.
 2. Change that feature from `pending` to `in_progress` in `$HARNESS_WORKSPACE/feature_list.json`.
-3. Update `$HARNESS_WORKSPACE/progress/current.md` with feature, start time, plan, and live log.
+3. Update `$HARNESS_WORKSPACE/progress/current.md` with feature, start time, plan, and live log. Append log bullets with `scripts/feature.py log "<line>"` and set the resume point with `scripts/feature.py next "<step>"`, which keep the section format and the `updated:` stamp consistent instead of hand-editing.
 4. Implement the smallest code change that satisfies the acceptance criteria.
 5. Add or update tests at the same risk level as the change.
 6. Run the verifier from `PROJECT_ROOT`.
-7. Write `$HARNESS_WORKSPACE/backlog/impl_<feature>.md` with YAML frontmatter (`feature`, `status: implemented`, `role: implementer`, `updated`, `tags`), files changed, design notes, and test output.
+7. Write `$HARNESS_WORKSPACE/backlog/impl_<feature>.md` with YAML frontmatter (`feature`, `status: implemented`, `role: implementer`, `updated`, `tags`), files changed, design notes, and test output. Create it with `scripts/backlog.py impl <feature>`, which stamps the frontmatter from the template instead of hand-typing it.
 8. Return only `done -> $HARNESS_WORKSPACE/backlog/impl_<feature>.md` or `blocked -> $HARNESS_WORKSPACE/progress/current.md`.
 
 The implementer does not self-approve. It can mark `done` only if the local protocol explicitly says the implementer performs closure after reviewer approval.
@@ -67,7 +67,7 @@ The reviewer validates and does not edit code. It runs under its assigned model,
 4. Inspect changed files.
 5. Run the verifier from `PROJECT_ROOT`.
 6. Mark checklist items as pass or fail.
-7. Write `$HARNESS_WORKSPACE/backlog/review_<feature>.md` with YAML frontmatter (`feature`, `status: approved` or `status: changes_requested`, `role: reviewer`, `updated`, `tags`) and `APPROVED` or `CHANGES_REQUESTED` in the body.
+7. Write `$HARNESS_WORKSPACE/backlog/review_<feature>.md` with YAML frontmatter (`feature`, `status: approved` or `status: changes_requested`, `role: reviewer`, `updated`, `tags`) and `APPROVED` or `CHANGES_REQUESTED` in the body. Create it with `scripts/backlog.py review <feature> --status approved|changes_requested`, which keeps the status, tag, and verdict coherent.
 8. Return only `APPROVED -> $HARNESS_WORKSPACE/backlog/review_<feature>.md` or `CHANGES_REQUESTED -> $HARNESS_WORKSPACE/backlog/review_<feature>.md`.
 
 ## Closure Protocol
@@ -84,7 +84,7 @@ Closure steps:
 
 1. Resolve `HARNESS_WORKSPACE`.
 2. Mark the feature `done` in `$HARNESS_WORKSPACE/feature_list.json`.
-3. Append a session entry to `$HARNESS_WORKSPACE/progress/history.md`.
+3. Append a session entry to `$HARNESS_WORKSPACE/progress/history.md`. `scripts/feature.py done` writes this entry in the standard headed form (Agent, Plan, Changes, Verification, Review, Closure); fill the narrative fields it leaves as `...`.
 4. Reset `$HARNESS_WORKSPACE/progress/current.md` to the repo template.
 5. Run the verifier one last time from `PROJECT_ROOT`.
 6. Report concise final status to the user.
@@ -109,7 +109,7 @@ Rules:
 - Each explorer gets one narrow question.
 - If a graphify context graph exists (`graphify-out/graph.json`), each explorer runs `graphify query "<question>"` first and starts from the returned `source_location`s; if it is missing, it falls back to a normal read. See [graphify.md](./graphify.md).
 - Each explorer runs under the cheapest fast model (see [models.md](./models.md)) and a read-only tool set (`vscode`, `execute`, `read`, `search`, `todo`; no `edit`, no `agent`) (see [tools.md](./tools.md)).
-- Each explorer writes to `$HARNESS_WORKSPACE/backlog/explore_<topic>.md` with frontmatter (`topic`, `role: explorer`, `updated`, `tags`).
+- Each explorer writes to `$HARNESS_WORKSPACE/backlog/explore_<topic>.md` with frontmatter (`topic`, `role: explorer`, `updated`, `tags`). Scaffold it with `scripts/backlog.py explore <topic>`.
 - Each explorer returns only a file reference.
 - The leader synthesizes the reports before selecting implementation scope.
 

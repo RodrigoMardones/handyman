@@ -275,4 +275,38 @@ else
   echo "  NOTE jsonschema not installed - skipping schema acceptance test (T14)"
 fi
 
+# --- T15: frontmatter advisory NOTEs an incomplete report (non-blocking) ----
+start_case "validate_harness: frontmatter advisory NOTEs an incomplete report but stays green"
+T15="$(mktemp -d)"
+write_workspace_files "$T15/.handyman" 1
+mkdir -p "$T15/.handyman/backlog"
+cat > "$T15/.handyman/backlog/impl_x.md" <<'MD'
+---
+feature: x
+---
+
+# Implementation Report: x
+MD
+OUT="$(python3 "$VALIDATOR" --root "$T15" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "NOTE:" \
+  && printf '%s' "$OUT" | grep -q "impl_x.md"; then
+  pass
+else
+  fail "expected a non-blocking NOTE, exit=$CODE output: $OUT"
+fi
+rm -rf "$T15"
+
+# --- T16: frontmatter advisory is silent on a well-formed report ------------
+start_case "validate_harness: frontmatter advisory is silent on a well-formed report"
+T16="$(mktemp -d)"
+write_workspace_files "$T16/.handyman" 1
+python3 "$SUITE_DIR/../scripts/backlog.py" --root "$T16" impl wellformed --date 2026-01-01 >/dev/null 2>&1
+OUT="$(python3 "$VALIDATOR" --root "$T16" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && ! printf '%s' "$OUT" | grep -q "impl_wellformed.md"; then
+  pass
+else
+  fail "expected silence on a well-formed report, exit=$CODE output: $OUT"
+fi
+rm -rf "$T16"
+
 summary

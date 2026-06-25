@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -31,6 +32,14 @@ REQUIRED_WORKSPACE_FILES = (
 PLATFORM_ROLE_DIRS = (".github/agents", ".claude/agents")
 
 VALID_STATUS = ("pending", "in_progress", "done", "blocked")
+
+# Required frontmatter keys per report type for the non-blocking advisory.
+FRONTMATTER_REQUIRED = {
+    "current": ("feature", "status", "role", "updated", "tags"),
+    "impl": ("feature", "status", "role", "updated", "tags"),
+    "review": ("feature", "status", "role", "updated", "tags"),
+    "explore": ("topic", "role", "updated", "tags"),
+}
 
 
 def resolve_workspace(root: Path) -> Path:
@@ -167,6 +176,66 @@ def check_role_files(root: Path, workspace: Path, gaps: list[str]) -> None:
         )
 
 
+def _frontmatter_keys(text: str):
+    """Return (keys, tags_line) from the leading YAML frontmatter, or (None, '')."""
+    lines = text.split("\n")
+    if not lines or lines[0].strip() != "---":
+        return None, ""
+    keys: list[str] = []
+    tags_line = ""
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        match = re.match(r"^([A-Za-z_][A-Za-z0-9_]*):", line)
+        if match:
+            keys.append(match.group(1))
+            if match.group(1) == "tags":
+                tags_line = line
+    return keys, tags_line
+
+
+def check_frontmatter_advisory(workspace: Path) -> None:
+    """Non-blocking advisory over progress/ and backlog/ report frontmatter.
+
+    Reports files missing the required keys for their type or the #handyman/ tag
+    namespace. Like the other init.sh advisories it only prints NOTE lines and
+    never contributes to the gap list, so it cannot change the exit code. Empty
+    placeholder files are skipped (a missing report is a different concern).
+    """
+    targets: list[tuple[str, Path]] = []
+    current = workspace / "progress" / "current.md"
+    if current.is_file():
+        targets.append(("current", current))
+    backlog = workspace / "backlog"
+    if backlog.is_dir():
+        for kind, pattern in (("impl", "impl_*.md"),
+                              ("review", "review_*.md"),
+                              ("explore", "explore_*.md")):
+            for path in sorted(backlog.glob(pattern)):
+                targets.append((kind, path))
+
+    for kind, path in targets:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if not text.strip():
+            continue
+        required = FRONTMATTER_REQUIRED[kind]
+        keys, tags_line = _frontmatter_keys(text)
+        if keys is None:
+            print(f"NOTE: {path} has no YAML frontmatter "
+                  f"(expected {', '.join(required)}).", file=sys.stderr)
+            continue
+        missing = [k for k in required if k not in keys]
+        if missing:
+            print(f"NOTE: {path} frontmatter is missing: "
+                  f"{', '.join(missing)}.", file=sys.stderr)
+        if "tags" in keys and "handyman/" not in tags_line:
+            print(f"NOTE: {path} tags do not use the #handyman/ namespace.",
+                  file=sys.stderr)
+
+
 def validate(root: Path) -> list[str]:
     gaps: list[str] = []
     workspace = resolve_workspace(root)
@@ -193,6 +262,7 @@ def main(argv: list[str] | None = None) -> int:
 
     workspace = resolve_workspace(root)
     gaps = validate(root)
+    check_frontmatter_advisory(workspace)
 
     if gaps:
         print(f"validate_harness: FAIL (HARNESS_WORKSPACE={workspace})", file=sys.stderr)
