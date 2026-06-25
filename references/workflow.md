@@ -21,11 +21,12 @@ Creating a harness is deterministic. Run the scaffold first and always; do not h
 1. Confirm the target repo, the install scope (`local` or `global`), and whether existing files may change.
 2. Run `scripts/scaffold.sh <local|global> <project_root>` from the skill directory. It creates `progress/`, `backlog/`, and `docs/`, copies the mutable-state and bridge templates, stamps `harness_version`, and never overwrites existing files. It writes `harness.config.json` into the project root in **both** scopes (the scope only changes the template and the workspace location), so do not treat the config as global-only.
 3. Do not reconstruct scaffolded files by hand. The script is the single source of truth for the file set; the templates in [templates.md](./templates.md) are for filling in content and per-file customization, not for re-creating the layout from memory.
-4. Fill the copied templates with project-specific content; do not leave placeholders.
-5. Replace the `run_lint` / `run_build` / `run_test` placeholders in `init.sh` with the project's real commands.
-6. Materialize role files in the platform path (`.github/agents/` or `.claude/agents/`), never inside `HARNESS_WORKSPACE`.
-7. Add features through `scripts/feature.py add`, never by hand-editing `feature_list.json`, so only contract keys are written.
-8. Run `./init.sh` from the project root and resolve every reported gap before declaring the harness ready.
+4. **Interview the user about the business layer before filling `docs/business.md`.** Do not invent or infer the domain from code — ask. At minimum gather the domain and the problem it solves, the stakeholders, the central use case (actor → goal → flow → rules), what is deliberately out of scope, and the glossary; the `docs/business.md` template carries the exact prompts under each section. Architecture, conventions, and verification can be read from the repo, but the business domain usually lives only in the user's head, so the bootstrap is not complete until `docs/business.md` reflects real business context from the user, not the template.
+5. Fill the copied templates with project-specific content; do not leave placeholders.
+6. Replace the `run_lint` / `run_build` / `run_test` placeholders in `init.sh` with the project's real commands.
+7. Materialize role files in the platform path (`.github/agents/` or `.claude/agents/`), never inside `HARNESS_WORKSPACE`.
+8. Add features through `scripts/feature.py add`, never by hand-editing `feature_list.json`, so only contract keys are written.
+9. Run `./init.sh` from the project root and resolve every reported gap before declaring the harness ready.
 
 ## Leader Protocol
 

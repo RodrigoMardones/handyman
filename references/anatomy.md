@@ -47,7 +47,7 @@ Wikilinks (`[[docs/architecture]]`, `[[progress/current]]`) are optional and coe
 | `progress/current.md` | `PROJECT_ROOT/.handyman/progress/current.md` | `HARNESS_WORKSPACE/progress/current.md` | Live session state. It records the active feature, plan, log, and next step. |
 | `progress/history.md` | `PROJECT_ROOT/.handyman/progress/history.md` | `HARNESS_WORKSPACE/progress/history.md` | Append-only history of closed sessions. |
 | `backlog/` | `PROJECT_ROOT/.handyman/backlog/` | `HARNESS_WORKSPACE/backlog/` | Task-detail reports (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`), kept separate from the important harness state in `progress/`. |
-| `docs/business.md` | `PROJECT_ROOT/.handyman/docs/business.md` | `HARNESS_WORKSPACE/docs/business.md` | Business domain and the use cases the project serves. |
+| `docs/business.md` | `PROJECT_ROOT/.handyman/docs/business.md` | `HARNESS_WORKSPACE/docs/business.md` | Business domain and the use cases the project serves. It is **populated through a mandatory user interview during bootstrap**, not inferred from code: unlike architecture, conventions, and verification, the domain lives in the user's head, so the leader must ask for it. See the Bootstrap Protocol in [workflow.md](./workflow.md). |
 | `docs/architecture.md` | `PROJECT_ROOT/.handyman/docs/architecture.md` | `HARNESS_WORKSPACE/docs/architecture.md` | Project-specific definition of good architecture. |
 | `docs/conventions.md` | `PROJECT_ROOT/.handyman/docs/conventions.md` | `HARNESS_WORKSPACE/docs/conventions.md` | Style, naming, layout, and error-handling rules. |
 | `docs/verification.md` | `PROJECT_ROOT/.handyman/docs/verification.md` | `HARNESS_WORKSPACE/docs/verification.md` | Commands and evidence required before a feature can close. |
@@ -164,6 +164,7 @@ The verifier should be executable and should fail loudly. Typical checks:
 5. `$HARNESS_WORKSPACE/feature_list.json` validates against the feature_list JSON Schema (`assets/schemas/feature_list.schema.json`), so keys outside the contract — for example invented `start_date` / `close_date` fields on a feature — are rejected. The schema sets `additionalProperties: false`; `scripts/validate_harness.py` runs this check and degrades to a non-blocking skip when `jsonschema` or the schema file is unavailable.
 6. Tests run and pass from `PROJECT_ROOT`.
 7. Optional checks detect suspicious temporary files, broken docs, or missing reports.
+8. Optional advisory checks surface non-blocking gaps with a `NOTE:` and never change the exit code: a missing version stamp, a stale context graph, or a `docs/business.md` that still matches the starter template — a signal that the mandatory bootstrap business interview was skipped and the doc was never filled with real context.
 
 ## Anti Telephone Protocol
 
