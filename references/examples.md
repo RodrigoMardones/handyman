@@ -95,6 +95,25 @@ notes-cli/
 
 ## Example 2: Run One Feature
 
+**Form-first intake (optional).** When the user has not framed the request, offer the
+`feature-request.md` form. The user fills the **CORE** (and any **OPTIONAL** sections that
+apply); the leader then turns the filled form into a feature entry with `scripts/feature.py add`,
+which writes only the contract keys (`name`, `title`, `description`, `acceptance`) — never the
+process-guidance sections (`Verification`, `Considerations`, `Tools`, `Post-feature`):
+
+```text
+$ python scripts/feature.py add --name cli_recent \
+    --title "Recent notes command" \
+    --description "Add a recent subcommand listing the latest notes." \
+    --acceptance "recent lists the latest N notes (default 10)" \
+    --acceptance "tests cover default, custom --limit, and empty store" \
+    --acceptance "bash tests/run_tests.sh passes"
+added feature 7 'cli_recent' (pending)
+```
+
+This seeds the `cli_recent` feature used below. If the feature is already in `feature_list.json`,
+skip straight to running it.
+
 **Input** (what the user says):
 
 > Run the next pending feature.

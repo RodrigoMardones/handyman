@@ -30,6 +30,10 @@ Template: [../assets/feature_list.template.json](../assets/feature_list.template
 
 Optional intake form the user fills to frame one new feature before it becomes a `feature_list.json` entry. Scaffolded into the `HARNESS_WORKSPACE` root; the leader offers it during `run-feature` and turns the filled form into the feature. It is a convenience, not a verifier gate.
 
+The form encodes two format contracts. First, only `name`, `title`, `description`, and `acceptance` become the `feature_list.json` entry (via `scripts/feature.py add`); the `Verification`, `Considerations`, `Tools`, and `Post-feature` sections are process guidance for the leader and the human, not stored keys. Second, the green gate (`./init.sh` or `bash tests/run_tests.sh`) is always the last Acceptance bullet, mirroring how every closed feature ends its acceptance.
+
+The template is organized as a **CORE** block (filled every time: Feature, Context, Scope > Includes, Acceptance, Verification, Tools > skills) and an **OPTIONAL** block (filled only when it applies, otherwise deleted: Scope extensions, Functional check, Considerations, Post-feature, sub-agents, Questions). It carries two worked examples, one per request archetype: a **Research** request (investigate and leave a plan under `docs/`) and an **Implementation** request (change code plus tests). The heavy guidance lives here and in the template; `SKILL.md` keeps only a short pointer that offers the `feature-request.md` form.
+
 Template: [../assets/feature-request.template.md](../assets/feature-request.template.md)
 
 ## harness.config.json
