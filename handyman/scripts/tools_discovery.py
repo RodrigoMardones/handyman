@@ -41,7 +41,7 @@ from pathlib import Path
 # scripts/ is on sys.path[0] when run as a script, so this resolves.
 from validate_harness import resolve_workspace
 
-DEFAULT_SKILL_ROOTS = ("~/.agents/skills", "~/.claude/skills")
+DEFAULT_SKILL_ROOTS = ("~/.agents/skills", "~/.claude/skills", "~/.github/skills")
 
 _FRONT_FENCE = re.compile(r"^---\s*$")
 
