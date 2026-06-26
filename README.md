@@ -31,7 +31,7 @@ Handyman define un flujo de trabajo para agentes basado en tres roles:
 - 🛠️ **Implementer:** implementa una sola feature, agrega o ajusta tests y deja evidencia en disco. Usa por defecto un modelo mas barato y rapido.
 - ✅ **Reviewer:** valida la implementacion contra arquitectura, convenciones, checkpoints y verificacion. Usa por defecto un modelo mas barato y rapido.
 
-Cada rol puede correr bajo su propio modelo: el leader usa un modelo fuerte, mientras que implementer y reviewer prefieren un modelo barato ya configurado en el editor y, si no hay, caen a `Claude Sonnet 4.6`. Mas detalles en [references/models.md](references/models.md). Ademas cada rol corre con un set de tools restringido segun el principio de menor privilegio; mas detalles en [references/tools.md](references/tools.md).
+Cada rol puede correr bajo su propio modelo: el leader usa un modelo fuerte, mientras que implementer y reviewer prefieren un modelo barato ya configurado en el editor y, si no hay, caen a `Claude Sonnet 4.6`. Mas detalles en [handyman/references/models.md](handyman/references/models.md). Ademas cada rol corre con un set de tools restringido segun el principio de menor privilegio; mas detalles en [handyman/references/tools.md](handyman/references/tools.md).
 
 Este patron evita que el trabajo viva solamente en mensajes largos de chat. Los agentes escriben reportes de detalle bajo `backlog/`, el estado vivo de la sesion vive en `progress/`, el backlog de features vive en `feature_list.json`, las reglas del proyecto viven en `docs/`, y el cierre de una feature depende de una verificacion real, normalmente `./init.sh`.
 
@@ -115,9 +115,9 @@ El `HARNESS_WORKSPACE` esta disenado para abrirse directamente como vault de Obs
 3. El archivo `index.md` actua como MOC con enlaces a `feature_list.json`, `docs/`, `progress/current` y `progress/history`. Los archivos puente `AGENTS.md` y `CHECKPOINTS.md` viven en el root del repo, fuera del vault, en ambos modos.
 4. Los tags siguen el namespace `#handyman/...` (ej: `#handyman/feature/in_progress`, `#handyman/review/approved`).
 5. Plugins recomendados: **Outline**, **Backlinks** y **Tags** (todos core). Opcionales: **Dataview** y **Templater**.
-6. Manten el harness abstracto del repo: en modo local ignora el estado operativo con `.handyman/*` y versiona solo la capa de docs con `!.handyman/docs/` (incluye `business.md`); el mismo snippet deja fuera `.obsidian/` y `.trash/`. Usa el de [references/templates.md](references/templates.md#gitignore-harness).
+6. Manten el harness abstracto del repo: en modo local ignora el estado operativo con `.handyman/*` y versiona solo la capa de docs con `!.handyman/docs/` (incluye `business.md`); el mismo snippet deja fuera `.obsidian/` y `.trash/`. Usa el de [handyman/references/templates.md](handyman/references/templates.md#gitignore-harness).
 
-Mas detalles en [references/obsidian.md](references/obsidian.md).
+Mas detalles en [handyman/references/obsidian.md](handyman/references/obsidian.md).
 
 > 🧹 **Ayuda de versionado:** en modo local solo `.handyman/docs/` se versiona; el estado operativo (`feature_list.json`, `progress/`, `backlog/`, cache de Obsidian) queda fuera para mantener el repo abstracto.
 
@@ -132,7 +132,7 @@ Cada rol corre con su propio modelo y un set de tools restringido (menor privile
 | `reviewer` | Barato y rapido (fallback `Claude Sonnet 4.6`) | Sin delegacion ni web |
 | `explorer` | El mas barato | Solo lectura: sin `edit` ni `agent` |
 
-Se declaran en el frontmatter del archivo de rol (`model:`, `tools:`) o en los mapas `models`/`tools` de `harness.config.json`. Detalles: [references/models.md](references/models.md) y [references/tools.md](references/tools.md).
+Se declaran en el frontmatter del archivo de rol (`model:`, `tools:`) o en los mapas `models`/`tools` de `harness.config.json`. Detalles: [handyman/references/models.md](handyman/references/models.md) y [handyman/references/tools.md](handyman/references/tools.md).
 
 ##  Casos De Uso
 
@@ -200,7 +200,7 @@ Ejemplo de flujo completo:
 
 ## 📏 Reglas Operativas
 
-Las reglas duras del harness viven en [SKILL.md](SKILL.md) (Core Rules) y en `CHECKPOINTS.md` de cada proyecto. Las esenciales:
+Las reglas duras del harness viven en [handyman/SKILL.md](handyman/SKILL.md) (Core Rules) y en `CHECKPOINTS.md` de cada proyecto. Las esenciales:
 
 - 🎯 Una sola feature a la vez, con `HARNESS_WORKSPACE` resuelto antes de tocar estado.
 - ✅ Nada se marca `done` sin tests, verificador verde (`./init.sh`) y revision aprobada.
@@ -209,13 +209,13 @@ Las reglas duras del harness viven en [SKILL.md](SKILL.md) (Core Rules) y en `CH
 
 ## 🔗 Referencias Internas
 
-- [Anatomia del harness](references/anatomy.md)
-- [Workflow](references/workflow.md)
-- [Templates](references/templates.md)
-- [Checklists](references/checklists.md)
-- [Modelos por rol](references/models.md)
-- [Tools por rol](references/tools.md)
-- [Integracion con Obsidian](references/obsidian.md)
+- [Anatomia del harness](handyman/references/anatomy.md)
+- [Workflow](handyman/references/workflow.md)
+- [Templates](handyman/references/templates.md)
+- [Checklists](handyman/references/checklists.md)
+- [Modelos por rol](handyman/references/models.md)
+- [Tools por rol](handyman/references/tools.md)
+- [Integracion con Obsidian](handyman/references/obsidian.md)
 
 ## 📜 Licencia Y Atribucion
 
