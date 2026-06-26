@@ -25,7 +25,10 @@ try:
 except ImportError:
     _HAVE_JSONSCHEMA = False
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# The skill content (SKILL.md, assets/, references/) lives under handyman/;
+# repo-level docs (README.md, docs/) stay at REPO_ROOT.
+ROOT = os.path.join(REPO_ROOT, "handyman")
 
 PASS = "\033[32mPASS\033[0m" if sys.stdout.isatty() else "PASS"
 FAIL = "\033[31mFAIL\033[0m" if sys.stdout.isatty() else "FAIL"
@@ -91,7 +94,7 @@ def strip_code(text: str) -> str:
 
 def test_markdown_links() -> None:
     md_files = []
-    for dirpath, dirnames, filenames in os.walk(ROOT):
+    for dirpath, dirnames, filenames in os.walk(REPO_ROOT):
         parts = dirpath.split(os.sep)
         # Skip VCS internals and the assets/ template bodies, whose relative
         # links are illustrative and only resolve inside a target repo.
@@ -117,7 +120,7 @@ def test_markdown_links() -> None:
                 continue
             resolved = os.path.normpath(os.path.join(os.path.dirname(md), target))
             if not os.path.exists(resolved):
-                rel_md = os.path.relpath(md, ROOT)
+                rel_md = os.path.relpath(md, REPO_ROOT)
                 broken.append(f"{rel_md} -> {target}")
     check("all relative markdown links resolve", not broken,
           "; ".join(broken))

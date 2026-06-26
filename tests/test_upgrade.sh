@@ -5,8 +5,8 @@ set -u
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
-UPGRADE="$SUITE_DIR/../scripts/upgrade_harness.py"
-SKILL_MD="$SUITE_DIR/../SKILL.md"
+UPGRADE="$SUITE_DIR/../handyman/scripts/upgrade_harness.py"
+SKILL_MD="$SUITE_DIR/../handyman/SKILL.md"
 
 echo "Upgrade-check suite (test_upgrade.sh)"
 

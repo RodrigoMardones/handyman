@@ -7,7 +7,7 @@ set -u
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
-BACKLOG="$SUITE_DIR/../scripts/backlog.py"
+BACKLOG="$SUITE_DIR/../handyman/scripts/backlog.py"
 
 echo "Backlog-generator suite (test_backlog.sh)"
 

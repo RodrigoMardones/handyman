@@ -8,7 +8,7 @@ set -u
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
-UPDATER="$SUITE_DIR/../scripts/update_harness.py"
+UPDATER="$SUITE_DIR/../handyman/scripts/update_harness.py"
 
 echo "Updater-contract suite (test_update.sh)"
 
@@ -151,7 +151,7 @@ start_case "skill repo mode updates assets templates instead"
 T6="$(mktemp -d)"
 mkdir -p "$T6/assets"
 : > "$T6/SKILL.md"
-SKILL_ROOT="$SUITE_DIR/.."
+SKILL_ROOT="$SUITE_DIR/../handyman"
 cp "$SKILL_ROOT/assets/harness.config.local.template.json" "$T6/assets/"
 cp "$SKILL_ROOT/assets/harness.config.global.template.json" "$T6/assets/"
 cp "$SKILL_ROOT/assets/role-implementer.template.md" "$T6/assets/"

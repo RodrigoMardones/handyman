@@ -8,7 +8,7 @@ set -u
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
-INDEX="$SUITE_DIR/../scripts/index_md.py"
+INDEX="$SUITE_DIR/../handyman/scripts/index_md.py"
 
 echo "Index-MOC suite (test_index.sh)"
 

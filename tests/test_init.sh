@@ -139,7 +139,7 @@ fi
 rm -rf "$T7"
 
 # --- validate_harness.py: deterministic structure validator ----------------
-VALIDATOR="$SUITE_DIR/../scripts/validate_harness.py"
+VALIDATOR="$SUITE_DIR/../handyman/scripts/validate_harness.py"
 
 # --- T8: validator exits 0 on a well-formed local harness ------------------
 start_case "validate_harness: exits 0 on a well-formed local harness"
@@ -194,13 +194,13 @@ rm -rf "$T11"
 # --- T12: scaffold stamps harness_version from SKILL.md --------------------
 start_case "scaffold stamps harness_version from SKILL.md into new state"
 T12="$(mktemp -d)"
-SKILL_MD="$SUITE_DIR/../SKILL.md"
+SKILL_MD="$SUITE_DIR/../handyman/SKILL.md"
 WANT="$(awk '
   /^---[[:space:]]*$/ { f++; if (f == 2) exit; next }
   f == 1 && /^[[:space:]]+version:[[:space:]]*/ {
     sub(/^[[:space:]]+version:[[:space:]]*/, ""); sub(/[[:space:]]*$/, ""); print; exit
   }' "$SKILL_MD")"
-"$SUITE_DIR/../scripts/scaffold.sh" local "$T12" demo >/dev/null 2>&1
+"$SUITE_DIR/../handyman/scripts/scaffold.sh" local "$T12" demo >/dev/null 2>&1
 GOT_CFG="$(jq -r '.harness_version // empty' "$T12/harness.config.json" 2>/dev/null)"
 GOT_FL="$(jq -r '.config.harness_version // empty' "$T12/.handyman/feature_list.json" 2>/dev/null)"
 if [ -n "$WANT" ] && [ "$GOT_CFG" = "$WANT" ] && [ "$GOT_FL" = "$WANT" ]; then
@@ -300,7 +300,7 @@ rm -rf "$T15"
 start_case "validate_harness: frontmatter advisory is silent on a well-formed report"
 T16="$(mktemp -d)"
 write_workspace_files "$T16/.handyman" 1
-python3 "$SUITE_DIR/../scripts/backlog.py" --root "$T16" impl wellformed --date 2026-01-01 >/dev/null 2>&1
+python3 "$SUITE_DIR/../handyman/scripts/backlog.py" --root "$T16" impl wellformed --date 2026-01-01 >/dev/null 2>&1
 OUT="$(python3 "$VALIDATOR" --root "$T16" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && ! printf '%s' "$OUT" | grep -q "impl_wellformed.md"; then
   pass

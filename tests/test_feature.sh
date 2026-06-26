@@ -9,7 +9,7 @@ set -u
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
-FEATURE="$SUITE_DIR/../scripts/feature.py"
+FEATURE="$SUITE_DIR/../handyman/scripts/feature.py"
 
 echo "Feature-CLI suite (test_feature.sh)"
 
