@@ -112,7 +112,9 @@ added feature 7 'cli_recent' (pending)
 ```
 
 This seeds the `cli_recent` feature used below. If the feature is already in `feature_list.json`,
-skip straight to running it.
+skip straight to running it. The `Tools > skills` a request lists should come from the skills the
+harness declares under `discovery.skills`; the leader confirms they are installed with
+`scripts/tools_discovery.py check` (see `discovery.md`).
 
 **Input** (what the user says):
 

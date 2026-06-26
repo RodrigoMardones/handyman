@@ -29,6 +29,8 @@ request before you start.
 # - Fill the CORE always; delete the OPTIONAL sections that do not apply (no placeholders).
 # - Only name, title, description, and acceptance become the feature_list.json entry (via feature.py add);
 #   Verification, Considerations, Tools, and Post-feature are guidance for the leader and the human.
+# - Tools > skills: pick from the skills the harness declares under discovery.skills (harness.config.json);
+#   verify they are installed with scripts/tools_discovery.py check. See references/discovery.md.
 
 ## ───── CORE (fill always) ─────
 

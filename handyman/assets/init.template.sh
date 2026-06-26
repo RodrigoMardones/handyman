@@ -152,6 +152,22 @@ check_business_context() {
   fi
 }
 
+# A harness that declares no skills or MCP servers under discovery in
+# harness.config.json has not recorded what it relies on, so skill/MCP discovery
+# stays implicit. Nudge the operator to declare them; never changes EXIT_CODE.
+# See references/discovery.md.
+check_tools_discovery() {
+  config="$PROJECT_ROOT/harness.config.json"
+  [ -f "$config" ] || return 0
+  command -v jq >/dev/null 2>&1 || return 0
+  skills="$(jq -r '(.discovery.skills // []) | length' "$config" 2>/dev/null)"
+  mcp="$(jq -r '(.discovery.mcp // []) | length' "$config" 2>/dev/null)"
+  if [ "${skills:-0}" -eq 0 ] && [ "${mcp:-0}" -eq 0 ]; then
+    echo "NOTE: harness.config.json declares no skills or MCP servers under discovery." >&2
+    echo "      record what the harness relies on (see references/discovery.md)." >&2
+  fi
+}
+
 # --- Execution --------------------------------------------------------------
 if [ "$EXIT_CODE" -eq 0 ]; then
   cd "$PROJECT_ROOT" || exit 1
@@ -173,5 +189,6 @@ fi
 check_harness_version
 check_graphify_context
 check_business_context
+check_tools_discovery
 
 exit $EXIT_CODE

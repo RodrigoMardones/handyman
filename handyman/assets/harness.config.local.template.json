@@ -16,5 +16,9 @@
     "implementer": ["vscode", "execute", "read", "edit", "search", "todo"],
     "reviewer": ["vscode", "execute", "read", "edit", "search", "todo"],
     "explorer": ["vscode", "execute", "read", "search", "todo"]
+  },
+  "discovery": {
+    "skills": [],
+    "mcp": []
   }
 }

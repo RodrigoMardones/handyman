@@ -356,6 +356,60 @@ def test_harness_version() -> None:
           bool(semver.match(version)), version)
 
 
+def test_discovery_config() -> None:
+    """Plan A: optional discovery block (skills/mcp) in both config schemas."""
+    schemas_dir = os.path.join(ROOT, "assets", "schemas")
+    assets_dir = os.path.join(ROOT, "assets")
+
+    with open(os.path.join(schemas_dir, "harness.config.schema.json"),
+              encoding="utf-8") as fh:
+        cfg_schema = json.load(fh)
+    check("harness.config schema declares discovery",
+          "discovery" in cfg_schema.get("properties", {}))
+    check("discovery stays optional in harness.config schema",
+          "discovery" not in cfg_schema.get("required", []))
+    disc_def = cfg_schema.get("definitions", {}).get("discovery", {})
+    check("discovery definition lists skills and mcp",
+          "skills" in disc_def.get("properties", {})
+          and "mcp" in disc_def.get("properties", {}))
+    check("discovery rejects unknown keys (additionalProperties:false)",
+          disc_def.get("additionalProperties") is False)
+
+    with open(os.path.join(schemas_dir, "feature_list.schema.json"),
+              encoding="utf-8") as fh:
+        fl_schema = json.load(fh)
+    config_props = (fl_schema.get("definitions", {})
+                    .get("config", {}).get("properties", {}))
+    check("feature_list config schema declares discovery",
+          "discovery" in config_props)
+
+    for name in ("harness.config.local.template.json",
+                 "harness.config.global.template.json"):
+        with open(os.path.join(assets_dir, name), encoding="utf-8") as fh:
+            data = json.load(fh)
+        disc = data.get("discovery")
+        check(f"template '{name}' carries a discovery block",
+              isinstance(disc, dict)
+              and isinstance(disc.get("skills"), list)
+              and isinstance(disc.get("mcp"), list))
+    with open(os.path.join(assets_dir, "feature_list.template.json"),
+              encoding="utf-8") as fh:
+        fl_template = json.load(fh)
+    check("feature_list template config carries discovery",
+          "discovery" in fl_template.get("config", {}))
+
+    if not _HAVE_JSONSCHEMA:
+        print("       NOTE: jsonschema not installed - discovery rejection "
+              "checked in CI.")
+        return
+    with open(os.path.join(assets_dir, "harness.config.local.template.json"),
+              encoding="utf-8") as fh:
+        bad = json.load(fh)
+    bad["discovery"]["unexpected"] = ["x"]
+    check("an unknown key inside discovery is rejected",
+          any(Draft7Validator(cfg_schema).iter_errors(bad)))
+
+
 def test_upgrade_advisory() -> None:
     """Phase-1 contract: init.template.sh carries a non-blocking version advisory."""
     with open(os.path.join(ROOT, "assets", "init.template.sh"),
@@ -400,16 +454,74 @@ def test_business_context_advisory() -> None:
           "docs/business.md" in advisory_body)
 
 
+def test_tools_discovery_advisory() -> None:
+    """Plan C: init.template.sh carries a non-blocking skill/MCP discovery advisory."""
+    with open(os.path.join(ROOT, "assets", "init.template.sh"),
+              encoding="utf-8") as fh:
+        body = fh.read()
+    check("init.template.sh defines check_tools_discovery",
+          "check_tools_discovery()" in body)
+    check("init.template.sh calls check_tools_discovery",
+          re.search(r"^\s*check_tools_discovery\s*$", body, re.MULTILINE) is not None)
+    match = re.search(r"check_tools_discovery\(\)\s*\{(.*?)\n\}", body, re.DOTALL)
+    advisory_body = match.group(1) if match else ""
+    check("check_tools_discovery is advisory (does not set EXIT_CODE)",
+          bool(match) and "EXIT_CODE=" not in advisory_body)
+    check("check_tools_discovery inspects the discovery block",
+          "discovery" in advisory_body)
+
+
+def test_discovery_reference() -> None:
+    """Plan D: references/discovery.md exists and is listed in the catalog."""
+    doc = os.path.join(ROOT, "references", "discovery.md")
+    check("references/discovery.md exists", os.path.isfile(doc))
+    if os.path.isfile(doc):
+        with open(doc, encoding="utf-8") as fh:
+            body = fh.read()
+        for token in ("discovery", "tools_discovery.py", "progressive disclosure",
+                      "tool_search"):
+            check(f"discovery.md documents '{token}'", token in body)
+    with open(os.path.join(ROOT, "references", "README.md"),
+              encoding="utf-8") as fh:
+        ref_readme = fh.read()
+    check("references/README.md lists discovery.md", "discovery.md" in ref_readme)
+
+
+def test_feature_request_tools_link() -> None:
+    """Plan E: the feature-request Tools>skills ties to the declared discovery set."""
+    with open(os.path.join(ROOT, "references", "templates.md"),
+              encoding="utf-8") as fh:
+        templates = fh.read()
+    check("templates.md ties Tools>skills to discovery.skills",
+          "discovery.skills" in templates)
+    check("templates.md links the discovery reference",
+          "discovery.md" in templates)
+    with open(os.path.join(ROOT, "references", "examples.md"),
+              encoding="utf-8") as fh:
+        examples = fh.read()
+    check("examples.md points to tools_discovery.py for skill verification",
+          "tools_discovery.py" in examples)
+    with open(os.path.join(ROOT, "assets", "feature-request.template.md"),
+              encoding="utf-8") as fh:
+        form = fh.read()
+    check("feature-request template ties Tools>skills to discovery",
+          "discovery.skills" in form and "tools_discovery.py" in form)
+
+
 def main() -> int:
     print("Doc-structure suite (test_docs.py)")
     test_json_templates()
     test_json_schemas()
     test_harness_version()
+    test_discovery_config()
     test_upgrade_advisory()
     test_markdown_links()
     test_obsidian_contract()
     test_business_intake_prompts()
     test_business_context_advisory()
+    test_tools_discovery_advisory()
+    test_discovery_reference()
+    test_feature_request_tools_link()
     test_token_budgets()
     test_security_contract()
     test_w011_passive_framing()
