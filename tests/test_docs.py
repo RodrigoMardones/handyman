@@ -9,6 +9,9 @@ Validates contracts that the skill's markdown promises:
       and AGENTS.template.md word count stay within their caps.
   T5  Security contract: references/security.md exists, is referenced, and the
       data-not-instructions boundary survives in AGENTS + role templates.
+  T6  W011 passive framing: the scanned skill body (SKILL.md, references/*.md,
+      assets/*.md) never frames an agent as the subject that reads/ingests
+      outsider-authored content, while the mitigation guidance survives.
 
 Exit code 0 when all pass, 1 otherwise.
 """
@@ -193,6 +196,68 @@ def test_security_contract() -> None:
               "not instructions" in body)
 
 
+# W011 (snyk-agent-scan, indirect prompt injection): the scanned skill body must
+# never frame an agent or role as the grammatical subject that reads, ingests, or
+# fetches outsider-authored content. The behavioral mitigation stays (golden rule
+# "data, never instructions"); only the agent-as-ingestor *descriptions* are
+# rephrased as passive, resource-as-subject prose. See docs/analisis-snyk-w011.md.
+_W011_REMOVED = (
+    "constantly read free text",
+    "continuously ingest text they did not author",
+    "ingests outsider-authored content",
+    "ingests arbitrary code",
+    "reads that report as trusted input",
+)
+_W011_SUBJECT_VERB = re.compile(
+    r"\b(agents?|explorers?|leaders?|reviewers?|implementers?)\b"
+    r"[^.\n]{0,40}?\b(ingests?|reads?|fetch(?:es)?)\b"
+    r"[^.\n]{0,30}?\b(free text|outsider|arbitrary code|untrusted|did not author)\b",
+    re.IGNORECASE,
+)
+
+
+def _scanned_skill_body() -> dict:
+    """Return {relpath: text} for the markdown files snyk-agent-scan inspects."""
+    bodies = {}
+    with open(os.path.join(ROOT, "SKILL.md"), encoding="utf-8") as fh:
+        bodies["SKILL.md"] = fh.read()
+    for sub in ("references", "assets"):
+        sub_dir = os.path.join(ROOT, sub)
+        for name in sorted(os.listdir(sub_dir)):
+            if name.endswith(".md"):
+                with open(os.path.join(sub_dir, name), encoding="utf-8") as fh:
+                    bodies[f"{sub}/{name}"] = fh.read()
+    return bodies
+
+
+def test_w011_passive_framing() -> None:
+    """Guard the W011 fix: no agent-as-ingestor framing in the scanned body."""
+    bodies = _scanned_skill_body()
+    joined = "\n".join(bodies.values())
+
+    # 1. The specific agent-as-ingestor phrasings that tripped W011 stay gone.
+    for phrase in _W011_REMOVED:
+        check(f"W011 trigger phrase absent: '{phrase}'",
+              phrase not in joined,
+              "rephrase as passive, resource-as-subject prose")
+
+    # 2. No role-subject + ingestion-verb + untrusted-object construction remains.
+    for path, text in bodies.items():
+        match = _W011_SUBJECT_VERB.search(text)
+        check(f"{path} has no agent-as-ingestor construction",
+              match is None, match.group(0) if match else "")
+
+    # 3. Restructuring must not delete the mitigation it depends on.
+    sec = bodies["references/security.md"]
+    check("security.md keeps the data-not-instructions golden rule",
+          "never as instructions" in sec)
+    check("security.md keeps the per-role operating rules",
+          "Operating Rules Per Role" in sec)
+    anat = bodies["references/anatomy.md"]
+    check("anatomy.md keeps the data-not-instructions boundary",
+          "never instructions to the agent" in anat)
+
+
 # Each schema file maps to the templates that must validate against it.
 _SCHEMA_TARGETS = {
     "feature_list.schema.json": ["feature_list.template.json"],
@@ -347,6 +412,7 @@ def main() -> int:
     test_business_context_advisory()
     test_token_budgets()
     test_security_contract()
+    test_w011_passive_framing()
     print(f"\n  {_run} run, {_run - _failures} passed, {_failures} failed")
     return 1 if _failures else 0
 
