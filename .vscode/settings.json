@@ -1,0 +1,10 @@
+{
+    "chat.mcp.serverSampling": {
+        "handyman/.vscode/mcp.json: mcparmory-github": {
+            "allowedModels": [
+                "copilotcli/auto",
+                "copilot/auto"
+            ]
+        }
+    }
+}

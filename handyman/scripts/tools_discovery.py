@@ -18,14 +18,19 @@ Operations:
 
 Usage:
   scripts/tools_discovery.py [--root PATH] [--skills-dir DIR ...] list [--json]
-  scripts/tools_discovery.py [--skills-dir DIR ...] find KEYWORD [--json]
+  scripts/tools_discovery.py [--root PATH] [--skills-dir DIR ...] find KEYWORD [--json]
   scripts/tools_discovery.py [--root PATH] [--skills-dir DIR ...] check
 
-Skill roots resolve from --skills-dir (repeatable), else $HANDYMAN_SKILL_ROOTS
-(os.pathsep-separated), else the defaults ~/.agents/skills and ~/.claude/skills.
-Missing roots are skipped (graceful degradation). MCP servers have no on-disk
-manifest in this environment, so `check` validates only that declared MCP entries
-are well-formed strings; their real availability is decided by the host.
+Skill roots resolve from --skills-dir (verbatim override), else the project-local
+roots (<root>/.agents/skills, .claude/skills, .github/skills) FIRST, then the
+global roots from $HANDYMAN_SKILL_ROOTS (os.pathsep-separated) or the ~/... defaults
+— "always local, then global". Missing roots are skipped (graceful degradation).
+
+MCP servers are validated against on-disk host manifests declared in
+MCP_CONFIG_SOURCES (VS Code's .vscode/mcp.json today; the registry is open to new
+hosts): a declared server present in a manifest is `ok`, an absent one is a
+non-gating NOTE (it may be host/extension-provided), and a configured-but-undeclared
+server is noted. With no manifest on disk, `check` falls back to shape validation.
 
 Exit codes: 0 ok, 1 a declared skill is missing (check), 2 usage error.
 """
@@ -41,7 +46,16 @@ from pathlib import Path
 # scripts/ is on sys.path[0] when run as a script, so this resolves.
 from validate_harness import resolve_workspace
 
-DEFAULT_SKILL_ROOTS = ("~/.agents/skills", "~/.claude/skills", "~/.github/skills")
+DEFAULT_LOCAL_SKILL_DIRS = (".agents/skills", ".claude/skills", ".github/skills")
+DEFAULT_GLOBAL_SKILL_ROOTS = ("~/.agents/skills", "~/.claude/skills", "~/.github/skills")
+
+# MCP server configuration sources, in precedence order. Each row maps a host label
+# to its workspace-relative config file and the JSON key holding the server map.
+# The registry is intentionally open: add a row to support a new host (for example
+# ".cursor/mcp.json" or a root ".mcp.json") without touching the logic below.
+MCP_CONFIG_SOURCES = (
+    ("vscode", ".vscode/mcp.json", "servers"),
+)
 
 _FRONT_FENCE = re.compile(r"^---\s*$")
 
@@ -51,14 +65,26 @@ def err(msg: str) -> int:
     return 2
 
 
-def skill_roots(cli_dirs: list[str] | None) -> list[Path]:
-    """Resolve the ordered list of skill root directories to scan."""
+def skill_roots(cli_dirs: list[str] | None, root: Path | str | None = None) -> list[Path]:
+    """Resolve the ordered skill roots to scan, *local first, then global*.
+
+    `--skills-dir` is an explicit, hermetic override and is used verbatim. Otherwise
+    the project-local roots (`<root>/.agents/skills`, `.claude/skills`,
+    `.github/skills`) are scanned BEFORE the global roots (from
+    `$HANDYMAN_SKILL_ROOTS`, else the `~/...` defaults). Because the first occurrence
+    of a skill name wins (see `discover_skills`), a locally vendored skill shadows a
+    same-named global one — "always local, then global". Missing roots are skipped.
+    """
     if cli_dirs:
-        raw = cli_dirs
-    elif os.environ.get("HANDYMAN_SKILL_ROOTS"):
-        raw = os.environ["HANDYMAN_SKILL_ROOTS"].split(os.pathsep)
+        raw = list(cli_dirs)
     else:
-        raw = list(DEFAULT_SKILL_ROOTS)
+        base = Path(root).expanduser() if root is not None else Path(".")
+        local = [str(base / rel) for rel in DEFAULT_LOCAL_SKILL_DIRS]
+        if os.environ.get("HANDYMAN_SKILL_ROOTS"):
+            global_roots = os.environ["HANDYMAN_SKILL_ROOTS"].split(os.pathsep)
+        else:
+            global_roots = list(DEFAULT_GLOBAL_SKILL_ROOTS)
+        raw = local + global_roots
     roots: list[Path] = []
     for item in raw:
         path = Path(item).expanduser()
@@ -91,7 +117,7 @@ def _parse_frontmatter(skill_md: Path) -> dict[str, str]:
             value = match.group(2).strip()
             if value in (">", "|", ">-", "|-", ">+", "|+"):
                 value = ""  # YAML block scalar; fold the following lines
-            fields[last_key] = value
+            fields[last_key] = value # type: ignore
         elif last_key and line.strip():
             # Continuation of a folded/multi-line value.
             fields[last_key] = (fields[last_key] + " " + line.strip()).strip()
@@ -147,8 +173,42 @@ def read_discovery(root: Path) -> dict | None:
     return None
 
 
+def discover_mcp_servers(root: Path) -> dict[str, str]:
+    """Return a map of configured MCP server name -> host label.
+
+    Scans every source in `MCP_CONFIG_SOURCES` relative to the project root (for
+    example VS Code's `.vscode/mcp.json` `servers` map). Missing files and malformed
+    JSON are skipped (graceful degradation); the first host to declare a name wins.
+    """
+    found: dict[str, str] = {}
+    for host, rel, key in MCP_CONFIG_SOURCES:
+        path = root / rel
+        if not path.is_file():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            continue
+        block = data.get(key) if isinstance(data, dict) else None
+        if isinstance(block, dict):
+            for name in block:
+                found.setdefault(name, host)
+        elif isinstance(block, list):
+            for item in block:
+                if isinstance(item, str):
+                    found.setdefault(item, host)
+                elif isinstance(item, dict) and isinstance(item.get("name"), str):
+                    found.setdefault(item["name"], host)
+    return found
+
+
+def mcp_sources_present(root: Path) -> list[str]:
+    """List the MCP config files that actually exist under the project root."""
+    return [rel for _host, rel, _key in MCP_CONFIG_SOURCES if (root / rel).is_file()]
+
+
 def cmd_list(args) -> int:
-    roots = skill_roots(args.skills_dir)
+    roots = skill_roots(args.skills_dir, args.root)
     skills = discover_skills(roots)
     if args.json:
         print(json.dumps(skills, indent=2))
@@ -163,7 +223,7 @@ def cmd_list(args) -> int:
 
 def cmd_find(args) -> int:
     needle = args.keyword.lower()
-    roots = skill_roots(args.skills_dir)
+    roots = skill_roots(args.skills_dir, args.root)
     matches = [
         s for s in discover_skills(roots)
         if needle in s["name"].lower() or needle in s["description"].lower()
@@ -186,7 +246,7 @@ def cmd_check(args) -> int:
         print("no discovery block declared; nothing to verify")
         return 0
 
-    roots = skill_roots(args.skills_dir)
+    roots = skill_roots(args.skills_dir, root)
     installed = {s["name"] for s in discover_skills(roots)}
 
     declared_skills = discovery.get("skills") or []
@@ -200,9 +260,24 @@ def cmd_check(args) -> int:
         print(f"NOTE: installed but not declared: {name}")
 
     declared_mcp = discovery.get("mcp") or []
+    configured = discover_mcp_servers(root)
+    sources = mcp_sources_present(root)
     for name in declared_mcp:
-        shape = "ok (declared, not verifiable on disk)" if isinstance(name, str) and name.strip() else "INVALID"
-        print(f"mcp {name}: {shape}")
+        if not (isinstance(name, str) and name.strip()):
+            print(f"mcp {name}: INVALID")
+        elif name in configured:
+            print(f"mcp {name}: ok (configured in {configured[name]})")
+        elif sources:
+            # A manifest exists but does not list it; likely host/extension-provided.
+            print(f"mcp {name}: NOTE not configured in {', '.join(sources)} "
+                  "(host-provided?)")
+        else:
+            print(f"mcp {name}: ok (declared, not verifiable on disk)")
+
+    if sources:
+        declared_names = {n for n in declared_mcp if isinstance(n, str)}
+        for name in sorted(set(configured) - declared_names):
+            print(f"NOTE: configured but not declared: {name} ({configured[name]})")
 
     if missing:
         print(f"error: {len(missing)} declared skill(s) missing: {', '.join(missing)}",

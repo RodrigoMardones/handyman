@@ -410,6 +410,82 @@ def test_discovery_config() -> None:
           any(Draft7Validator(cfg_schema).iter_errors(bad)))
 
 
+def test_eval_set() -> None:
+    """Plan A: the trigger-eval set has a schema and a deterministic structural contract.
+
+    "Testing the model evaluation" splits in two: the *contract* of the eval set
+    is deterministic (parses, right keys/types, both classes present, no duplicate
+    queries) and lives here in the verifier; the *measurement* of the real trigger
+    is stochastic and lives opt-in in scripts/evals.py. This guards the contract.
+    """
+    schema_path = os.path.join(ROOT, "assets", "schemas", "trigger_eval.schema.json")
+    check("schema 'trigger_eval.schema.json' exists", os.path.isfile(schema_path))
+    schema = None
+    if os.path.isfile(schema_path):
+        with open(schema_path, encoding="utf-8") as fh:
+            try:
+                schema = json.load(fh)
+                check("schema 'trigger_eval.schema.json' parses", True)
+            except json.JSONDecodeError as exc:
+                check("schema 'trigger_eval.schema.json' parses", False, str(exc))
+        if schema is not None:
+            check("schema 'trigger_eval.schema.json' declares draft-07",
+                  "draft-07" in str(schema.get("$schema", "")))
+
+    eval_path = os.path.join(ROOT, "evals", "trigger-eval.json")
+    check("evals/trigger-eval.json exists", os.path.isfile(eval_path))
+    if not os.path.isfile(eval_path):
+        return
+    with open(eval_path, encoding="utf-8") as fh:
+        try:
+            eval_set = json.load(fh)
+        except json.JSONDecodeError as exc:
+            check("evals/trigger-eval.json parses", False, str(exc))
+            return
+    check("evals/trigger-eval.json parses", True)
+    check("eval set is a non-empty array",
+          isinstance(eval_set, list) and len(eval_set) > 0)
+    if not isinstance(eval_set, list):
+        return
+
+    well_formed = all(
+        isinstance(item, dict)
+        and isinstance(item.get("query"), str) and item["query"].strip()
+        and isinstance(item.get("should_trigger"), bool)
+        for item in eval_set
+    )
+    check("every eval item has a non-empty query and a boolean should_trigger",
+          well_formed)
+
+    positives = [i for i in eval_set
+                 if isinstance(i, dict) and i.get("should_trigger") is True]
+    negatives = [i for i in eval_set
+                 if isinstance(i, dict) and i.get("should_trigger") is False]
+    check("eval set covers both classes (>=5 positive, >=5 negative)",
+          len(positives) >= 5 and len(negatives) >= 5,
+          f"positive={len(positives)} negative={len(negatives)}")
+
+    queries = [i.get("query") for i in eval_set if isinstance(i, dict)]
+    check("eval set has no duplicate queries",
+          len(queries) == len(set(queries)))
+
+    if not _HAVE_JSONSCHEMA:
+        print("       NOTE: jsonschema not installed - eval-set schema "
+              "conformance checked in CI.")
+        return
+    if schema is not None:
+        Draft7Validator.check_schema(schema)
+        check("schema 'trigger_eval.schema.json' is valid draft-07", True)
+        errors = sorted(Draft7Validator(schema).iter_errors(eval_set),
+                        key=lambda e: list(e.path))
+        detail = "; ".join(
+            f"{'/'.join(map(str, e.path)) or '<root>'}: {e.message}"
+            for e in errors
+        )
+        check("evals/trigger-eval.json validates against its schema",
+              not errors, detail)
+
+
 def test_upgrade_advisory() -> None:
     """Phase-1 contract: init.template.sh carries a non-blocking version advisory."""
     with open(os.path.join(ROOT, "assets", "init.template.sh"),
@@ -471,6 +547,23 @@ def test_tools_discovery_advisory() -> None:
           "discovery" in advisory_body)
 
 
+def test_evals_advisory() -> None:
+    """Plan C: init.template.sh carries a non-blocking trigger-eval advisory."""
+    with open(os.path.join(ROOT, "assets", "init.template.sh"),
+              encoding="utf-8") as fh:
+        body = fh.read()
+    check("init.template.sh defines check_evals",
+          "check_evals()" in body)
+    check("init.template.sh calls check_evals",
+          re.search(r"^\s*check_evals\s*$", body, re.MULTILINE) is not None)
+    match = re.search(r"check_evals\(\)\s*\{(.*?)\n\}", body, re.DOTALL)
+    advisory_body = match.group(1) if match else ""
+    check("check_evals is advisory (does not set EXIT_CODE)",
+          bool(match) and "EXIT_CODE=" not in advisory_body)
+    check("check_evals inspects the trigger-eval set",
+          "trigger-eval.json" in advisory_body)
+
+
 def test_discovery_reference() -> None:
     """Plan D: references/discovery.md exists and is listed in the catalog."""
     doc = os.path.join(ROOT, "references", "discovery.md")
@@ -485,6 +578,22 @@ def test_discovery_reference() -> None:
               encoding="utf-8") as fh:
         ref_readme = fh.read()
     check("references/README.md lists discovery.md", "discovery.md" in ref_readme)
+
+
+def test_evals_reference() -> None:
+    """Plan D: references/evals.md exists and is listed in the catalog."""
+    doc = os.path.join(ROOT, "references", "evals.md")
+    check("references/evals.md exists", os.path.isfile(doc))
+    if os.path.isfile(doc):
+        with open(doc, encoding="utf-8") as fh:
+            body = fh.read()
+        for token in ("trigger-eval.json", "evals.py", "deterministic",
+                      "stochastic", "held-out", "variance"):
+            check(f"evals.md documents '{token}'", token in body)
+    with open(os.path.join(ROOT, "references", "README.md"),
+              encoding="utf-8") as fh:
+        ref_readme = fh.read()
+    check("references/README.md lists evals.md", "evals.md" in ref_readme)
 
 
 def test_feature_request_tools_link() -> None:
@@ -508,20 +617,46 @@ def test_feature_request_tools_link() -> None:
           "discovery.skills" in form and "tools_discovery.py" in form)
 
 
+def test_description_gate() -> None:
+    """Plan E: re-measuring the description trigger is wired into the workflow."""
+    with open(os.path.join(ROOT, "references", "workflow.md"),
+              encoding="utf-8") as fh:
+        workflow = fh.read()
+    check("workflow.md documents the description trigger gate",
+          "scripts/evals.py measure" in workflow)
+    check("workflow.md links the evals reference",
+          "evals.md" in workflow)
+    with open(os.path.join(ROOT, "references", "examples.md"),
+              encoding="utf-8") as fh:
+        examples = fh.read()
+    check("examples.md models evals.py validate/measure",
+          "scripts/evals.py validate" in examples
+          and "scripts/evals.py measure" in examples)
+    with open(os.path.join(ROOT, "assets", "feature-request.template.md"),
+              encoding="utf-8") as fh:
+        form = fh.read()
+    check("feature-request Verification ties to re-measuring the trigger",
+          "scripts/evals.py measure" in form)
+
+
 def main() -> int:
     print("Doc-structure suite (test_docs.py)")
     test_json_templates()
     test_json_schemas()
     test_harness_version()
     test_discovery_config()
+    test_eval_set()
     test_upgrade_advisory()
     test_markdown_links()
     test_obsidian_contract()
     test_business_intake_prompts()
     test_business_context_advisory()
     test_tools_discovery_advisory()
+    test_evals_advisory()
     test_discovery_reference()
+    test_evals_reference()
     test_feature_request_tools_link()
+    test_description_gate()
     test_token_budgets()
     test_security_contract()
     test_w011_passive_framing()

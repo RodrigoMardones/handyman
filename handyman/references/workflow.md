@@ -89,6 +89,16 @@ Closure steps:
 5. Run the verifier one last time from `PROJECT_ROOT`.
 6. Report concise final status to the user.
 
+## Description Trigger Gate
+
+This applies only when a feature edits a skill's `description` (a skill-authoring harness with an `evals/trigger-eval.json` set). The `description` is how the platform decides to load the skill, and the verifier's size cap (`test_token_budgets`) checks only that it fits, never that it still triggers. So when a change touches the `description`, re-measuring belongs in that feature's `Verification`:
+
+1. Validate the eval set's deterministic contract: `scripts/evals.py validate` (offline, safe in CI and the verifier).
+2. Measure the real trigger with a runner: `scripts/evals.py measure --runner "<cmd>" --runs 3` (online; with no runner it prints a `NOTE` and exits 0, so it never blocks the gate).
+3. Refresh the `evals/.last-measured` marker so the non-blocking `check_evals` advisory goes quiet.
+
+The split is deliberate: the eval-set contract is deterministic and gates; the trigger measurement is stochastic and stays advisory. See [evals.md](./evals.md).
+
 ## Blocked Protocol
 
 If a required tool, file, test, or decision is missing:

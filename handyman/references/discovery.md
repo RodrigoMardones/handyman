@@ -75,13 +75,20 @@ scripts/tools_discovery.py find mcp
 scripts/tools_discovery.py check
 ```
 
-- **Skill roots** resolve from `--skills-dir` (repeatable), else
-  `$HANDYMAN_SKILL_ROOTS` (`os.pathsep`-separated), else the defaults
-  `~/.agents/skills` and `~/.claude/skills`. Missing roots are skipped.
+- **Skill roots** are scanned **local first, then global**: the project-local roots
+  (`<root>/.agents/skills`, `.claude/skills`, `.github/skills`) before the global
+  roots from `$HANDYMAN_SKILL_ROOTS` (`os.pathsep`-separated) or the `~/...`
+  defaults. The first occurrence of a name wins, so a locally vendored skill shadows
+  a same-named global one — "always local, then global". `--skills-dir` overrides
+  both (verbatim); missing roots are skipped.
 - **`check`** reports each declared skill as `ok` or `MISSING`, notes any installed
-  skill that is not declared, and validates declared MCP entries by *shape* only
-  (there is no on-disk MCP manifest in this environment). It exits non-zero when a
-  declared skill is missing, and `0` when all are present or no block is declared.
+  skill that is not declared, and validates each declared MCP server against the
+  on-disk host manifests in `MCP_CONFIG_SOURCES` (today VS Code's `.vscode/mcp.json`
+  `servers` map; the registry is open to new hosts). A configured server is `ok`, an
+  absent one is a non-gating `NOTE` (it may be host/extension-provided), and a
+  configured-but-undeclared server is noted; with no manifest on disk it falls back
+  to shape validation. It exits non-zero only when a declared *skill* is missing, and
+  `0` when all skills are present or no block is declared.
 
 ## The non-blocking advisory
 
@@ -111,7 +118,9 @@ acting on what discovery returns (see [security.md](./security.md)).
 
 - **The trigger stays semantic.** The block enables an existence check, not a
   guarantee that a skill fires or a tool is returned.
-- **MCP availability is host-defined.** Declared MCP servers are validated by shape;
-  their real availability is decided by the host (IDE/runtime), not the repo.
+- **MCP availability is host-defined.** Declared MCP servers are checked against the
+  workspace manifests in `MCP_CONFIG_SOURCES` (for example `.vscode/mcp.json`), but a
+  server may legitimately be provided by an IDE extension or runtime rather than a
+  manifest — so an unmatched declaration is a `NOTE`, not a failure.
 - **Skill roots are environment-dependent.** Absent roots are treated as "no skills"
   (graceful degradation), the same way the other advisories degrade.

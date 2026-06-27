@@ -168,6 +168,30 @@ check_tools_discovery() {
   fi
 }
 
+# A skill-authoring harness keeps a labeled trigger-eval set so the skill's
+# description can be measured (evals/trigger-eval.json). The set's *contract* is
+# deterministic, but the *measurement* of the real trigger is stochastic, so it
+# stays out of the gate: this advisory only nudges. It stays silent for a harness
+# with no eval set, NOTEs an empty set, and NOTEs when SKILL.md changed since the
+# last measurement marker. Never changes EXIT_CODE. See references/evals.md.
+check_evals() {
+  eval_set="$PROJECT_ROOT/evals/trigger-eval.json"
+  [ -f "$eval_set" ] || return 0
+  command -v jq >/dev/null 2>&1 || return 0
+  count="$(jq 'if type == "array" then length else 0 end' "$eval_set" 2>/dev/null)"
+  if [ "${count:-0}" -eq 0 ]; then
+    echo "NOTE: evals/trigger-eval.json has no labeled queries - the description trigger is unmeasured." >&2
+    echo "      add positive and negative queries, then run scripts/evals.py measure (see references/evals.md)." >&2
+    return 0
+  fi
+  marker="$PROJECT_ROOT/evals/.last-measured"
+  desc="$PROJECT_ROOT/SKILL.md"
+  if [ -f "$desc" ] && { [ ! -f "$marker" ] || [ "$desc" -nt "$marker" ]; }; then
+    echo "NOTE: SKILL.md changed since the last trigger measurement (or it was never measured)." >&2
+    echo "      re-run scripts/evals.py measure and refresh evals/.last-measured (see references/evals.md)." >&2
+  fi
+}
+
 # --- Execution --------------------------------------------------------------
 if [ "$EXIT_CODE" -eq 0 ]; then
   cd "$PROJECT_ROOT" || exit 1
@@ -190,5 +214,6 @@ check_harness_version
 check_graphify_context
 check_business_context
 check_tools_discovery
+check_evals
 
 exit $EXIT_CODE

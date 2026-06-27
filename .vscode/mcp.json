@@ -1,0 +1,12 @@
+{
+	"servers": {
+		"mcparmory-github": {
+			"command": "uvx",
+			"args": [
+				"mcparmory-github==1.0.6"
+			],
+			"type": "stdio"
+		}
+	},
+	"inputs": []
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/RodrigoMardones/handyman/assets/schemas/trigger_eval.schema.json",
+  "title": "Handyman trigger-evaluation set",
+  "description": "Labeled queries that measure whether the skill's description triggers. Each item pairs a natural-language query with the expected trigger label; the array is consumed by scripts/evals.py and documented in references/evals.md.",
+  "type": "array",
+  "minItems": 2,
+  "uniqueItems": true,
+  "items": {
+    "type": "object",
+    "required": ["query", "should_trigger"],
+    "additionalProperties": false,
+    "properties": {
+      "query": { "type": "string", "minLength": 1 },
+      "should_trigger": { "type": "boolean" }
+    }
+  }
+}

@@ -63,6 +63,9 @@ request before you start.
 
 ## Verification (extension)
 - Functional check: <which request/action and the expected result>
+- Description trigger (skill-authoring only): if this change edits the skill's `description`,
+  re-measure the trigger with `scripts/evals.py measure` and refresh `evals/.last-measured`
+  (the size cap alone does not prove it still triggers — see references/evals.md).
 
 ## Considerations
 - <constraints, complementary skills, style — e.g. ponytail, skill-creator>

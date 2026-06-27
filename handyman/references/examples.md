@@ -116,6 +116,22 @@ skip straight to running it. The `Tools > skills` a request lists should come fr
 harness declares under `discovery.skills`; the leader confirms they are installed with
 `scripts/tools_discovery.py check` (see `discovery.md`).
 
+**When the feature edits the skill's `description`.** A request that touches the
+`description` (a skill-authoring harness) carries a trigger-measurement step in its
+`Verification`: the size cap stays green, but the *trigger* must be re-measured. Validate
+the eval set deterministically, then measure with a runner and refresh the marker:
+
+```text
+$ python scripts/evals.py validate                 # offline contract; safe in CI
+validate: OK
+$ python scripts/evals.py measure --runner "<cmd>" --runs 3   # online; needs a model
+confusion: TP=9 FP=1 TN=10 FN=0
+$ touch evals/.last-measured                        # clears the check_evals advisory
+```
+
+With no runner, `measure` prints a `NOTE` and exits `0`; the deterministic `validate`
+still gates. See `evals.md` for the deterministic-vs-stochastic boundary.
+
 **Input** (what the user says):
 
 > Run the next pending feature.
