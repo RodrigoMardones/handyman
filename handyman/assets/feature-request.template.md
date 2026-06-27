@@ -29,6 +29,8 @@ request before you start.
 # - Fill the CORE always; delete the OPTIONAL sections that do not apply (no placeholders).
 # - Only name, title, description, and acceptance become the feature_list.json entry (via feature.py add);
 #   Verification, Considerations, Tools, and Post-feature are guidance for the leader and the human.
+# - Tools > skills: pick from the skills the harness declares under discovery.skills (harness.config.json);
+#   verify they are installed with scripts/tools_discovery.py check. See references/discovery.md.
 
 ## ───── CORE (fill always) ─────
 
@@ -61,6 +63,9 @@ request before you start.
 
 ## Verification (extension)
 - Functional check: <which request/action and the expected result>
+- Description trigger (skill-authoring only): if this change edits the skill's `description`,
+  re-measure the trigger with `scripts/evals.py measure` and refresh `evals/.last-measured`
+  (the size cap alone does not prove it still triggers — see references/evals.md).
 
 ## Considerations
 - <constraints, complementary skills, style — e.g. ponytail, skill-creator>

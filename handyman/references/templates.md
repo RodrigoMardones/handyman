@@ -34,6 +34,8 @@ The form encodes two format contracts. First, only `name`, `title`, `description
 
 The template is organized as a **CORE** block (filled every time: Feature, Context, Scope > Includes, Acceptance, Verification, Tools > skills) and an **OPTIONAL** block (filled only when it applies, otherwise deleted: Scope extensions, Functional check, Considerations, Post-feature, sub-agents, Questions). It carries two worked examples, one per request archetype: a **Research** request (investigate and leave a plan under `docs/`) and an **Implementation** request (change code plus tests). The heavy guidance lives here and in the template; `SKILL.md` keeps only a short pointer that offers the `feature-request.md` form.
 
+The `Tools > skills` line ties a request to the harness's declared skill set: list skills the harness records under `discovery.skills` in `harness.config.json`, and confirm they are installed with `scripts/tools_discovery.py check` before relying on them. See [discovery.md](./discovery.md).
+
 Template: [../assets/feature-request.template.md](../assets/feature-request.template.md)
 
 ## harness.config.json

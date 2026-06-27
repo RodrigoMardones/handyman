@@ -14,9 +14,18 @@
     "harness_workspace": { "type": "string", "minLength": 1 },
     "harness_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
     "models": { "$ref": "#/definitions/role_models" },
-    "tools": { "$ref": "#/definitions/role_tools" }
+    "tools": { "$ref": "#/definitions/role_tools" },
+    "discovery": { "$ref": "#/definitions/discovery" }
   },
   "definitions": {
+    "discovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "skills": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "mcp": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      }
+    },
     "role_models": {
       "type": "object",
       "required": ["leader", "implementer", "reviewer", "explorer"],

@@ -25,6 +25,8 @@ run_suite bash "$SUITE_DIR/test_feature.sh"
 run_suite bash "$SUITE_DIR/test_backlog.sh"
 run_suite bash "$SUITE_DIR/test_index.sh"
 run_suite bash "$SUITE_DIR/test_upgrade.sh"
+run_suite bash "$SUITE_DIR/test_tools_discovery.sh"
+run_suite bash "$SUITE_DIR/test_evals.sh"
 
 echo "=============================================="
 if [ "$FAILED" -eq 0 ]; then
