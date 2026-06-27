@@ -1,10 +1,18 @@
 graphify-out/*
 
-.github/
+####### HANDYMAN #######
 .handyman/
-
+.handyman/docs
 CLAUDE.md
 AGENTS.md
 CHECKPOINTS.md
 harness.config.json
 init.sh
+####### SKILLS #######
+.github/skills
+.agents/skills
+####### AGENTS #######
+.github/agents
+.agents/skills
+###### MCPS #######
+.vscode/*
