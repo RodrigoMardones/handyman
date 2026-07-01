@@ -91,6 +91,56 @@ def _save(path: Path, data: dict) -> None:
                     encoding="utf-8")
 
 
+def _read_post_run(root: Path) -> list[str]:
+    """Read the optional `post_run` command list, preferring harness.config.json
+    and falling back to the feature_list.json config block. Returns [] when the
+    block is absent or malformed (post_run is opt-in)."""
+    cfg = root / "harness.config.json"
+    try:
+        if cfg.is_file():
+            data = json.loads(cfg.read_text(encoding="utf-8"))
+            steps = data.get("post_run")
+            if isinstance(steps, list):
+                return [s for s in steps if isinstance(s, str) and s.strip()]
+        fl = root / ".handyman" / "feature_list.json"
+        if not fl.is_file():
+            fl = root / "feature_list.json"
+        if fl.is_file():
+            data = json.loads(fl.read_text(encoding="utf-8"))
+            steps = (data.get("config") or {}).get("post_run")
+            if isinstance(steps, list):
+                return [s for s in steps if isinstance(s, str) and s.strip()]
+    except (ValueError, OSError):
+        pass
+    return []
+
+
+def run_post_run(root: Path) -> None:
+    """Run declared post_run commands after a verified close. A custom step that
+    fails only WARNs; it never reverts a close that already passed the verifier,
+    and never changes this command's exit code (always exit 0)."""
+    steps = _read_post_run(root)
+    if not steps:
+        return
+    for cmd in steps:
+        try:
+            result = subprocess.run(
+                cmd, shell=True, cwd=str(root),
+                capture_output=True, text=True, check=False,
+            )
+        except OSError as exc:
+            print(f"post_run WARN: could not run '{cmd}': {exc}", file=sys.stderr)
+            continue
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout or "").strip().splitlines()
+            tail = detail[-1] if detail else ""
+            print(
+                f"post_run WARN: '{cmd}' exited {result.returncode}"
+                + (f" - {tail}" if tail else ""),
+                file=sys.stderr,
+            )
+
+
 def _find(features: list, name: str):
     for feature in features:
         if feature.get("name") == name:
@@ -306,6 +356,10 @@ def cmd_done(args, workspace: Path, root: Path) -> int:
         in_progress="_none_", start="_-_", agent="_-_", today=today,
     )
     print(f"closed feature {feature.get('id')} '{args.name}' (done)")
+    # Post-run hooks: opt-in custom steps declared in harness.config.json under
+    # `post_run`. Always exit 0 (a failing step only WARNs); never reverts a
+    # verified close. Run AFTER the close so the verifier gate is unaffected.
+    run_post_run(root)
     return 0
 
 

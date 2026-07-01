@@ -44,6 +44,8 @@ Create this bridge file in the project root. In local mode it records the `.hand
 
 Use `"editor-default"` (or omit a key) to follow the model configured in the host editor. Omit the `tools` map (or a role key) to fall back to the Handyman per-role tool defaults.
 
+The optional `discovery` block declares the skills and MCP servers the harness relies on (see [discovery.md](./discovery.md)). The optional `post_run` list declares shell commands that run automatically after a feature closes via `scripts/feature.py done` (for example regenerating `index.md` or refreshing a context graph); each step runs with exit 0, so a failing custom step only WARNs and never reverts a verified close.
+
 - Local install: [../assets/harness.config.local.template.json](../assets/harness.config.local.template.json)
 - Global install: [../assets/harness.config.global.template.json](../assets/harness.config.global.template.json)
 

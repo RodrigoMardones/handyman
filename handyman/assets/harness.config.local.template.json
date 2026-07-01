@@ -20,5 +20,6 @@
   "discovery": {
     "skills": [],
     "mcp": []
-  }
+  },
+  "post_run": []
 }

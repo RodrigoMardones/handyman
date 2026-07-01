@@ -8,7 +8,8 @@
     "handyman_root": null,
     "harness_workspace": ".handyman",
     "harness_version": "0.0.0",
-    "discovery": { "skills": [], "mcp": [] }
+    "discovery": { "skills": [], "mcp": [] },
+    "post_run": []
   },
   "rules": {
     "one_feature_at_a_time": true,

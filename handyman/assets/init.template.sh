@@ -192,6 +192,17 @@ check_evals() {
   fi
 }
 
+# Preflight: read-only stability report (format/drift/sync/discovery) that
+# orchestrates validate_harness, upgrade_harness, update_harness and
+# tools_discovery. It always exits 0 and never changes EXIT_CODE; it surfaces
+# drift/sync as NOTEs for the operator to act on. See references/workflow.md.
+check_preflight() {
+  preflight="$PROJECT_ROOT/scripts/preflight.py"
+  [ -f "$preflight" ] || return 0
+  command -v python3 >/dev/null 2>&1 || return 0
+  python3 "$preflight" --root "$PROJECT_ROOT" >&2 || true
+}
+
 # --- Execution --------------------------------------------------------------
 if [ "$EXIT_CODE" -eq 0 ]; then
   cd "$PROJECT_ROOT" || exit 1
@@ -215,5 +226,6 @@ check_graphify_context
 check_business_context
 check_tools_discovery
 check_evals
+check_preflight
 
 exit $EXIT_CODE

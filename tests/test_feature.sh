@@ -203,4 +203,56 @@ else
 fi
 rm -rf "$F12"
 
+# --- F13: post_run hook runs a successful custom step after close -----------
+start_case "post_run: a successful custom step runs after a verified close"
+F13="$(mktemp -d)"
+write_harness "$F13"
+write_verifier "$F13/pass.sh" 0
+# declare a post_run step that touches a marker file in the harness root
+cat > "$F13/harness.config.json" <<'JSON'
+{ "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman", "post_run": ["touch .post_run_marker"] }
+JSON
+python3 "$FEATURE" --root "$F13" start a >/dev/null 2>&1
+OUT="$(python3 "$FEATURE" --root "$F13" "done" a --verifier "$F13/pass.sh" --date 2026-02-02 2>&1)"; CODE=$?
+ST="$(status_of "$F13/.handyman/feature_list.json" a)"
+if [ "$CODE" -eq 0 ] && [ "$ST" = "done" ] && [ -f "$F13/.post_run_marker" ]; then
+  pass
+else
+  fail "exit=$CODE status=$ST marker=$([ -f "$F13/.post_run_marker" ] && echo yes || echo no) out=$OUT"
+fi
+rm -rf "$F13"
+
+# --- F14: post_run hook WARNs on a failing step but never reverts the close -
+start_case "post_run: a failing custom step WARNs but the close stays exit 0 + done"
+F14="$(mktemp -d)"
+write_harness "$F14"
+write_verifier "$F14/pass.sh" 0
+cat > "$F14/harness.config.json" <<'JSON'
+{ "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman", "post_run": ["false"] }
+JSON
+python3 "$FEATURE" --root "$F14" start a >/dev/null 2>&1
+OUT="$(python3 "$FEATURE" --root "$F14" "done" a --verifier "$F14/pass.sh" --date 2026-02-02 2>&1)"; CODE=$?
+ST="$(status_of "$F14/.handyman/feature_list.json" a)"
+if [ "$CODE" -eq 0 ] && [ "$ST" = "done" ] && printf '%s' "$OUT" | grep -q "post_run WARN"; then
+  pass
+else
+  fail "expected exit 0 + done + post_run WARN; exit=$CODE status=$ST out=$OUT"
+fi
+rm -rf "$F14"
+
+# --- F15: no post_run declared = identical close to today -------------------
+start_case "post_run: absent block means a normal close with no WARN"
+F15="$(mktemp -d)"
+write_harness "$F15"
+write_verifier "$F15/pass.sh" 0
+python3 "$FEATURE" --root "$F15" start a >/dev/null 2>&1
+OUT="$(python3 "$FEATURE" --root "$F15" "done" a --verifier "$F15/pass.sh" --date 2026-02-02 2>&1)"; CODE=$?
+ST="$(status_of "$F15/.handyman/feature_list.json" a)"
+if [ "$CODE" -eq 0 ] && [ "$ST" = "done" ] && ! printf '%s' "$OUT" | grep -q "post_run"; then
+  pass
+else
+  fail "expected clean close; exit=$CODE status=$ST out=$OUT"
+fi
+rm -rf "$F15"
+
 summary

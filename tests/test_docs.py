@@ -564,6 +564,23 @@ def test_evals_advisory() -> None:
           "trigger-eval.json" in advisory_body)
 
 
+def test_preflight_advisory() -> None:
+    """Plan B: init.template.sh carries a non-blocking preflight stability advisory."""
+    with open(os.path.join(ROOT, "assets", "init.template.sh"),
+              encoding="utf-8") as fh:
+        body = fh.read()
+    check("init.template.sh defines check_preflight",
+          "check_preflight()" in body)
+    check("init.template.sh calls check_preflight",
+          re.search(r"^\s*check_preflight\s*$", body, re.MULTILINE) is not None)
+    match = re.search(r"check_preflight\(\)\s*\{(.*?)\n\}", body, re.DOTALL)
+    advisory_body = match.group(1) if match else ""
+    check("check_preflight is advisory (does not set EXIT_CODE)",
+          bool(match) and "EXIT_CODE=" not in advisory_body)
+    check("check_preflight invokes scripts/preflight.py",
+          "preflight.py" in advisory_body)
+
+
 def test_discovery_reference() -> None:
     """Plan D: references/discovery.md exists and is listed in the catalog."""
     doc = os.path.join(ROOT, "references", "discovery.md")
@@ -653,6 +670,7 @@ def main() -> int:
     test_business_context_advisory()
     test_tools_discovery_advisory()
     test_evals_advisory()
+    test_preflight_advisory()
     test_discovery_reference()
     test_evals_reference()
     test_feature_request_tools_link()
