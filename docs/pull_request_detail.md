@@ -4,22 +4,19 @@
 
 ## Cambios
 
-- Declara skills y MCP en la config del harness: bloque opcional `discovery {skills, mcp}` en `harness.config.schema.json` y en el `config` de `feature_list.schema.json` (con `additionalProperties:false`, fuera de `required`) y en las plantillas, con el sentinel `{skills:[],mcp:[]}`.
-- Agrega `handyman/scripts/tools_discovery.py` (contraparte determinista del descubrimiento semántico) con `list`, `find <keyword>` y `check` del bloque `discovery` contra el disco.
-- Valida los MCP declarados contra el manifiesto on-disk de VS Code `.vscode/mcp.json` mediante un registro extensible `MCP_CONFIG_SOURCES` (declara vscode, abierto a nuevos hosts): un MCP configurado da `ok`, uno ausente da un NOTE no bloqueante (provisto por el host), y se anota el configurado-pero-no-declarado.
-- Resuelve las raíces de skills local primero y luego global (`.agents/skills`, `.claude/skills`, `.github/skills` del proyecto antes que las globales `~/...`), de modo que una skill local sombrea a la global homónima; `--skills-dir` sigue siendo un override literal.
-- Agrega el advisory no bloqueante `check_tools_discovery()` en `init.template.sh` (avisa cuando no hay skills ni MCP declarados, nunca altera el `EXIT_CODE`).
-- Incorpora el harness de evaluaciones del modelo: schema `trigger_eval.schema.json`, `handyman/scripts/evals.py` con `validate` (contrato offline) y `measure` (medición online con varianza y matriz de confusión, degrada con NOTE sin runner), y el advisory `check_evals()` en `init.template.sh`.
-- Agrega documentación de entrega: `handyman/references/discovery.md` y `handyman/references/evals.md` (con alta en `references/README.md`), un paso "Description Trigger Gate" en `workflow.md` y el enlace de `Tools>skills` del feature-request con el set declarado.
-- Agrega los documentos de investigación `docs/analisis-tool-discovery.md` y `docs/analisis-tests-evaluaciones-modelo.md`.
-- Agrega la configuración de VS Code `.vscode/mcp.json` y `.vscode/settings.json`.
-- Agrega las suites `tests/test_tools_discovery.sh` (9 casos) y `tests/test_evals.sh` (7 casos), las cablea en `tests/run_tests.sh` y amplía `tests/test_docs.py`.
+- Documenta el pipeline de trabajo como 7 etapas nombradas: nueva sección "Stages at a Glance" en `handyman/references/workflow.md` (etapa → guardián → artefacto en disco → medida derivable) más la regla "a stage without its artifact did not happen"; el contrato de `feature_list.json` se mantiene en 4 estados (nada nuevo que declarar). Se añade el item de cierre correspondiente en `handyman/references/checklists.md`.
+- Agrega `handyman/scripts/metrics.py`: agregador de solo lectura que deriva métricas de los tres artefactos que el workflow ya escribe — conteos por estado de `feature_list.json`, throughput por fecha desde los encabezados fechados de `progress/history.md`, tasa de aprobación y cobertura de reportes (`impl_`/`review_`) desde el frontmatter de `backlog/`. Soporta `--json` y siempre sale con código 0. Nueva suite `tests/test_metrics.sh` (6 casos), cableada como la 11ª suite en `tests/run_tests.sh`.
+- Agrega el subcomando `declare <skill|mcp|agent> <nombre> [--dry-run]` en `handyman/scripts/tools_discovery.py`: añade la declaración al bloque `discovery` de `harness.config.json` mediante round-trip de JSON, rechaza duplicados sin escribir, valida el resultado contra el schema antes de guardar y soporta previsualización con `--dry-run`. Extiende `tests/test_tools_discovery.sh` con 4 casos nuevos.
+- Agrega el modo `--strict` a `handyman/scripts/preflight.py`: opcional, pensado para CI, sale con código distinto de cero cuando el reporte de estabilidad detecta desfase de versión, desincronización de configuración/role-files o herramientas declaradas faltantes; el modo por defecto se mantiene siempre en 0. Extiende `tests/test_preflight.sh` con 3 casos nuevos.
+- Agrega el flag opcional `--tools` a `handyman/scripts/feature.py done`, que registra en la entrada de `progress/history.md` qué skills/agentes se usaron realmente en la feature; se documenta el paso de validar la sección `## Tools` del formulario de intake contra el bloque `discovery` en `handyman/references/workflow.md`. Extiende `tests/test_feature.sh` con 1 caso nuevo.
+- Agrega el documento de investigación `docs/analisis-workflow-etapas.md`, que sustenta el plan anterior con evidencia del repositorio y literatura de las skills `handyman`, `skill-creator` y `ponytail`.
 
 ## Tarea o asunto asociado
 
-- feat/MCP-Revision
+- feat/breakingpoints-workflow
 
 ## Evidencia del cambio
 
-- `bash tests/run_tests.sh`: ALL SUITES PASSED (docs 142, init 14, update 7, feature 12, backlog 7, index 5, upgrade 10, tools-discovery 9, evals 7).
-- `./init.sh`: VERIFIER: all gates passed (exit 0); shellcheck limpio.
+- `bash tests/run_tests.sh`: ALL SUITES PASSED (docs, init 14, update 12, feature 18, backlog 7, index 5, upgrade 10, tools-discovery 16, evals 7, preflight 8, metrics 6).
+- `./init.sh`: exit 0 (todas las fases y advisories pasan).
+- `find handyman/scripts tests -name '*.sh' | xargs shellcheck -S warning`: limpio.
