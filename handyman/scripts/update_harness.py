@@ -16,13 +16,21 @@ assets/), it updates the distributed templates instead:
   - assets/role-<role>.template.md
 
 Usage:
-  scripts/update_harness.py [--root PATH] [--dry-run] --list
+  scripts/update_harness.py [--root PATH] --list
+  scripts/update_harness.py [--root PATH] --check
+  scripts/update_harness.py [--root PATH] [--dry-run] --sync
   scripts/update_harness.py [--root PATH] [--dry-run] \
       [--model ROLE=MODEL]... [--tools ROLE=t1,t2,...]... [--set KEY=VALUE]...
 
 Examples:
   # Audit current per-role models/tools of the harness in the cwd
   scripts/update_harness.py --list
+
+  # Report config <-> role-file drift (read-only, exit 1 on drift)
+  scripts/update_harness.py --check
+
+  # Reconcile role files to the config deterministically (config is the source)
+  scripts/update_harness.py --sync
 
   # Bump the cheap-tier model everywhere it is declared
   scripts/update_harness.py --model implementer="Claude Sonnet 5" \
@@ -233,6 +241,121 @@ def list_state(root: str, found: dict) -> None:
             info(f"    tools={tools_m.group(1).strip() if tools_m else '-'}")
 
 
+def _norm_model(value: str) -> str:
+    """Normalize a model value for comparison (strip surrounding quotes/space)."""
+    return str(value).strip().strip("\"'").strip()
+
+
+def _parse_tools(raw: str) -> list[str]:
+    """Parse a frontmatter tools value like '[a, b, c]' into ['a', 'b', 'c']."""
+    return [t.strip() for t in raw.strip().strip("[]").split(",") if t.strip()]
+
+
+def check_state(root: str, found: dict) -> int:
+    """Read-only drift audit: config models/tools vs role-file frontmatter.
+
+    The detection counterpart of --list: it gives preflight a real pass/fail
+    signal for the config<->role-file sync control. Returns 0 when every role
+    file agrees with the config (or there is nothing to compare) and 1 when any
+    drift is found. Writes nothing.
+    """
+    mode = "skill-repo templates" if is_skill_repo(root) else "installed harness"
+    info(f"==> sync check: {root} ({mode})")
+    expected: dict[str, dict] = {}
+    for path in found["configs"]:
+        data = load_json(path)
+        if data is None:
+            continue
+        for role in ROLES:
+            if role in expected:
+                continue
+            expected[role] = {
+                "model": data.get("models", {}).get(role),
+                "tools": data.get("tools", {}).get(role),
+            }
+    drift = 0
+    compared = 0
+    for role in ROLES:
+        for path in found["roles"][role]:
+            compared += 1
+            with open(path, encoding="utf-8") as fh:
+                text = fh.read()
+            match = _FM_RE.match(text)
+            body = match.group(1) if match else ""
+            model_m = re.search(r"^model:\s*(.+)$", body, re.MULTILINE)
+            tools_m = re.search(r"^tools:\s*(.+)$", body, re.MULTILINE)
+            file_model = model_m.group(1).strip() if model_m else None
+            file_tools = _parse_tools(tools_m.group(1)) if tools_m else None
+            exp = expected.get(role, {})
+            rel = os.path.relpath(path, root)
+            file_drift = 0
+            if exp.get("model") is not None and file_model is not None \
+                    and _norm_model(exp["model"]) != _norm_model(file_model):
+                info(f"    DRIFT {rel}: model config={exp['model']!r} "
+                     f"file={file_model!r}")
+                file_drift += 1
+            if exp.get("tools") is not None and file_tools is not None \
+                    and list(exp["tools"]) != file_tools:
+                info(f"    DRIFT {rel}: tools config={list(exp['tools'])} "
+                     f"file={file_tools}")
+                file_drift += 1
+            if file_drift == 0:
+                info(f"    OK {rel}")
+            drift += file_drift
+    if compared == 0:
+        info("    no role files to compare (config-only harness)")
+        return 0
+    if drift:
+        info(f"==> sync drift: {drift} mismatch(es) between config and role files")
+        info("    reconcile deterministically with: "
+             "update_harness.py --sync (config -> role files)")
+        return 1
+    info("==> sync OK: config and role files agree")
+    return 0
+
+
+def sync_state(root: str, found: dict, dry_run: bool) -> int:
+    """Reconcile role files to the config deterministically: write the config's
+    models/tools into every role-file frontmatter. The config is the canonical
+    source of truth (see references/anatomy.md), so the deterministic direction
+    is config -> role files. The write counterpart of --check; honors --dry-run.
+    Returns 0 on success, 1 on error.
+    """
+    models: dict[str, str] = {}
+    tools: dict[str, list[str]] = {}
+    for path in found["configs"]:
+        data = load_json(path)
+        if data is None:
+            continue
+        for role in ROLES:
+            if role not in models and role in data.get("models", {}):
+                models[role] = data["models"][role]
+            if role not in tools and role in data.get("tools", {}):
+                tools[role] = list(data["tools"][role])
+    if not any(found["roles"].values()):
+        info("==> sync: no role files to reconcile (config-only harness)")
+        return 0
+    info("==> sync: reconciling role files to the config (config -> role files)")
+    failures = 0
+    touched = 0
+    for role in ROLES:
+        for path in found["roles"][role]:
+            result = update_role_file(path, models.get(role),
+                                      tools.get(role), dry_run)
+            if result == ABSENT:
+                failures += 1
+            elif result == CHANGED:
+                touched += 1
+            info(f"    {result}: {os.path.relpath(path, root)}")
+    if dry_run:
+        info("==> dry-run: nothing written")
+    elif touched == 0:
+        info("==> sync: role files already match the config")
+    else:
+        info(f"==> sync: reconciled {touched} role file(s) to the config")
+    return 1 if failures else 0
+
+
 # --- CLI -----------------------------------------------------------------------
 
 def parse_role_arg(raw: str, what: str) -> tuple[str, str]:
@@ -257,6 +380,12 @@ def main(argv: list[str]) -> int:
                         help="print diffs, write nothing")
     parser.add_argument("--list", action="store_true",
                         help="show current models/tools per surface and exit")
+    parser.add_argument("--check", action="store_true",
+                        help="read-only drift audit: config vs role files, "
+                             "exit 1 on drift (writes nothing)")
+    parser.add_argument("--sync", action="store_true",
+                        help="reconcile role files to the config "
+                             "(config -> role files); honors --dry-run")
     parser.add_argument("--model", action="append", default=[],
                         metavar="ROLE=MODEL")
     parser.add_argument("--tools", action="append", default=[],
@@ -277,6 +406,10 @@ def main(argv: list[str]) -> int:
             "or the skill repo assets/)")
         return 1
 
+    if args.check:
+        return check_state(root, found)
+    if args.sync:
+        return sync_state(root, found, args.dry_run)
     if args.list:
         list_state(root, found)
         return 0
@@ -309,7 +442,7 @@ def main(argv: list[str]) -> int:
 
     if not (models or tools or sets):
         parser.print_usage(sys.stderr)
-        err("nothing to do: pass --list, --model, --tools, or --set")
+        err("nothing to do: pass --list, --check, --sync, --model, --tools, or --set")
         return 2
 
     failures = 0

@@ -28,6 +28,11 @@ Tool names below are logical capability groups, not a single vendor tool. Map ea
 | `browser` | Drive a browser to validate UI or flows | browser automation tools |
 | `todo` | Manage task or todo lists | todo / task-tracking tools |
 
+> The `agent` group lets the leader **delegate** to consultation subagents. Those
+> subagents are the `*.agent.md` role files a harness can *declare and verify* under
+> `discovery.agents` — the declarable counterpart of this capability. See
+> [discovery.md](./discovery.md).
+
 ## Recommended Per-Role Tools
 
 | Role | Default tools | Rationale |

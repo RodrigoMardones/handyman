@@ -19,6 +19,8 @@
   },
   "discovery": {
     "skills": [],
-    "mcp": []
-  }
+    "mcp": [],
+    "agents": []
+  },
+  "post_run": []
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Handyman skill/MCP discovery helper.
+"""Handyman skill, MCP, and agent discovery helper.
 
 Platform discovery of skills and MCP servers is *semantic*: a skill triggers on
 its `description` (progressive disclosure) and an MCP tool surfaces through a
@@ -9,12 +9,15 @@ installed skills, finds them by keyword without a similarity model, and checks t
 `discovery` block of `harness.config.json` against what is actually on disk.
 
 It does not — and cannot — force the platform to trigger a skill; it only makes the
-*declaration* and the *existence* of skills/MCPs reproducible and auditable.
+*declaration* and the *existence* of skills, MCP servers, and consultation agents
+reproducible and auditable.
 
 Operations:
   list                 Print every installed skill (name + description).
   find KEYWORD          Print installed skills whose name/description match KEYWORD.
-  check                Cross-check the declared discovery block against disk.
+  check                Cross-check the declared discovery block (skills, agents, MCP)
+                       against disk, printing the resolved path of each present
+                       skill and agent as a direct reference.
 
 Usage:
   scripts/tools_discovery.py [--root PATH] [--skills-dir DIR ...] list [--json]
@@ -32,7 +35,14 @@ hosts): a declared server present in a manifest is `ok`, an absent one is a
 non-gating NOTE (it may be host/extension-provided), and a configured-but-undeclared
 server is noted. With no manifest on disk, `check` falls back to shape validation.
 
-Exit codes: 0 ok, 1 a declared skill is missing (check), 2 usage error.
+Agents (consultation subagents) are role files (`*.agent.md`) under the platform
+role directories imported from validate_harness (`.github/agents`, `.claude/agents`).
+Because a role file is a document on disk, a declared agent is verified like a skill:
+present is `ok` with its path, absent is `MISSING` and gates. The contract declares
+*names* (portable); `check` resolves and prints the *path* (machine-specific) as a
+direct reference — it is never persisted in the declaration.
+
+Exit codes: 0 ok, 1 a declared skill or agent is missing (check), 2 usage error.
 """
 from __future__ import annotations
 
@@ -44,7 +54,7 @@ import sys
 from pathlib import Path
 
 # scripts/ is on sys.path[0] when run as a script, so this resolves.
-from validate_harness import resolve_workspace
+from validate_harness import resolve_workspace, PLATFORM_ROLE_DIRS
 
 DEFAULT_LOCAL_SKILL_DIRS = (".agents/skills", ".claude/skills", ".github/skills")
 DEFAULT_GLOBAL_SKILL_ROOTS = ("~/.agents/skills", "~/.claude/skills", "~/.github/skills")
@@ -142,6 +152,35 @@ def discover_skills(roots: list[Path]) -> list[dict[str, str]]:
                 "name": name,
                 "description": front.get("description", ""),
                 "path": str(skill_md),
+            }
+    return [seen[name] for name in sorted(seen)]
+
+
+def discover_agents(root: Path) -> list[dict[str, str]]:
+    """Return a sorted, de-duplicated catalog of consultation agents (role files).
+
+    An agent is any `<root>/<dir>/*.agent.md` where `<dir>` is one of the platform
+    role directories (`.github/agents`, `.claude/agents`, imported from
+    validate_harness so the two stay in sync). Its name is the frontmatter `name`
+    (falling back to the file stem without the `.agent` suffix) and its description
+    is the frontmatter `description`. First occurrence wins on duplicate names.
+    Because a role file is a document on disk, its presence is verifiable — unlike a
+    host-defined MCP server.
+    """
+    seen: dict[str, dict[str, str]] = {}
+    for rel in PLATFORM_ROLE_DIRS:
+        directory = root / rel
+        if not directory.is_dir():
+            continue
+        for agent_md in sorted(directory.glob("*.agent.md")):
+            front = _parse_frontmatter(agent_md)
+            name = front.get("name") or agent_md.name[: -len(".agent.md")]
+            if name in seen:
+                continue
+            seen[name] = {
+                "name": name,
+                "description": front.get("description", ""),
+                "path": str(agent_md),
             }
     return [seen[name] for name in sorted(seen)]
 
@@ -247,17 +286,32 @@ def cmd_check(args) -> int:
         return 0
 
     roots = skill_roots(args.skills_dir, root)
-    installed = {s["name"] for s in discover_skills(roots)}
+    skill_path = {s["name"]: s["path"] for s in discover_skills(roots)}
+    installed = set(skill_path)
 
     declared_skills = discovery.get("skills") or []
     missing = [s for s in declared_skills if s not in installed]
     for name in declared_skills:
-        flag = "MISSING" if name in missing else "ok"
-        print(f"skill {name}: {flag}")
+        if name in missing:
+            print(f"skill {name}: MISSING")
+        else:
+            print(f"skill {name}: ok -> {skill_path[name]}")
 
     undeclared = sorted(installed - set(declared_skills))
     for name in undeclared:
         print(f"NOTE: installed but not declared: {name}")
+
+    declared_agents = discovery.get("agents") or []
+    agent_path = {a["name"]: a["path"] for a in discover_agents(root)}
+    installed_agents = set(agent_path)
+    missing_agents = [a for a in declared_agents if a not in installed_agents]
+    for name in declared_agents:
+        if name in missing_agents:
+            print(f"agent {name}: MISSING")
+        else:
+            print(f"agent {name}: ok -> {agent_path[name]}")
+    for name in sorted(installed_agents - set(declared_agents)):
+        print(f"NOTE: installed but not declared: agent {name}")
 
     declared_mcp = discovery.get("mcp") or []
     configured = discover_mcp_servers(root)
@@ -282,6 +336,10 @@ def cmd_check(args) -> int:
     if missing:
         print(f"error: {len(missing)} declared skill(s) missing: {', '.join(missing)}",
               file=sys.stderr)
+        return 1
+    if missing_agents:
+        print(f"error: {len(missing_agents)} declared agent(s) missing: "
+              f"{', '.join(missing_agents)}", file=sys.stderr)
         return 1
     return 0
 

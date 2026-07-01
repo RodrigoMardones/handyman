@@ -372,6 +372,8 @@ def test_discovery_config() -> None:
     check("discovery definition lists skills and mcp",
           "skills" in disc_def.get("properties", {})
           and "mcp" in disc_def.get("properties", {}))
+    check("discovery definition lists agents",
+          "agents" in disc_def.get("properties", {}))
     check("discovery rejects unknown keys (additionalProperties:false)",
           disc_def.get("additionalProperties") is False)
 
@@ -382,6 +384,9 @@ def test_discovery_config() -> None:
                     .get("config", {}).get("properties", {}))
     check("feature_list config schema declares discovery",
           "discovery" in config_props)
+    fl_disc_def = fl_schema.get("definitions", {}).get("discovery", {})
+    check("feature_list discovery definition lists agents",
+          "agents" in fl_disc_def.get("properties", {}))
 
     for name in ("harness.config.local.template.json",
                  "harness.config.global.template.json"):
@@ -391,12 +396,16 @@ def test_discovery_config() -> None:
         check(f"template '{name}' carries a discovery block",
               isinstance(disc, dict)
               and isinstance(disc.get("skills"), list)
-              and isinstance(disc.get("mcp"), list))
+              and isinstance(disc.get("mcp"), list)
+              and isinstance(disc.get("agents"), list))
     with open(os.path.join(assets_dir, "feature_list.template.json"),
               encoding="utf-8") as fh:
         fl_template = json.load(fh)
     check("feature_list template config carries discovery",
           "discovery" in fl_template.get("config", {}))
+    check("feature_list template discovery carries agents",
+          isinstance(fl_template.get("config", {})
+                     .get("discovery", {}).get("agents"), list))
 
     if not _HAVE_JSONSCHEMA:
         print("       NOTE: jsonschema not installed - discovery rejection "
@@ -545,6 +554,8 @@ def test_tools_discovery_advisory() -> None:
           bool(match) and "EXIT_CODE=" not in advisory_body)
     check("check_tools_discovery inspects the discovery block",
           "discovery" in advisory_body)
+    check("check_tools_discovery inspects agents",
+          "discovery.agents" in advisory_body)
 
 
 def test_evals_advisory() -> None:
@@ -564,6 +575,23 @@ def test_evals_advisory() -> None:
           "trigger-eval.json" in advisory_body)
 
 
+def test_preflight_advisory() -> None:
+    """Plan B: init.template.sh carries a non-blocking preflight stability advisory."""
+    with open(os.path.join(ROOT, "assets", "init.template.sh"),
+              encoding="utf-8") as fh:
+        body = fh.read()
+    check("init.template.sh defines check_preflight",
+          "check_preflight()" in body)
+    check("init.template.sh calls check_preflight",
+          re.search(r"^\s*check_preflight\s*$", body, re.MULTILINE) is not None)
+    match = re.search(r"check_preflight\(\)\s*\{(.*?)\n\}", body, re.DOTALL)
+    advisory_body = match.group(1) if match else ""
+    check("check_preflight is advisory (does not set EXIT_CODE)",
+          bool(match) and "EXIT_CODE=" not in advisory_body)
+    check("check_preflight invokes scripts/preflight.py",
+          "preflight.py" in advisory_body)
+
+
 def test_discovery_reference() -> None:
     """Plan D: references/discovery.md exists and is listed in the catalog."""
     doc = os.path.join(ROOT, "references", "discovery.md")
@@ -572,8 +600,13 @@ def test_discovery_reference() -> None:
         with open(doc, encoding="utf-8") as fh:
             body = fh.read()
         for token in ("discovery", "tools_discovery.py", "progressive disclosure",
-                      "tool_search"):
+                      "tool_search", "discovery.agents", "Consultation agents"):
             check(f"discovery.md documents '{token}'", token in body)
+        check("discovery.md documents the contract-vs-resolution path boundary",
+              "names travel" in body or "Contract vs resolution" in body)
+    with open(os.path.join(ROOT, "references", "tools.md"), encoding="utf-8") as fh:
+        tools_doc = fh.read()
+    check("tools.md cross-links agent discovery", "discovery.agents" in tools_doc)
     with open(os.path.join(ROOT, "references", "README.md"),
               encoding="utf-8") as fh:
         ref_readme = fh.read()
@@ -615,6 +648,13 @@ def test_feature_request_tools_link() -> None:
         form = fh.read()
     check("feature-request template ties Tools>skills to discovery",
           "discovery.skills" in form and "tools_discovery.py" in form)
+    check("feature-request template ties Tools>agents to discovery.agents",
+          "discovery.agents" in form)
+    with open(os.path.join(ROOT, "references", "workflow.md"),
+              encoding="utf-8") as fh:
+        workflow = fh.read()
+    check("workflow Leader Protocol ties delegation to discovery.agents",
+          "discovery.agents" in workflow)
 
 
 def test_description_gate() -> None:
@@ -653,6 +693,7 @@ def main() -> int:
     test_business_context_advisory()
     test_tools_discovery_advisory()
     test_evals_advisory()
+    test_preflight_advisory()
     test_discovery_reference()
     test_evals_reference()
     test_feature_request_tools_link()

@@ -39,6 +39,8 @@ from pathlib import Path
 # scripts/ directory is on sys.path[0], so this import resolves.
 from validate_harness import resolve_workspace
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+
 VALID_STATUS = ("pending", "in_progress", "done", "blocked")
 
 SESSION_TEMPLATE = """\
@@ -89,6 +91,73 @@ def _load(workspace: Path):
 def _save(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n",
                     encoding="utf-8")
+
+
+def _run_preflight(root: Path) -> None:
+    """Run the read-only preflight stability report before starting work.
+
+    Best-effort: a preflight problem never blocks starting a feature (preflight
+    only reports and always exits 0). Skipped when there is no
+    harness.config.json (a bare or fixture workspace) or preflight.py is not
+    alongside this script."""
+    preflight = SCRIPT_DIR / "preflight.py"
+    if not preflight.is_file() or not (root / "harness.config.json").is_file():
+        return
+    try:
+        subprocess.run([sys.executable, str(preflight), "--root", str(root)],
+                       check=False)
+    except OSError:
+        pass
+
+
+def _read_post_run(root: Path) -> list[str]:
+    """Read the optional `post_run` command list, preferring harness.config.json
+    and falling back to the feature_list.json config block. Returns [] when the
+    block is absent or malformed (post_run is opt-in)."""
+    cfg = root / "harness.config.json"
+    try:
+        if cfg.is_file():
+            data = json.loads(cfg.read_text(encoding="utf-8"))
+            steps = data.get("post_run")
+            if isinstance(steps, list):
+                return [s for s in steps if isinstance(s, str) and s.strip()]
+        fl = root / ".handyman" / "feature_list.json"
+        if not fl.is_file():
+            fl = root / "feature_list.json"
+        if fl.is_file():
+            data = json.loads(fl.read_text(encoding="utf-8"))
+            steps = (data.get("config") or {}).get("post_run")
+            if isinstance(steps, list):
+                return [s for s in steps if isinstance(s, str) and s.strip()]
+    except (ValueError, OSError):
+        pass
+    return []
+
+
+def run_post_run(root: Path) -> None:
+    """Run declared post_run commands after a verified close. A custom step that
+    fails only WARNs; it never reverts a close that already passed the verifier,
+    and never changes this command's exit code (always exit 0)."""
+    steps = _read_post_run(root)
+    if not steps:
+        return
+    for cmd in steps:
+        try:
+            result = subprocess.run(
+                cmd, shell=True, cwd=str(root),
+                capture_output=True, text=True, check=False,
+            )
+        except OSError as exc:
+            print(f"post_run WARN: could not run '{cmd}': {exc}", file=sys.stderr)
+            continue
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout or "").strip().splitlines()
+            tail = detail[-1] if detail else ""
+            print(
+                f"post_run WARN: '{cmd}' exited {result.returncode}"
+                + (f" - {tail}" if tail else ""),
+                file=sys.stderr,
+            )
 
 
 def _find(features: list, name: str):
@@ -224,7 +293,9 @@ def cmd_add(args, workspace: Path) -> int:
     return 0
 
 
-def cmd_start(args, workspace: Path) -> int:
+def cmd_start(args, workspace: Path, root: Path) -> int:
+    if not getattr(args, "no_preflight", False):
+        _run_preflight(root)
     data, path = _load(workspace)
     features = data.get("features", [])
     feature = _find(features, args.name)
@@ -306,6 +377,10 @@ def cmd_done(args, workspace: Path, root: Path) -> int:
         in_progress="_none_", start="_-_", agent="_-_", today=today,
     )
     print(f"closed feature {feature.get('id')} '{args.name}' (done)")
+    # Post-run hooks: opt-in custom steps declared in harness.config.json under
+    # `post_run`. Always exit 0 (a failing step only WARNs); never reverts a
+    # verified close. Run AFTER the close so the verifier gate is unaffected.
+    run_post_run(root)
     return 0
 
 
@@ -324,6 +399,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_start = sub.add_parser("start", help="Mark a feature in_progress.")
     p_start.add_argument("name")
+    p_start.add_argument("--no-preflight", action="store_true",
+                         help="Skip the read-only preflight stability report.")
     p_start.add_argument("--date", default=None, help=argparse.SUPPRESS)
 
     p_block = sub.add_parser("block", help="Mark a feature blocked.")
@@ -356,7 +433,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "add":
             return cmd_add(args, workspace)
         if args.command == "start":
-            return cmd_start(args, workspace)
+            return cmd_start(args, workspace, root)
         if args.command == "block":
             return cmd_block(args, workspace)
         if args.command == "done":

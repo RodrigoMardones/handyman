@@ -203,4 +203,90 @@ else
 fi
 rm -rf "$F12"
 
+# --- F13: post_run hook runs a successful custom step after close -----------
+start_case "post_run: a successful custom step runs after a verified close"
+F13="$(mktemp -d)"
+write_harness "$F13"
+write_verifier "$F13/pass.sh" 0
+# declare a post_run step that touches a marker file in the harness root
+cat > "$F13/harness.config.json" <<'JSON'
+{ "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman", "post_run": ["touch .post_run_marker"] }
+JSON
+python3 "$FEATURE" --root "$F13" start a >/dev/null 2>&1
+OUT="$(python3 "$FEATURE" --root "$F13" "done" a --verifier "$F13/pass.sh" --date 2026-02-02 2>&1)"; CODE=$?
+ST="$(status_of "$F13/.handyman/feature_list.json" a)"
+if [ "$CODE" -eq 0 ] && [ "$ST" = "done" ] && [ -f "$F13/.post_run_marker" ]; then
+  pass
+else
+  fail "exit=$CODE status=$ST marker=$([ -f "$F13/.post_run_marker" ] && echo yes || echo no) out=$OUT"
+fi
+rm -rf "$F13"
+
+# --- F14: post_run hook WARNs on a failing step but never reverts the close -
+start_case "post_run: a failing custom step WARNs but the close stays exit 0 + done"
+F14="$(mktemp -d)"
+write_harness "$F14"
+write_verifier "$F14/pass.sh" 0
+cat > "$F14/harness.config.json" <<'JSON'
+{ "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman", "post_run": ["false"] }
+JSON
+python3 "$FEATURE" --root "$F14" start a >/dev/null 2>&1
+OUT="$(python3 "$FEATURE" --root "$F14" "done" a --verifier "$F14/pass.sh" --date 2026-02-02 2>&1)"; CODE=$?
+ST="$(status_of "$F14/.handyman/feature_list.json" a)"
+if [ "$CODE" -eq 0 ] && [ "$ST" = "done" ] && printf '%s' "$OUT" | grep -q "post_run WARN"; then
+  pass
+else
+  fail "expected exit 0 + done + post_run WARN; exit=$CODE status=$ST out=$OUT"
+fi
+rm -rf "$F14"
+
+# --- F15: no post_run declared = identical close to today -------------------
+start_case "post_run: absent block means a normal close with no WARN"
+F15="$(mktemp -d)"
+write_harness "$F15"
+write_verifier "$F15/pass.sh" 0
+python3 "$FEATURE" --root "$F15" start a >/dev/null 2>&1
+OUT="$(python3 "$FEATURE" --root "$F15" "done" a --verifier "$F15/pass.sh" --date 2026-02-02 2>&1)"; CODE=$?
+ST="$(status_of "$F15/.handyman/feature_list.json" a)"
+if [ "$CODE" -eq 0 ] && [ "$ST" = "done" ] && ! printf '%s' "$OUT" | grep -q "post_run"; then
+  pass
+else
+  fail "expected clean close; exit=$CODE status=$ST out=$OUT"
+fi
+rm -rf "$F15"
+
+# --- F16: start runs the read-only preflight report when a config exists -----
+start_case "start: runs the read-only preflight report when harness.config.json exists"
+F16="$(mktemp -d)"
+write_harness "$F16"
+cat > "$F16/harness.config.json" <<'JSON'
+{ "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman" }
+JSON
+OUT="$(python3 "$FEATURE" --root "$F16" start a 2>&1)"; CODE=$?
+ST="$(status_of "$F16/.handyman/feature_list.json" a)"
+if [ "$CODE" -eq 0 ] && [ "$ST" = "in_progress" ] \
+  && printf '%s' "$OUT" | grep -q "preflight"; then
+  pass
+else
+  fail "exit=$CODE status=$ST (expected preflight report on start) out=$OUT"
+fi
+rm -rf "$F16"
+
+# --- F17: --no-preflight skips the stability report -------------------------
+start_case "start: --no-preflight skips the stability report"
+F17="$(mktemp -d)"
+write_harness "$F17"
+cat > "$F17/harness.config.json" <<'JSON'
+{ "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman" }
+JSON
+OUT="$(python3 "$FEATURE" --root "$F17" start a --no-preflight 2>&1)"; CODE=$?
+ST="$(status_of "$F17/.handyman/feature_list.json" a)"
+if [ "$CODE" -eq 0 ] && [ "$ST" = "in_progress" ] \
+  && ! printf '%s' "$OUT" | grep -q "preflight"; then
+  pass
+else
+  fail "exit=$CODE status=$ST (expected no preflight output) out=$OUT"
+fi
+rm -rf "$F17"
+
 summary

@@ -110,6 +110,7 @@ See [tools.md](./tools.md) for capability-group definitions, per-platform syntax
 | `scripts/backlog.py` | Optional generator for backlog reports (`impl`/`review`/`explore`) that stamps the per-type frontmatter from the bundled templates and never overwrites an existing entry. |
 | `scripts/index_md.py` | Optional regenerator for the `index.md` Obsidian MOC: rebuilds State/Docs/Progress/Features/Backlog/Tags from live state and preserves a `## Notes` block. |
 | `scripts/upgrade_harness.py` | Optional version-upgrade tool: `--check` reports drift; running it applies idempotent migrations (managed files + re-seal), `--dry-run` previews. |
+| `scripts/preflight.py` | Optional read-only stability report run before feature work: orchestrates `validate_harness`, `upgrade_harness --check`, `update_harness --list` and `tools_discovery check` into a unified format/drift/sync/discovery view; always exits 0. |
 | `assets/schemas/*.schema.json` | JSON Schema (draft-07) contracts for `feature_list.json` and `harness.config.json`. |
 | `$HARNESS_WORKSPACE/backlog/impl_<feature>.md` | Implementer report with files changed and test output. |
 | `$HARNESS_WORKSPACE/backlog/review_<feature>.md` | Reviewer verdict with checklist and required changes. |
@@ -119,7 +120,7 @@ See [tools.md](./tools.md) for capability-group definitions, per-platform syntax
 A minimal `feature_list.json` lives in `HARNESS_WORKSPACE` and contains:
 
 - Project metadata.
-- Optional config for `install_mode`, `project_name`, `project_root`, `handyman_root`, `harness_workspace`, a `models` map keyed by role, and a `tools` map keyed by role. This block is an optional **mirror** of `harness.config.json` (the canonical bridge file); keep the two in sync. Resolution prefers `harness.config.json`, then this `config`, then a `PROJECT_ROOT/.handyman/` directory, then the legacy `PROJECT_ROOT` fallback (as `scripts/validate_harness.py` implements).
+- Optional config for `install_mode`, `project_name`, `project_root`, `handyman_root`, `harness_workspace`, a `models` map keyed by role, a `tools` map keyed by role, and an optional `post_run` list of shell commands. This block is an optional **mirror** of `harness.config.json` (the canonical bridge file); keep the two in sync. Resolution prefers `harness.config.json`, then this `config`, then a `PROJECT_ROOT/.handyman/` directory, then the legacy `PROJECT_ROOT` fallback (as `scripts/validate_harness.py` implements). The `post_run` commands (e.g. rebuild the `index.md` MOC, refresh a context graph) run after a feature closes: `scripts/feature.py done` executes them always with exit 0, so a failing custom step only WARNs and never reverts a verified close.
 - Global rules such as `one_feature_at_a_time` and `require_tests_to_close`.
 - `valid_status`: usually `pending`, `in_progress`, `done`, `blocked`.
 - A `features` array. Each feature carries exactly `id`, `name`, `title`, `description`, `acceptance`, `status`, and — only when blocked — `blocked_reason`. A feature carries **no dates**: the schema sets `additionalProperties: false`, so any other key (for example an invented `start_date` / `close_date`) is rejected by the verifier.

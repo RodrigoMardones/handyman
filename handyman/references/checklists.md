@@ -56,6 +56,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 
 ## Run-Feature Checklist
 
+- [ ] Stability check run before starting: `scripts/preflight.py` (or the verifier's non-blocking advisories) reports the harness well-formed and not drifted; version drift, config↔role-file sync, and declared skills/MCPs reviewed.
 - [ ] Verifier is green before starting, or blocker is documented.
 - [ ] `HARNESS_WORKSPACE` is resolved before feature state changes.
 - [ ] Exactly one feature is selected.
@@ -69,6 +70,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] Approved features are marked `done`.
 - [ ] `$HARNESS_WORKSPACE/progress/history.md` has the closing entry.
 - [ ] `$HARNESS_WORKSPACE/progress/current.md` is reset.
+- [ ] Declared post-run hooks (the `post_run` list in `harness.config.json`) ran after the close, or none were declared.
 
 ## Review Checklist
 
