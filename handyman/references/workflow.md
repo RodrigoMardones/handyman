@@ -21,7 +21,7 @@ Before selecting a feature, confirm the harness is well-formed and stable across
 - **Format** — `scripts/validate_harness.py`: structure, core files, `feature_list.json` parses, at most one `in_progress`, role files in the platform path.
 - **Feature-list contract** — the live `feature_list.json` validates against `assets/schemas/feature_list.schema.json` (`additionalProperties:false` rejects out-of-contract keys).
 - **Version drift** — `scripts/upgrade_harness.py --check`: the installed `harness_version` against the current skill; a `BEHIND` report means run `scripts/upgrade_harness.py` (with `--dry-run`) to apply migrations and re-seal.
-- **Config ↔ role-file sync** — `scripts/update_harness.py --list`: the `models`/`tools` maps of `harness.config.json` against the role files; if they drifted, run `scripts/update_harness.py --model/--tools` to reconcile.
+- **Config ↔ role-file sync** — `scripts/update_harness.py --check`: the `models`/`tools` maps of `harness.config.json` against the role files; if they drifted, run `scripts/update_harness.py --sync` to reconcile the role files to the config (deterministic, config is the source of truth).
 - **Discovery** — `scripts/tools_discovery.py check`: the declared `discovery` skills and MCP servers against what is installed; install or declare what is missing.
 
 `preflight.py` always exits 0 (it reports stability, it does not gate): the blocking checks already live in the verifier's `validate` phase. Treat the report as the stability review that precedes feature work, and act on `BEHIND`/drift before starting.

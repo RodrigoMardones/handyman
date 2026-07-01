@@ -90,10 +90,14 @@ def preflight(root: Path) -> int:
     status = "OK" if rc == 0 else "BEHIND"
     _block("drift", status, out)
 
-    # --- sync: config <-> role-file audit ------------------------------------
-    rc, out = _run([py, str(SCRIPT_DIR / "update_harness.py"), "--list", "--root", str(root)])
+    # --- sync: config <-> role-file drift ------------------------------------
+    rc, out = _run([py, str(SCRIPT_DIR / "update_harness.py"), "--check", "--root", str(root)])
     status = "OK" if rc == 0 else "NOTE"
     _block("sync", status, out)
+    if rc != 0:
+        print("    recommended for safety: run "
+              "'update_harness.py --sync' to reconcile role files to the "
+              "config before starting work")
 
     # --- discovery: declared skills + MCPs -----------------------------------
     rc, out = _run(

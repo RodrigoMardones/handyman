@@ -39,6 +39,8 @@ from pathlib import Path
 # scripts/ directory is on sys.path[0], so this import resolves.
 from validate_harness import resolve_workspace
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+
 VALID_STATUS = ("pending", "in_progress", "done", "blocked")
 
 SESSION_TEMPLATE = """\
@@ -89,6 +91,23 @@ def _load(workspace: Path):
 def _save(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n",
                     encoding="utf-8")
+
+
+def _run_preflight(root: Path) -> None:
+    """Run the read-only preflight stability report before starting work.
+
+    Best-effort: a preflight problem never blocks starting a feature (preflight
+    only reports and always exits 0). Skipped when there is no
+    harness.config.json (a bare or fixture workspace) or preflight.py is not
+    alongside this script."""
+    preflight = SCRIPT_DIR / "preflight.py"
+    if not preflight.is_file() or not (root / "harness.config.json").is_file():
+        return
+    try:
+        subprocess.run([sys.executable, str(preflight), "--root", str(root)],
+                       check=False)
+    except OSError:
+        pass
 
 
 def _read_post_run(root: Path) -> list[str]:
@@ -274,7 +293,9 @@ def cmd_add(args, workspace: Path) -> int:
     return 0
 
 
-def cmd_start(args, workspace: Path) -> int:
+def cmd_start(args, workspace: Path, root: Path) -> int:
+    if not getattr(args, "no_preflight", False):
+        _run_preflight(root)
     data, path = _load(workspace)
     features = data.get("features", [])
     feature = _find(features, args.name)
@@ -378,6 +399,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_start = sub.add_parser("start", help="Mark a feature in_progress.")
     p_start.add_argument("name")
+    p_start.add_argument("--no-preflight", action="store_true",
+                         help="Skip the read-only preflight stability report.")
     p_start.add_argument("--date", default=None, help=argparse.SUPPRESS)
 
     p_block = sub.add_parser("block", help="Mark a feature blocked.")
@@ -410,7 +433,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "add":
             return cmd_add(args, workspace)
         if args.command == "start":
-            return cmd_start(args, workspace)
+            return cmd_start(args, workspace, root)
         if args.command == "block":
             return cmd_block(args, workspace)
         if args.command == "done":

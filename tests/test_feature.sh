@@ -255,4 +255,38 @@ else
 fi
 rm -rf "$F15"
 
+# --- F16: start runs the read-only preflight report when a config exists -----
+start_case "start: runs the read-only preflight report when harness.config.json exists"
+F16="$(mktemp -d)"
+write_harness "$F16"
+cat > "$F16/harness.config.json" <<'JSON'
+{ "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman" }
+JSON
+OUT="$(python3 "$FEATURE" --root "$F16" start a 2>&1)"; CODE=$?
+ST="$(status_of "$F16/.handyman/feature_list.json" a)"
+if [ "$CODE" -eq 0 ] && [ "$ST" = "in_progress" ] \
+  && printf '%s' "$OUT" | grep -q "preflight"; then
+  pass
+else
+  fail "exit=$CODE status=$ST (expected preflight report on start) out=$OUT"
+fi
+rm -rf "$F16"
+
+# --- F17: --no-preflight skips the stability report -------------------------
+start_case "start: --no-preflight skips the stability report"
+F17="$(mktemp -d)"
+write_harness "$F17"
+cat > "$F17/harness.config.json" <<'JSON'
+{ "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman" }
+JSON
+OUT="$(python3 "$FEATURE" --root "$F17" start a --no-preflight 2>&1)"; CODE=$?
+ST="$(status_of "$F17/.handyman/feature_list.json" a)"
+if [ "$CODE" -eq 0 ] && [ "$ST" = "in_progress" ] \
+  && ! printf '%s' "$OUT" | grep -q "preflight"; then
+  pass
+else
+  fail "exit=$CODE status=$ST (expected no preflight output) out=$OUT"
+fi
+rm -rf "$F17"
+
 summary

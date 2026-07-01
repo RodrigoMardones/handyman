@@ -1,5 +1,9 @@
 graphify-out/*
 
+####### PYTHON #######
+__pycache__/
+*.pyc
+
 ####### HANDYMAN #######
 .handyman/
 .handyman/docs

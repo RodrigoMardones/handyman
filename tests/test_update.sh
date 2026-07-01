@@ -183,4 +183,89 @@ else
 fi
 rm -rf "$T7" "$EMPTY"
 
+# --- T8: --check passes when config and role files agree ---------------------
+start_case "--check exits 0 when config models match the role frontmatter"
+T8="$(mktemp -d)"
+write_installed_harness "$T8"
+OUT="$(python3 "$UPDATER" --root "$T8" --check 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "sync OK"; then
+  pass
+else
+  fail "expected exit 0 + sync OK; exit=$CODE out=$OUT"
+fi
+rm -rf "$T8"
+
+# --- T9: --check flags drift between config and role files -------------------
+start_case "--check exits non-zero and reports drift when a role file diverges"
+T9="$(mktemp -d)"
+write_installed_harness "$T9"
+# diverge the role-file model from the config without touching the config
+python3 - "$T9/.github/agents/implementer.agent.md" <<'PY'
+import re, sys
+p = sys.argv[1]
+t = open(p).read()
+open(p, "w").write(re.sub(r"^model: .*$", "model: Drifted Model", t, count=1, flags=re.M))
+PY
+OUT="$(python3 "$UPDATER" --root "$T9" --check 2>&1)"; CODE=$?
+if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "DRIFT" \
+  && printf '%s' "$OUT" | grep -q "implementer.agent.md"; then
+  pass
+else
+  fail "expected non-zero + DRIFT report; exit=$CODE out=$OUT"
+fi
+rm -rf "$T9"
+
+# --- T10: --check is read-only (writes nothing) -----------------------------
+start_case "--check writes nothing (read-only audit)"
+T10="$(mktemp -d)"
+write_installed_harness "$T10"
+BEFORE_CFG="$(cat "$T10/harness.config.json")"
+BEFORE_GH="$(cat "$T10/.github/agents/implementer.agent.md")"
+python3 "$UPDATER" --root "$T10" --check >/dev/null 2>&1
+if [ "$BEFORE_CFG" = "$(cat "$T10/harness.config.json")" ] \
+  && [ "$BEFORE_GH" = "$(cat "$T10/.github/agents/implementer.agent.md")" ]; then
+  pass
+else
+  fail "--check modified files"
+fi
+rm -rf "$T10"
+
+# --- T11: --sync reconciles role files to the config ------------------------
+start_case "--sync writes config models into role files and clears the drift"
+T11="$(mktemp -d)"
+write_installed_harness "$T11"
+# diverge the role-file model from the config
+python3 - "$T11/.github/agents/implementer.agent.md" <<'PY'
+import re, sys
+p = sys.argv[1]; t = open(p).read()
+open(p, "w").write(re.sub(r"^model: .*$", "model: Drifted", t, count=1, flags=re.M))
+PY
+python3 "$UPDATER" --root "$T11" --sync >/dev/null 2>&1; CODE=$?
+python3 "$UPDATER" --root "$T11" --check >/dev/null 2>&1; CHECK=$?
+if [ "$CODE" -eq 0 ] && [ "$CHECK" -eq 0 ] \
+  && grep -q '^model: Old Model$' "$T11/.github/agents/implementer.agent.md"; then
+  pass
+else
+  fail "exit=$CODE check=$CHECK role file not reconciled to config"
+fi
+rm -rf "$T11"
+
+# --- T12: --sync --dry-run previews without writing -------------------------
+start_case "--sync --dry-run previews without touching any file"
+T12="$(mktemp -d)"
+write_installed_harness "$T12"
+python3 - "$T12/.github/agents/implementer.agent.md" <<'PY'
+import re, sys
+p = sys.argv[1]; t = open(p).read()
+open(p, "w").write(re.sub(r"^model: .*$", "model: Drifted", t, count=1, flags=re.M))
+PY
+BEFORE="$(cat "$T12/.github/agents/implementer.agent.md")"
+python3 "$UPDATER" --root "$T12" --sync --dry-run >/dev/null 2>&1; CODE=$?
+if [ "$CODE" -eq 0 ] && [ "$BEFORE" = "$(cat "$T12/.github/agents/implementer.agent.md")" ]; then
+  pass
+else
+  fail "exit=$CODE --sync --dry-run modified the role file"
+fi
+rm -rf "$T12"
+
 summary
