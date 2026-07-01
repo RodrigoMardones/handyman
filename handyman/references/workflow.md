@@ -2,6 +2,22 @@
 
 This workflow keeps agent work resumable and auditable.
 
+## Stages at a Glance
+
+A feature moves through seven stages. Each stage has a deterministic guardian and leaves a dated artifact on disk; the measures in the last column are **derived** from those artifacts, never declared in the feature contract (`feature_list.json` stays a four-state machine: `pending`, `in_progress`, `done`, `blocked`). The rule: **a stage without its artifact did not happen.**
+
+| # | Stage | Guardian | Artifact (evidence) | Derivable measure |
+|---|-------|----------|---------------------|-------------------|
+| 0 | Stability | `scripts/preflight.py` | stability report (format/drift/sync/discovery) | drift and discovery NOTEs per session |
+| 1 | Intake | `scripts/feature.py add` | `pending` entry in `feature_list.json` | backlog size |
+| 2 | Start | `scripts/feature.py start` | `progress/current.md` frontmatter | start date |
+| 3 | Implementation | `scripts/feature.py log` / `next` | `## Log` bullets in `current.md` | steps per feature |
+| 4 | Verification | `./init.sh` | exit code and suite counts | runs until green |
+| 5 | Review | `scripts/backlog.py review` | `review_<feature>.md` frontmatter `status:` | first-pass approval rate |
+| 6 | Closure | `scripts/feature.py done` | dated heading in `progress/history.md` | throughput per date |
+
+The protocols below walk these stages role by role.
+
 ## Startup
 
 1. Read `AGENTS.md`.
@@ -47,7 +63,7 @@ The leader coordinates. It does not implement product code and does not mark a f
 1. Decide whether the request is analysis, bootstrap, one feature, or review.
 2. For analysis, inspect and report. Do not modify product code.
 3. Resolve `HARNESS_WORKSPACE` before selecting or editing feature state.
-4. For one feature, select exactly one `pending` feature from `$HARNESS_WORKSPACE/feature_list.json`. If the user has not framed the request, offer the `feature-request.md` form (see [templates.md](./templates.md)) and turn the filled form into a feature entry with `scripts/feature.py add`, which writes only the contract keys (`id`, `name`, `title`, `description`, `acceptance`, `status`). Do not hand-edit `feature_list.json`, which is how out-of-contract keys such as date fields creep in.
+4. For one feature, select exactly one `pending` feature from `$HARNESS_WORKSPACE/feature_list.json`. If the user has not framed the request, offer the `feature-request.md` form (see [templates.md](./templates.md)) and turn the filled form into a feature entry with `scripts/feature.py add`, which writes only the contract keys (`id`, `name`, `title`, `description`, `acceptance`, `status`). Before converting, validate the form's `## Tools` section against the declared `discovery` block: run `scripts/tools_discovery.py check`, and close any gap deterministically with `scripts/tools_discovery.py declare <skill|mcp|agent> <name>` (or correct the form) so the selection is declared and installed before work starts. Do not hand-edit `feature_list.json`, which is how out-of-contract keys such as date fields creep in.
 5. Delegate to an implementer when available.
 6. Require the implementer to write a report in `$HARNESS_WORKSPACE/backlog/impl_<feature>.md`.
 7. Delegate to a reviewer after implementation.
@@ -96,7 +112,7 @@ Closure steps:
 
 1. Resolve `HARNESS_WORKSPACE`.
 2. Mark the feature `done` in `$HARNESS_WORKSPACE/feature_list.json`.
-3. Append a session entry to `$HARNESS_WORKSPACE/progress/history.md`. `scripts/feature.py done` writes this entry in the standard headed form (Agent, Plan, Changes, Verification, Review, Closure); fill the narrative fields it leaves as `...`.
+3. Append a session entry to `$HARNESS_WORKSPACE/progress/history.md`. `scripts/feature.py done` writes this entry in the standard headed form (Agent, Plan, Changes, Tools, Verification, Review, Closure); pass `--tools` to record which skills and agents were actually consulted (tools provenance, the input for future selection), and fill the narrative fields it leaves as `...`.
 4. Reset `$HARNESS_WORKSPACE/progress/current.md` to the repo template.
 5. Run the verifier one last time from `PROJECT_ROOT`.
 6. Run any declared post-run hooks. The optional `post_run` list in `harness.config.json` holds shell commands that run automatically after a verified close (`scripts/feature.py done` executes them, always with exit 0 — a failing custom step only WARNs and never reverts the close). Typical uses: regenerate `index.md` (`scripts/index_md.py`), refresh a context graph (`/graphify --update`), or re-measure a description trigger (`scripts/evals.py measure`). Leave the list empty (`[]`) when no custom steps are wanted.

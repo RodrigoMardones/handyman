@@ -6,21 +6,27 @@ deterministic scripts instead of reimplementing them:
 
   - format   : scripts/validate_harness.py   (structure + feature_list contract)
   - drift    : scripts/upgrade_harness.py --check  (version drift vs the skill)
-  - sync     : scripts/update_harness.py --list    (config <-> role-file audit)
+  - sync     : scripts/update_harness.py --check   (config <-> role-file audit)
   - discovery: scripts/tools_discovery.py check    (declared skills + MCPs)
 
 It writes nothing. It is a *stability* report, not a quality gate: the
 blocking checks already live in `validate` (a phase of `init.sh`), so this
-script ALWAYS exits 0 and surfaces drift/sync/discovery as `NOTE`s for the
+script exits 0 by default and surfaces drift/sync/discovery as `NOTE`s for the
 operator to act on. Applying fixes (migrations, role-file rewrites) stays a
 human decision (managed vs project-owned); the gate only makes instability
 visible.
 
+With `--strict` (opt-in, meant for CI of harness repos) the report exits
+non-zero when drift is BEHIND, sync reports DRIFT, or discovery reports a
+MISSING declaration. Format stays out of strict: it already blocks in the
+verifier's `validate` phase.
+
 Usage:
-    python scripts/preflight.py [--root PATH]
+    python scripts/preflight.py [--root PATH] [--strict]
 
 Exit codes:
-    0  always (read-only stability report)
+    0  stable (always, without --strict; read-only stability report)
+    1  --strict only: drift/sync/discovery reported a problem
     2  usage error
 """
 from __future__ import annotations
@@ -71,9 +77,10 @@ def _block(title: str, status: str, detail: str) -> None:
             print(f"    {line}")
 
 
-def preflight(root: Path) -> int:
+def preflight(root: Path, strict: bool = False) -> int:
     workspace = _resolve_workspace(root)
     py = sys.executable
+    problems: list[str] = []
     print(f"==> harness: {root}")
     print(f"    workspace: {workspace}")
     print("==> preflight (read-only stability report)")
@@ -89,12 +96,15 @@ def preflight(root: Path) -> int:
     )
     status = "OK" if rc == 0 else "BEHIND"
     _block("drift", status, out)
+    if rc != 0:
+        problems.append("drift BEHIND")
 
     # --- sync: config <-> role-file drift ------------------------------------
     rc, out = _run([py, str(SCRIPT_DIR / "update_harness.py"), "--check", "--root", str(root)])
     status = "OK" if rc == 0 else "NOTE"
     _block("sync", status, out)
     if rc != 0:
+        problems.append("sync DRIFT")
         print("    recommended for safety: run "
               "'update_harness.py --sync' to reconcile role files to the "
               "config before starting work")
@@ -105,8 +115,14 @@ def preflight(root: Path) -> int:
     )
     status = "OK" if rc == 0 else "NOTE"
     _block("discovery", status, out)
+    if rc != 0:
+        problems.append("discovery MISSING")
 
-    print("==> preflight: stability report complete (read-only; exit 0)")
+    if strict and problems:
+        print(f"==> preflight: STRICT failure ({', '.join(problems)})")
+        return 1
+    print("==> preflight: stability report complete "
+          + ("(strict; stable)" if strict else "(read-only; exit 0)"))
     return 0
 
 
@@ -115,16 +131,19 @@ def main(argv: list[str] | None = None) -> int:
         description=(
             "Read-only stability report run before feature work. Reuses "
             "validate_harness, upgrade_harness, update_harness and "
-            "tools_discovery. Always exits 0."
+            "tools_discovery. Exits 0 unless --strict finds a problem."
         )
     )
     parser.add_argument("--root", default=".", help="Project root of the harness.")
+    parser.add_argument("--strict", action="store_true",
+                        help="Exit non-zero when drift/sync/discovery report a "
+                             "problem (opt-in, for CI).")
     args = parser.parse_args(argv)
     root = Path(args.root).resolve()
     if not root.is_dir():
         print(f"root is not a directory: {root}", file=sys.stderr)
         return 2
-    return preflight(root)
+    return preflight(root, strict=args.strict)
 
 
 if __name__ == "__main__":

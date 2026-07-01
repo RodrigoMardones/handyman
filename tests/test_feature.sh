@@ -289,4 +289,24 @@ else
 fi
 rm -rf "$F17"
 
+# --- F18: done --tools writes the Tools: provenance line --------------------
+start_case "done: --tools records provenance; omitted keeps the placeholder"
+F18="$(mktemp -d)"
+write_harness "$F18"
+write_verifier "$F18/pass.sh" 0
+python3 "$FEATURE" --root "$F18" start a >/dev/null 2>&1
+python3 "$FEATURE" --root "$F18" "done" a --verifier "$F18/pass.sh" \
+  --tools "skills: handyman, ponytail; agents: reviewer" --date 2026-02-02 >/dev/null 2>&1
+HIST="$F18/.handyman/progress/history.md"
+# second feature closed without --tools -> placeholder
+python3 "$FEATURE" --root "$F18" start b >/dev/null 2>&1
+python3 "$FEATURE" --root "$F18" "done" b --verifier "$F18/pass.sh" --date 2026-02-03 >/dev/null 2>&1
+if grep -q -- "- \*\*Tools:\*\* skills: handyman, ponytail; agents: reviewer" "$HIST" \
+  && grep -A4 "Feature 2: b" "$HIST" | grep -q -- "- \*\*Tools:\*\* \.\.\."; then
+  pass
+else
+  fail "Tools provenance wrong in history: $(cat "$HIST")"
+fi
+rm -rf "$F18"
+
 summary
