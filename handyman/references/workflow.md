@@ -42,7 +42,7 @@ Creating a harness is deterministic. Run the scaffold first and always; do not h
 
 ## Leader Protocol
 
-The leader coordinates. It does not implement product code and does not mark a feature `done` alone. It runs under a stronger reasoning model and the widest tool set (including `agent`, `web`, and `browser`) and delegates cheaper roles (see [models.md](./models.md) and [tools.md](./tools.md)).
+The leader coordinates. It does not implement product code and does not mark a feature `done` alone. It runs under a stronger reasoning model and the widest tool set (including `agent`, `web`, and `browser`) and delegates cheaper roles (see [models.md](./models.md) and [tools.md](./tools.md)). Delegate only to consultation agents the harness declares under `discovery.agents` and that `scripts/tools_discovery.py check` confirms are present (see [discovery.md](./discovery.md)).
 
 1. Decide whether the request is analysis, bootstrap, one feature, or review.
 2. For analysis, inspect and report. Do not modify product code.

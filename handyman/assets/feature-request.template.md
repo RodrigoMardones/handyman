@@ -29,8 +29,8 @@ request before you start.
 # - Fill the CORE always; delete the OPTIONAL sections that do not apply (no placeholders).
 # - Only name, title, description, and acceptance become the feature_list.json entry (via feature.py add);
 #   Verification, Considerations, Tools, and Post-feature are guidance for the leader and the human.
-# - Tools > skills: pick from the skills the harness declares under discovery.skills (harness.config.json);
-#   verify they are installed with scripts/tools_discovery.py check. See references/discovery.md.
+# - Tools: skills come from discovery.skills and agents from discovery.agents (harness.config.json);
+#   verify both are installed with scripts/tools_discovery.py check. See references/discovery.md.
 
 ## ───── CORE (fill always) ─────
 
@@ -54,6 +54,7 @@ request before you start.
 
 ## Tools
 - skills: <handyman, ...>
+- agents (optional): <implementer, reviewer, explorer>   # from discovery.agents; verify with scripts/tools_discovery.py check
 
 ## ───── OPTIONAL (fill only if it applies; otherwise delete the section) ─────
 
@@ -75,7 +76,7 @@ request before you start.
 - <PR publication or other closeout>
 
 ## Tools (extension)
-- sub-agents (read-only advice): <explorer / *.agent.md>
+- sub-agents (read-only advice): <explorer / *.agent.md declared under discovery.agents>
 
 ## Questions / prior investigation
 - <open question -> resolve it as an explorer BEFORE implementing; the finding drives the plan>

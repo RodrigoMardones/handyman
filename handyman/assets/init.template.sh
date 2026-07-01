@@ -162,8 +162,9 @@ check_tools_discovery() {
   command -v jq >/dev/null 2>&1 || return 0
   skills="$(jq -r '(.discovery.skills // []) | length' "$config" 2>/dev/null)"
   mcp="$(jq -r '(.discovery.mcp // []) | length' "$config" 2>/dev/null)"
-  if [ "${skills:-0}" -eq 0 ] && [ "${mcp:-0}" -eq 0 ]; then
-    echo "NOTE: harness.config.json declares no skills or MCP servers under discovery." >&2
+  agents="$(jq -r '(.discovery.agents // []) | length' "$config" 2>/dev/null)"
+  if [ "${skills:-0}" -eq 0 ] && [ "${mcp:-0}" -eq 0 ] && [ "${agents:-0}" -eq 0 ]; then
+    echo "NOTE: harness.config.json declares no skills, MCP servers, or agents under discovery." >&2
     echo "      record what the harness relies on (see references/discovery.md)." >&2
   fi
 }

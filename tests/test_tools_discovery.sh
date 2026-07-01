@@ -2,9 +2,10 @@
 # Skill/MCP discovery tests for the Handyman skill.
 # Exercises scripts/tools_discovery.py against fixture skill roots and a fixture
 # harness: list, find (keyword filter), check (declared-present, declared-missing,
-# and no-discovery-block), local-then-global skill-root precedence, and MCP
+# and no-discovery-block), local-then-global skill-root precedence, MCP
 # validation against a fixture .vscode/mcp.json (configured -> ok, host-provided
-# -> non-gating NOTE).
+# -> non-gating NOTE), and agent verification against fixture .github/agents role
+# files (present -> ok + resolved path, declared-missing -> gates, undeclared -> NOTE).
 set -u
 
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -145,6 +146,54 @@ OUT="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] \
   && printf '%s' "$OUT" | grep -q "mcp other: NOTE not configured" \
   && printf '%s' "$OUT" | grep -q "configured but not declared: mcparmory"; then
+  pass
+else
+  fail "exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
+# --- T10: check verifies a declared agent present in a role dir -------------
+start_case "check reports a declared agent present in .github/agents as ok with its path"
+T="$(mktemp -d)"; write_skills "$T/skills"
+mkdir -p "$T/.github/agents"
+printf -- '---\nname: leader\ndescription: Orchestrates the harness.\nmodel: x\ntools: [read]\n---\n# Leader\n' > "$T/.github/agents/leader.agent.md"
+write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":["leader"]}'
+OUT="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] \
+  && printf '%s' "$OUT" | grep -q "agent leader: ok -> " \
+  && printf '%s' "$OUT" | grep -q "leader.agent.md"; then
+  pass
+else
+  fail "exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
+# --- T11: declared-but-missing agent gates like a missing skill -------------
+start_case "check exits non-zero and names a declared-but-missing agent"
+T="$(mktemp -d)"; write_skills "$T/skills"
+mkdir -p "$T/.github/agents"
+printf -- '---\nname: leader\ndescription: Orchestrates.\n---\n' > "$T/.github/agents/leader.agent.md"
+write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":["leader","ghost"]}'
+OUT="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
+if [ "$CODE" -ne 0 ] \
+  && printf '%s' "$OUT" | grep -q "agent ghost: MISSING" \
+  && printf '%s' "$OUT" | grep -q "agent leader: ok"; then
+  pass
+else
+  fail "exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
+# --- T12: an installed-but-undeclared role file is a non-gating NOTE --------
+start_case "check notes an installed role file that discovery does not declare"
+T="$(mktemp -d)"; write_skills "$T/skills"
+mkdir -p "$T/.github/agents"
+printf -- '---\nname: leader\ndescription: Orchestrates.\n---\n' > "$T/.github/agents/leader.agent.md"
+printf -- '---\nname: reviewer\ndescription: Reviews.\n---\n' > "$T/.github/agents/reviewer.agent.md"
+write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":["leader"]}'
+OUT="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] \
+  && printf '%s' "$OUT" | grep -q "installed but not declared: agent reviewer"; then
   pass
 else
   fail "exit=$CODE out=$OUT"
