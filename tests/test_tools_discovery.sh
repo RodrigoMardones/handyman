@@ -200,4 +200,71 @@ else
 fi
 rm -rf "$T"
 
+# --- T13: declare adds a skill to discovery and keeps valid JSON ------------
+start_case "declare skill appends to discovery.skills via json round-trip"
+T="$(mktemp -d)"
+write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":[]}'
+OUT="$(python3 "$TD" --root "$T" declare skill beta 2>&1)"; CODE=$?
+LISTED="$(python3 -c "
+import json,sys
+d=json.load(open('$T/harness.config.json'))
+print('yes' if d['discovery']['skills']==['alpha','beta'] else 'no')
+" 2>/dev/null)"
+if [ "$CODE" -eq 0 ] && [ "$LISTED" = "yes" ] \
+  && printf '%s' "$OUT" | grep -q "declared skill 'beta' in discovery.skills"; then
+  pass
+else
+  fail "exit=$CODE listed=$LISTED out=$OUT"
+fi
+rm -rf "$T"
+
+# --- T14: declaring a duplicate exits non-zero without writing --------------
+start_case "declare rejects a duplicate and leaves the config untouched"
+T="$(mktemp -d)"
+write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":[]}'
+BEFORE="$(cat "$T/harness.config.json")"
+OUT="$(python3 "$TD" --root "$T" declare skill alpha 2>&1)"; CODE=$?
+AFTER="$(cat "$T/harness.config.json")"
+if [ "$CODE" -ne 0 ] && [ "$BEFORE" = "$AFTER" ] \
+  && printf '%s' "$OUT" | grep -q "already declared"; then
+  pass
+else
+  fail "exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
+# --- T15: declare --dry-run previews the diff without writing ---------------
+start_case "declare --dry-run previews and does not write"
+T="$(mktemp -d)"
+write_config "$T" '{"skills":[],"mcp":[],"agents":[]}'
+BEFORE="$(cat "$T/harness.config.json")"
+OUT="$(python3 "$TD" --root "$T" declare mcp nx --dry-run 2>&1)"; CODE=$?
+AFTER="$(cat "$T/harness.config.json")"
+if [ "$CODE" -eq 0 ] && [ "$BEFORE" = "$AFTER" ] \
+  && printf '%s' "$OUT" | grep -q '^+.*"nx"' \
+  && printf '%s' "$OUT" | grep -q "dry-run: would declare mcp 'nx'"; then
+  pass
+else
+  fail "exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
+# --- T16: declare creates the discovery block when absent -------------------
+start_case "declare on a config without discovery creates the block"
+T="$(mktemp -d)"
+write_config "$T" ''
+OUT="$(python3 "$TD" --root "$T" declare agent leader 2>&1)"; CODE=$?
+LISTED="$(python3 -c "
+import json,sys
+d=json.load(open('$T/harness.config.json'))
+disc=d.get('discovery',{})
+print('yes' if disc.get('agents')==['leader'] and disc.get('skills')==[] and disc.get('mcp')==[] else 'no')
+" 2>/dev/null)"
+if [ "$CODE" -eq 0 ] && [ "$LISTED" = "yes" ]; then
+  pass
+else
+  fail "exit=$CODE listed=$LISTED out=$OUT"
+fi
+rm -rf "$T"
+
 summary

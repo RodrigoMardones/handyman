@@ -111,4 +111,55 @@ else
 fi
 rm -rf "$T"
 
+# --- T6: --strict on a stable harness exits 0 -------------------------------
+start_case "--strict exits 0 on a stable harness"
+T="$(mktemp -d)"; write_fixture "$T"
+OUT="$(python3 "$PF" --root "$T" --strict 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "strict; stable"; then
+  pass
+else
+  fail "exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
+# --- T7: --strict gates on version drift (BEHIND) ---------------------------
+start_case "--strict exits non-zero when the harness is behind"
+T="$(mktemp -d)"; write_fixture "$T"
+python3 - "$T/harness.config.json" <<'PY'
+import json, sys
+p = sys.argv[1]
+d = json.loads(open(p).read())
+d["harness_version"] = "0.0.1"
+open(p, "w").write(json.dumps(d, indent=2))
+PY
+OUT="$(python3 "$PF" --root "$T" --strict 2>&1)"; CODE=$?
+if [ "$CODE" -ne 0 ] \
+  && printf '%s' "$OUT" | grep -q "STRICT failure" \
+  && printf '%s' "$OUT" | grep -q "drift BEHIND"; then
+  pass
+else
+  fail "expected strict failure on drift; exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
+# --- T8: --strict gates on a missing declared skill (discovery) -------------
+start_case "--strict exits non-zero when a declared skill is missing"
+T="$(mktemp -d)"; write_fixture "$T"
+python3 - "$T/harness.config.json" <<'PY'
+import json, sys
+p = sys.argv[1]
+d = json.loads(open(p).read())
+d["discovery"] = {"skills": ["ghost_skill"], "mcp": [], "agents": []}
+open(p, "w").write(json.dumps(d, indent=2))
+PY
+OUT="$(python3 "$PF" --root "$T" --strict 2>&1)"; CODE=$?
+if [ "$CODE" -ne 0 ] \
+  && printf '%s' "$OUT" | grep -q "STRICT failure" \
+  && printf '%s' "$OUT" | grep -q "discovery MISSING"; then
+  pass
+else
+  fail "expected strict failure on discovery; exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
 summary

@@ -71,6 +71,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] `$HARNESS_WORKSPACE/progress/history.md` has the closing entry.
 - [ ] `$HARNESS_WORKSPACE/progress/current.md` is reset.
 - [ ] Declared post-run hooks (the `post_run` list in `harness.config.json`) ran after the close, or none were declared.
+- [ ] Every stage left its artifact (see the stages table in [workflow.md](./workflow.md)): intake entry, session file, verifier output, `impl_`/`review_` reports, dated history heading.
 
 ## Review Checklist
 

@@ -18,11 +18,15 @@ Operations:
   check                Cross-check the declared discovery block (skills, agents, MCP)
                        against disk, printing the resolved path of each present
                        skill and agent as a direct reference.
+  declare KIND NAME    Add a skill, MCP server, or agent to the `discovery` block
+                       of harness.config.json (json round-trip; rejects duplicates;
+                       validates against the schema when jsonschema is available).
 
 Usage:
   scripts/tools_discovery.py [--root PATH] [--skills-dir DIR ...] list [--json]
   scripts/tools_discovery.py [--root PATH] [--skills-dir DIR ...] find KEYWORD [--json]
   scripts/tools_discovery.py [--root PATH] [--skills-dir DIR ...] check
+  scripts/tools_discovery.py [--root PATH] declare <skill|mcp|agent> NAME [--dry-run]
 
 Skill roots resolve from --skills-dir (verbatim override), else the project-local
 roots (<root>/.agents/skills, .claude/skills, .github/skills) FIRST, then the
@@ -42,7 +46,8 @@ present is `ok` with its path, absent is `MISSING` and gates. The contract decla
 *names* (portable); `check` resolves and prints the *path* (machine-specific) as a
 direct reference — it is never persisted in the declaration.
 
-Exit codes: 0 ok, 1 a declared skill or agent is missing (check), 2 usage error.
+Exit codes: 0 ok, 1 a declared skill or agent is missing (check) or a declare
+error (missing config, duplicate, schema-invalid result), 2 usage error.
 """
 from __future__ import annotations
 
@@ -344,6 +349,80 @@ def cmd_check(args) -> int:
     return 0
 
 
+_DECLARE_KEYS = {"skill": "skills", "mcp": "mcp", "agent": "agents"}
+
+
+def _config_schema_path() -> Path:
+    """Self-locating schema path (works when --root points at a fixture)."""
+    return Path(__file__).resolve().parent.parent / "assets" / "schemas" / "harness.config.schema.json"
+
+
+def _validate_config(data: dict) -> str | None:
+    """Validate config data against the schema. None = ok or gracefully skipped."""
+    schema_path = _config_schema_path()
+    if not schema_path.is_file():
+        return None
+    try:
+        import jsonschema  # type: ignore
+    except ImportError:
+        print("NOTE: jsonschema not installed; skipping schema validation")
+        return None
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    errors = sorted(
+        jsonschema.Draft7Validator(schema).iter_errors(data), key=lambda e: e.path
+    )
+    if errors:
+        return "; ".join(e.message for e in errors)
+    return None
+
+
+def cmd_declare(args) -> int:
+    root = Path(args.root).resolve()
+    config_path = root / "harness.config.json"
+    if not config_path.is_file():
+        print(f"error: no harness.config.json under {root}", file=sys.stderr)
+        return 1
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+    except (ValueError, OSError) as exc:
+        print(f"error: cannot parse {config_path}: {exc}", file=sys.stderr)
+        return 1
+    name = args.name.strip()
+    if not name:
+        print("error: empty name", file=sys.stderr)
+        return 2
+    key = _DECLARE_KEYS[args.kind]
+    discovery = data.get("discovery")
+    if not isinstance(discovery, dict):
+        discovery = {"skills": [], "mcp": [], "agents": []}
+        data["discovery"] = discovery
+    entries = discovery.setdefault(key, [])
+    if name in entries:
+        print(f"error: {args.kind} '{name}' already declared in discovery.{key}",
+              file=sys.stderr)
+        return 1
+    entries.append(name)
+    problem = _validate_config(data)
+    if problem:
+        print(f"error: result would not validate against the schema: {problem}",
+              file=sys.stderr)
+        return 1
+    new_text = json.dumps(data, indent=2) + "\n"
+    if args.dry_run:
+        import difflib
+        old_text = config_path.read_text(encoding="utf-8")
+        diff = difflib.unified_diff(
+            old_text.splitlines(keepends=True), new_text.splitlines(keepends=True),
+            fromfile=str(config_path), tofile=f"{config_path} (declared)",
+        )
+        sys.stdout.writelines(diff)
+        print(f"dry-run: would declare {args.kind} '{name}' in discovery.{key}")
+        return 0
+    config_path.write_text(new_text, encoding="utf-8")
+    print(f"declared {args.kind} '{name}' in discovery.{key} of {config_path}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="List, find, and check Handyman skills and MCP declarations.")
@@ -364,6 +443,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_check = sub.add_parser("check", help="Check declared discovery against disk.")
     p_check.set_defaults(func=cmd_check)
+
+    p_declare = sub.add_parser(
+        "declare", help="Declare a skill, MCP server, or agent in harness.config.json.")
+    p_declare.add_argument("kind", choices=sorted(_DECLARE_KEYS))
+    p_declare.add_argument("name")
+    p_declare.add_argument("--dry-run", action="store_true",
+                           help="Preview the config change without writing.")
+    p_declare.set_defaults(func=cmd_declare)
 
     return parser
 

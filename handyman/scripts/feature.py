@@ -361,11 +361,16 @@ def cmd_done(args, workspace: Path, root: Path) -> int:
     today = args.date or date.today().isoformat()
     history = workspace / "progress" / "history.md"
     if history.is_file():
+        # Tools provenance: what was actually consulted (skills/agents/MCP),
+        # so future selection can be derived from real usage. Optional flag;
+        # omitted keeps the narrative placeholder.
+        tools = args.tools.strip() if args.tools else "..."
         entry = (
             f"\n## {today} - Feature {feature.get('id')}: {args.name}\n"
             f"- **Agent:** leader -> implementer -> reviewer\n"
             f"- **Plan:** ...\n"
             f"- **Changes:** ...\n"
+            f"- **Tools:** {tools}\n"
             f"- **Verification:** verifier exit 0\n"
             f"- **Review:** APPROVED -> backlog/review_{args.name}.md\n"
             f"- **Closure:** done\n"
@@ -411,6 +416,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_done.add_argument("name")
     p_done.add_argument("--verifier", default=None,
                         help="Verifier script (default: <root>/init.sh).")
+    p_done.add_argument("--tools", default=None,
+                        help="Tools provenance for the history entry, e.g. "
+                             "'skills: handyman, ponytail; agents: reviewer'.")
     p_done.add_argument("--date", default=None, help=argparse.SUPPRESS)
 
     p_log = sub.add_parser("log", help="Append a bullet to current.md's Log.")
