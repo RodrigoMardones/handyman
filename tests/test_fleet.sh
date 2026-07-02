@@ -494,11 +494,15 @@ HANDYMAN_ROOT="$FR" python3 "$FLEET" moc >/dev/null 2>&1
 NOHTML="no"; [ ! -f "$FR/index.html" ] && NOHTML="yes"
 HANDYMAN_ROOT="$FR" python3 "$FLEET" moc --html >/dev/null 2>&1; CODE=$?
 CONTENT="$(cat "$FR/index.html" 2>/dev/null)"
+# Self-contained means no external fetches: no URLs, no scripts, and any
+# <link> must be a data: URI (the shared favicon), never a remote asset.
+LINKBAD="$(printf '%s' "$CONTENT" | grep '<link' | grep -v 'href="data:image/')"
 if [ "$CODE" -eq 0 ] && [ "$NOHTML" = "yes" ] \
   && printf '%s' "$CONTENT" | grep -q "<!DOCTYPE html>" \
   && printf '%s' "$CONTENT" | grep -q "proj1" \
   && printf '%s' "$CONTENT" | grep -q ">BEHIND<" \
-  && ! printf '%s' "$CONTENT" | grep -qE "https?://|<script|<link"; then
+  && ! printf '%s' "$CONTENT" | grep -qE "https?://|<script" \
+  && [ -z "$LINKBAD" ]; then
   pass
 else
   fail "exit=$CODE nohtml=$NOHTML content=$(printf '%s' "$CONTENT" | head -5)"

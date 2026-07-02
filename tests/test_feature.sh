@@ -309,4 +309,46 @@ else
 fi
 rm -rf "$F18"
 
+# --- F19: unblock returns a blocked feature to pending -----------------------
+start_case "unblock: blocked feature returns to pending and blocked_reason is removed"
+F19="$(mktemp -d)"
+write_harness "$F19"
+python3 "$FEATURE" --root "$F19" block a --reason "waiting on api" >/dev/null 2>&1
+OUT="$(python3 "$FEATURE" --root "$F19" unblock a 2>&1)"; CODE=$?
+ST="$(status_of "$F19/.handyman/feature_list.json" a)"
+HASKEY="$(python3 -c "import json;d=json.load(open('$F19/.handyman/feature_list.json'));print('blocked_reason' in d['features'][0])")"
+if [ "$CODE" -eq 0 ] && [ "$ST" = "pending" ] && [ "$HASKEY" = "False" ] \
+  && printf '%s' "$OUT" | grep -q "unblocked feature 1 'a' (pending)"; then
+  pass
+else
+  fail "exit=$CODE status=$ST haskey=$HASKEY out=$OUT"
+fi
+rm -rf "$F19"
+
+# --- F20: unblock refuses a feature that is not blocked ----------------------
+start_case "unblock: fails on a pending feature and leaves state unchanged"
+F20="$(mktemp -d)"
+write_harness "$F20"
+OUT="$(python3 "$FEATURE" --root "$F20" unblock a 2>&1)"; CODE=$?
+ST="$(status_of "$F20/.handyman/feature_list.json" a)"
+if [ "$CODE" -ne 0 ] && [ "$ST" = "pending" ] \
+  && printf '%s' "$OUT" | grep -q "is not blocked"; then
+  pass
+else
+  fail "exit=$CODE status=$ST out=$OUT"
+fi
+rm -rf "$F20"
+
+# --- F21: unblock fails on an unknown feature name ----------------------------
+start_case "unblock: fails with exit 1 on an unknown name"
+F21="$(mktemp -d)"
+write_harness "$F21"
+OUT="$(python3 "$FEATURE" --root "$F21" unblock nope 2>&1)"; CODE=$?
+if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "not found"; then
+  pass
+else
+  fail "exit=$CODE out=$OUT"
+fi
+rm -rf "$F21"
+
 summary

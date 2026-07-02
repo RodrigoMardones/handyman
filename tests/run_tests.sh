@@ -30,6 +30,7 @@ run_suite bash "$SUITE_DIR/test_evals.sh"
 run_suite bash "$SUITE_DIR/test_preflight.sh"
 run_suite bash "$SUITE_DIR/test_metrics.sh"
 run_suite bash "$SUITE_DIR/test_fleet.sh"
+run_suite bash "$SUITE_DIR/test_workstation.sh"
 
 echo "=============================================="
 if [ "$FAILED" -eq 0 ]; then

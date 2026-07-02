@@ -10,6 +10,7 @@ Operations:
   start  Mark a feature in_progress, enforcing the single-in_progress
          invariant, and refresh progress/current.md.
   block  Mark a feature blocked and record the reason.
+  unblock  Return a blocked feature to pending and clear blocked_reason.
   done   Run the verifier; only on exit 0 mark the feature done, append a
          rich progress/history.md entry, and reset progress/current.md.
   log    Append a bullet to the Log section of progress/current.md.
@@ -20,6 +21,7 @@ Usage:
                      [--acceptance LINE]...
   scripts/feature.py [--root PATH] start NAME
   scripts/feature.py [--root PATH] block NAME --reason WHY
+  scripts/feature.py [--root PATH] unblock NAME
   scripts/feature.py [--root PATH] done NAME [--verifier PATH] [--date YYYY-MM-DD]
   scripts/feature.py [--root PATH] log LINE
   scripts/feature.py [--root PATH] next STEP
@@ -334,6 +336,22 @@ def cmd_block(args, workspace: Path) -> int:
     return 0
 
 
+def cmd_unblock(args, workspace: Path) -> int:
+    data, path = _load(workspace)
+    features = data.get("features", [])
+    feature = _find(features, args.name)
+    if feature is None:
+        return err(f"feature '{args.name}' not found")
+    if feature.get("status") != "blocked":
+        return err(f"feature '{args.name}' is not blocked "
+                   f"(status: {feature.get('status')})")
+    feature["status"] = "pending"
+    feature.pop("blocked_reason", None)
+    _save(path, data)
+    print(f"unblocked feature {feature.get('id')} '{args.name}' (pending)")
+    return 0
+
+
 def cmd_done(args, workspace: Path, root: Path) -> int:
     data, path = _load(workspace)
     features = data.get("features", [])
@@ -412,6 +430,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_block.add_argument("name")
     p_block.add_argument("--reason", required=True)
 
+    p_unblock = sub.add_parser("unblock",
+                               help="Return a blocked feature to pending.")
+    p_unblock.add_argument("name")
+
     p_done = sub.add_parser("done", help="Close a feature after the verifier.")
     p_done.add_argument("name")
     p_done.add_argument("--verifier", default=None,
@@ -444,6 +466,8 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_start(args, workspace, root)
         if args.command == "block":
             return cmd_block(args, workspace)
+        if args.command == "unblock":
+            return cmd_unblock(args, workspace)
         if args.command == "done":
             return cmd_done(args, workspace, root)
         if args.command == "log":

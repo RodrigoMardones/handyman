@@ -710,26 +710,78 @@ def build_fleet_moc(hroot: Path, snaps: list[dict]) -> str:
     return "\n".join(out).rstrip("\n") + "\n"
 
 
+# Design tokens (--hw-*): the single source for every color, spacing and type
+# value on both pages (this static export and the workstation panel). Dark
+# mode only reassigns variables; rules below consume tokens exclusively, so
+# the no-stray-hex test can hold "every hex lives on a --hw- line".
 _HTML_STYLE = """
-  :root { color-scheme: light dark; }
-  body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 72rem;
-         padding: 0 1rem; background: #ffffff; color: #1a1a1a; }
-  h1 { font-size: 1.4rem; }
-  .meta { color: #555; font-size: 0.85rem; }
-  table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-  th, td { text-align: left; padding: 0.45rem 0.7rem;
-           border-bottom: 1px solid #d0d0d0; font-size: 0.9rem; }
+  :root {
+    color-scheme: light dark;
+    --hw-bg: #ffffff;
+    --hw-surface: #f2f4f7;
+    --hw-fg: #1a1a1a;
+    --hw-muted: #555555;
+    --hw-border: #d0d0d0;
+    --hw-accent: #0a5dc2;
+    --hw-ok: #1a7f37;
+    --hw-warn: #9a6700;
+    --hw-danger: #b00020;
+    --hw-backdrop: rgba(0, 0, 0, 0.35);
+    --hw-space-1: 0.25rem;
+    --hw-space-2: 0.5rem;
+    --hw-space-3: 1rem;
+    --hw-space-4: 2rem;
+    --hw-text-s: 0.85rem;
+    --hw-text-m: 0.95rem;
+    --hw-text-l: 1.3rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --hw-bg: #16181d;
+      --hw-surface: #1f232b;
+      --hw-fg: #e6e6e6;
+      --hw-muted: #9aa0a6;
+      --hw-border: #3a3f47;
+      --hw-accent: #6cb2ff;
+      --hw-ok: #4ccf6a;
+      --hw-warn: #e3b341;
+      --hw-danger: #ff8a80;
+      --hw-backdrop: rgba(0, 0, 0, 0.55);
+    }
+  }
+  body { font-family: system-ui, sans-serif;
+         margin: var(--hw-space-4) auto; max-width: 72rem;
+         padding: 0 var(--hw-space-3);
+         background: var(--hw-bg); color: var(--hw-fg); }
+  h1 { font-size: var(--hw-text-l); }
+  a { color: var(--hw-accent); }
+  :focus-visible { outline: 2px solid var(--hw-accent); outline-offset: 1px; }
+  .meta { color: var(--hw-muted); font-size: var(--hw-text-s); }
+  table { border-collapse: collapse; width: 100%;
+          margin-top: var(--hw-space-3); }
+  th, td { text-align: left; padding: var(--hw-space-1) var(--hw-space-2);
+           border-bottom: 1px solid var(--hw-border);
+           font-size: var(--hw-text-m); }
   th { font-weight: 600; }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .drift { font-weight: 600; }
+  .badge { display: inline-block; border: 1px solid var(--hw-border);
+           border-radius: 3px; padding: 0 var(--hw-space-1);
+           background: var(--hw-surface); font-size: var(--hw-text-s);
+           font-weight: 600; }
+  .badge-ok { color: var(--hw-ok); }
+  .badge-warn { color: var(--hw-warn); }
+  .badge-danger { color: var(--hw-danger); }
+  .badge-muted { color: var(--hw-muted); }
   .error { font-style: italic; }
-  code { font-size: 0.85em; }
-  @media (prefers-color-scheme: dark) {
-    body { background: #16181d; color: #e6e6e6; }
-    .meta { color: #9aa0a6; }
-    th, td { border-bottom-color: #3a3f47; }
-  }
+  code { font-size: var(--hw-text-s); }
 """
+
+# Shared favicon: a 16x16 PNG data URI (solid accent square). PNG keeps the
+# pages free of URLs (an SVG data URI would drag in the xmlns), so the
+# no-external-assets contract of the static export still holds.
+_FAVICON = ("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGUlEQVR42mPg"
+            "ij30nxLMMGrAqAGjBgwXAwDjoSgfJZqanwAAAABJRU5ErkJggg==")
+_FAVICON_LINK = f'<link rel="icon" href="data:image/png;base64,{_FAVICON}">'
 
 
 def build_fleet_html(hroot: Path, snaps: list[dict]) -> str:
@@ -750,12 +802,15 @@ def build_fleet_html(hroot: Path, snaps: list[dict]) -> str:
         version = snap.get("version", {})
         drift = ("BEHIND" if version.get("behind") is True
                  else "OK" if version.get("behind") is False else "?")
+        drift_class = ("badge-warn" if version.get("behind") is True
+                       else "badge-ok" if version.get("behind") is False
+                       else "badge-muted")
         counts = snap["status_counts"]
         rows.append(
             "<tr>"
             f'<td title="{root}">{name}</td>'
             f'<td>{escape(str(version.get("installed") or "unsealed"))}</td>'
-            f'<td class="drift">{drift}</td>'
+            f'<td><span class="badge {drift_class}">{drift}</span></td>'
             f'<td class="num">{counts.get("pending", 0)}</td>'
             f'<td class="num">{counts.get("in_progress", 0)}</td>'
             f'<td class="num">{counts.get("done", 0)}</td>'
@@ -772,11 +827,13 @@ def build_fleet_html(hroot: Path, snaps: list[dict]) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Handyman Fleet</title>
+{_FAVICON_LINK}
 <style>{_HTML_STYLE}</style>
 </head>
 <body>
-<h1>Handyman Fleet</h1>
-<p class="meta">Generated by <code>scripts/fleet.py moc --html</code> on
+<h1>Handyman · Fleet</h1>
+<p class="meta">skill {escape(str(current_skill_version() or "unknown"))} ·
+generated by <code>scripts/fleet.py moc --html</code> on
 {date.today().isoformat()} · registry: <code>{escape(str(registry_path(hroot)))}</code></p>
 <table>
 <thead><tr><th>Project</th><th>Version</th><th>Drift</th><th>Pending</th>

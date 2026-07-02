@@ -629,6 +629,24 @@ def test_evals_reference() -> None:
     check("references/README.md lists evals.md", "evals.md" in ref_readme)
 
 
+def test_workstation_reference() -> None:
+    """UX plan E: workstation.md carries the panel design guidelines."""
+    doc = os.path.join(ROOT, "references", "workstation.md")
+    check("references/workstation.md exists", os.path.isfile(doc))
+    if os.path.isfile(doc):
+        with open(doc, encoding="utf-8") as fh:
+            body = fh.read()
+        for token in ("Panel Design Guidelines", "Design tokens", "--hw-",
+                      "Interaction contract", "Action Nomenclature",
+                      "#/harness/", "textContent", "state-first"):
+            check(f"workstation.md documents '{token}'", token in body)
+    with open(os.path.join(ROOT, "references", "README.md"),
+              encoding="utf-8") as fh:
+        ref_readme = fh.read()
+    check("references/README.md lists workstation.md",
+          "workstation.md" in ref_readme)
+
+
 def test_feature_request_tools_link() -> None:
     """Plan E: the feature-request Tools>skills ties to the declared discovery set."""
     with open(os.path.join(ROOT, "references", "templates.md"),

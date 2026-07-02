@@ -163,4 +163,4 @@ blocked -> pending
 blocked -> in_progress
 ```
 
-Avoid moving `done` backward unless the user explicitly reopens the feature and the history records why.
+The `blocked -> pending` transition runs through `scripts/feature.py unblock <name>`, which clears `blocked_reason` — never by hand-editing `feature_list.json`. Avoid moving `done` backward unless the user explicitly reopens the feature and the history records why.

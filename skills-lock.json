@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "brand-guidelines": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/brand-guidelines/SKILL.md",
+      "computedHash": "e48840db6ea772ceecdb68b4e50f8cc77e2534b7580aeaf4a6fe6ee7bd845d7d"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "4eabc66183767153e404b39d1b839b1c37f2d82d86f0a0d7e880a579d8d62336"
+    },
+    "handyman": {
+      "source": "rodrigomardones/handyman",
+      "sourceType": "github",
+      "skillPath": "handyman/SKILL.md",
+      "computedHash": "53a60a5e3619e9cb3ad47f62aa53b98ed473c13bbb8eb77687f4b92d1d982ab4"
+    },
+    "ponytail": {
+      "source": "dietrichgebert/ponytail",
+      "sourceType": "github",
+      "skillPath": "skills/ponytail/SKILL.md",
+      "computedHash": "4503a9dba2dca5836469a104c90e0c32ae9cb8bb97d02806e6fa06d15ceed56a"
+    }
+  }
+}

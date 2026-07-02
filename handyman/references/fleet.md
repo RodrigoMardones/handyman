@@ -87,6 +87,9 @@ exist. The operator `## Notes` section is preserved across regenerations
 (mirror of `scripts/index_md.py`). Open `$HOME/HANDYMAN` as an Obsidian vault
 to browse the fleet.
 
+The live, interactive counterpart of these read-only views is the workstation
+panel (`scripts/workstation.py serve`) — see [workstation.md](./workstation.md).
+
 ## Typical Loop
 
 ```bash
