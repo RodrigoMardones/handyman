@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/RodrigoMardones/handyman/assets/schemas/registry.schema.json",
+  "title": "Handyman fleet registry",
+  "description": "Machine-global list of harness project roots observed by scripts/fleet.py ($HANDYMAN_ROOT/registry.json). Records only project_root + registration date: every other fact is read live from each harness, so disk stays the single source of truth.",
+  "type": "object",
+  "required": ["version", "harnesses"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "enum": [1] },
+    "harnesses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["project_root", "registered"],
+        "additionalProperties": false,
+        "properties": {
+          "project_root": { "type": "string", "minLength": 1 },
+          "registered": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+        }
+      }
+    }
+  }
+}

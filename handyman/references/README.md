@@ -11,6 +11,7 @@ Progressive-loading references for the `handyman` skill. Read only the file need
 - `tools.md` - per-role tool restrictions, capability groups, per-platform syntax.
 - `discovery.md` - skill/MCP discovery: platform mechanism, the discovery config block, tools_discovery.py, deterministic vs semantic.
 - `evals.md` - trigger evaluation: the deterministic eval-set contract vs the stochastic measurement, evals.py, variance and held-out splits.
+- `fleet.md` - multi-harness observation: the $HANDYMAN_ROOT registry, fleet.py subcommands, health signals, the global fleet MOC.
 - `obsidian.md` - vault setup, plugins, frontmatter, tags, wikilinks.
 - `graphify.md` - knowledge-graph context layer: install, freshness, role queries.
 - `security.md` - untrusted content and indirect prompt-injection contract per role.
