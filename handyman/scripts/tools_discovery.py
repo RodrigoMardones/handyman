@@ -303,8 +303,17 @@ def cmd_check(args) -> int:
             print(f"skill {name}: ok -> {skill_path[name]}")
 
     undeclared = sorted(installed - set(declared_skills))
-    for name in undeclared:
-        print(f"NOTE: installed but not declared: {name}")
+    if getattr(args, "verbose", False):
+        for name in undeclared:
+            print(f"NOTE: installed but not declared: {name}")
+    elif len(undeclared) > 3:
+        # Summary keeps real signals visible (17 one-per-skill NOTEs buried
+        # the actionable lines in every preflight run).
+        print(f"NOTE: {len(undeclared)} installed skill(s) not declared under "
+              "discovery (run check --verbose to list)")
+    elif undeclared:
+        print(f"NOTE: {len(undeclared)} installed skill(s) not declared: "
+              + ", ".join(undeclared))
 
     declared_agents = discovery.get("agents") or []
     agent_path = {a["name"]: a["path"] for a in discover_agents(root)}
@@ -442,6 +451,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_find.set_defaults(func=cmd_find)
 
     p_check = sub.add_parser("check", help="Check declared discovery against disk.")
+    p_check.add_argument("--verbose", action="store_true",
+                         help="List every installed-but-undeclared skill "
+                              "instead of the one-line summary.")
     p_check.set_defaults(func=cmd_check)
 
     p_declare = sub.add_parser(

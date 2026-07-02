@@ -16,8 +16,9 @@ skill repo.
 - **Drift tolerant.** Harnesses of different `harness_version`s coexist; every
   missing field degrades to `null`/`NOTE`, never an exception. An unreadable
   root becomes an `UNREADABLE` signal, not a crash.
-- **No foreign verifier runs.** The fleet never executes another project's
-  `init.sh`; live verification stays future opt-in work.
+- **No foreign verifier runs by default.** The fleet only executes another
+  project's `init.sh` under the explicit `status --run-verifier` opt-in; the
+  default report never runs foreign code.
 
 ## Registry
 
@@ -51,9 +52,11 @@ Run from the skill repo: `python scripts/fleet.py <subcommand>`.
 | `unregister PATH` | remove a registered root | 0 / 1 |
 | `list [--json]` | show registered roots with live `project_name` | 0 |
 | `discover --scan DIR [--register] [--max-depth N]` | find harnesses under a tree (`harness.config.json` or `.handyman/`); prunes `node_modules`, hidden dirs | 0 / 1 |
-| `status [--json]` | per-harness live report + fleet aggregate | 0 always |
+| `status [--json] [--run-verifier] [--verifier-timeout S]` | per-harness live report + fleet aggregate; `--run-verifier` opt-in executes each harness's `init.sh` and reports `green` / `red` / `skipped` / `timeout` (output discarded, exit code observed, default timeout 300 s) | 0 always |
+| `timeline [--json] [--limit N]` | merged closure chronology: every harness's dated `history.md` headings plus pushed events, newest first | 0 always |
+| `heartbeat [--root R] [--feature F] [--date D]` | append one closure event to `$HANDYMAN_ROOT/events.jsonl`; without `--feature` it reports the newest `history.md` closure — a drop-in `post_run` hook | 0 / 1 |
 | `health [--strict] [--stale-days N] [--idle-days N] [--today D] [--json]` | derived signals per harness | 0; `--strict` 1 on signals |
-| `moc` | regenerate the global fleet MOC at `$HANDYMAN_ROOT/index.md` | 0 / 1 |
+| `moc [--html]` | regenerate the global fleet MOC at `$HANDYMAN_ROOT/index.md`; `--html` also writes a self-contained `index.html` (no external assets, textual BEHIND/OK labels, dark-mode aware) for sharing outside Obsidian | 0 / 1 |
 
 `status` composes existing primitives — `metrics.collect()` (counts,
 throughput, review verdicts, coverage), the live session from
@@ -93,15 +96,26 @@ python scripts/fleet.py health                                   # anything stuc
 python scripts/fleet.py moc                                      # refresh the vault view
 ```
 
+## Heartbeat as a post_run Hook
+
+Declaring the heartbeat in `harness.config.json` makes every feature closure
+push its event without any scan:
+
+```json
+"post_run": ["python3 handyman/scripts/fleet.py heartbeat --root ."]
+```
+
+That relative path works in the skill repo itself. Skill scripts are NOT
+scaffolded into target repos, so a target project must point at wherever the
+skill lives, e.g.
+`python3 ~/.agents/skills/handyman/scripts/fleet.py heartbeat --root .`
+(resolve with `tools_discovery.py list` if unsure). `feature.py done` treats a
+failing `post_run` step as a warning, so a missing fleet script never blocks a
+verified closure. `timeline` merges events and history, preferring history on
+(project, feature, date) collisions; event-only entries render as
+`(heartbeat)`.
+
 ## Future Work (deliberately out of scope)
 
-- **`post_run` heartbeat** — each feature closure appends an event to the
-  registry for a scan-free fleet timeline; deferred because skill scripts are
-  not scaffolded into target repos, so path resolution needs its own design.
-- **Opt-in live verification** — `status --run-verifier` executing each
-  project's `init.sh` on demand.
-- **Static HTML export** of the MOC for sharing outside Obsidian.
-- **Cross-project timeline** merging every `history.md`'s dated headings
-  (the data is already in `status --json`).
 - **Fleet upgrades** — orchestrating `upgrade_harness.py` over every harness
   flagged `BEHIND`.

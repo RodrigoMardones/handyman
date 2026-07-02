@@ -344,4 +344,165 @@ else
 fi
 rm -rf "$T"
 
+# --- FL17: timeline merges closures across harnesses, newest first ------------
+start_case "timeline merges dated closures from two harnesses in desc order"
+T="$(mktemp -d)"; FR="$T/fleetroot"; H1="$T/proj1"; H2="$T/proj2"; mkdir -p "$H1" "$H2"
+write_harness "$H1" "proj1" "1.0.0"
+write_harness "$H2" "proj2" "1.0.0"
+cat > "$H2/.handyman/progress/history.md" <<'EOF'
+---
+tags: [handyman/history]
+---
+# History
+
+## 2026-06-15 - Feature 7: newer_thing
+- **Closure:** done
+EOF
+HANDYMAN_ROOT="$FR" python3 "$FLEET" register "$H1" >/dev/null 2>&1
+HANDYMAN_ROOT="$FR" python3 "$FLEET" register "$H2" >/dev/null 2>&1
+OUT="$(HANDYMAN_ROOT="$FR" python3 "$FLEET" timeline 2>&1)"; CODE=$?
+FIRST="$(printf '%s\n' "$OUT" | sed -n '2p')"
+if [ "$CODE" -eq 0 ] \
+  && printf '%s' "$OUT" | grep -q "2 closure(s) across 2 readable" \
+  && printf '%s' "$FIRST" | grep -q "2026-06-15  proj2" \
+  && printf '%s' "$OUT" | grep -q "2026-06-01  proj1" \
+  && printf '%s' "$OUT" | grep -q "newer_thing (feature 7)"; then
+  pass
+else
+  fail "exit=$CODE first=$FIRST out=$OUT"
+fi
+rm -rf "$T"
+
+# --- FL18: timeline --limit and --json ----------------------------------------
+start_case "timeline --limit 1 --json returns only the newest entry"
+T="$(mktemp -d)"; FR="$T/fleetroot"; H1="$T/proj1"; H2="$T/proj2"; mkdir -p "$H1" "$H2"
+write_harness "$H1" "proj1" "1.0.0"
+write_harness "$H2" "proj2" "1.0.0"
+cat > "$H2/.handyman/progress/history.md" <<'EOF'
+---
+tags: [handyman/history]
+---
+# History
+
+## 2026-06-15 - Feature 7: newer_thing
+- **Closure:** done
+EOF
+HANDYMAN_ROOT="$FR" python3 "$FLEET" register "$H1" >/dev/null 2>&1
+HANDYMAN_ROOT="$FR" python3 "$FLEET" register "$H2" >/dev/null 2>&1
+OUT="$(HANDYMAN_ROOT="$FR" python3 "$FLEET" timeline --limit 1 --json 2>&1)"; CODE=$?
+OK="$(printf '%s' "$OUT" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+ok = d['total'] == 2 and len(d['entries']) == 1 \
+  and d['entries'][0]['feature'] == 'newer_thing' \
+  and d['entries'][0]['source'] == 'history'
+print('yes' if ok else 'no')
+" 2>/dev/null)"
+if [ "$CODE" -eq 0 ] && [ "$OK" = "yes" ]; then
+  pass
+else
+  fail "exit=$CODE ok=$OK out=$OUT"
+fi
+rm -rf "$T"
+
+# --- FL19: heartbeat appends events (explicit and derived from history) -------
+start_case "heartbeat writes events.jsonl; without --feature derives newest closure"
+T="$(mktemp -d)"; FR="$T/fleetroot"; H1="$T/proj1"; mkdir -p "$H1"
+write_harness "$H1" "proj1" "1.0.0"
+OUT1="$(HANDYMAN_ROOT="$FR" python3 "$FLEET" heartbeat --root "$H1" --feature custom_evt --date 2026-07-01 2>&1)"; C1=$?
+OUT2="$(HANDYMAN_ROOT="$FR" python3 "$FLEET" heartbeat --root "$H1" 2>&1)"; C2=$?
+OK="$(python3 -c "
+import json
+lines = [json.loads(l) for l in open('$FR/events.jsonl') if l.strip()]
+ok = len(lines) == 2 \
+  and lines[0]['feature'] == 'custom_evt' and lines[0]['date'] == '2026-07-01' \
+  and lines[1]['feature'] == 'alpha' and lines[1]['date'] == '2026-06-01' \
+  and lines[1]['project_name'] == 'proj1'
+print('yes' if ok else 'no')
+" 2>/dev/null)"
+if [ "$C1" -eq 0 ] && [ "$C2" -eq 0 ] && [ "$OK" = "yes" ]; then
+  pass
+else
+  fail "c1=$C1 c2=$C2 ok=$OK out1=$OUT1 out2=$OUT2"
+fi
+rm -rf "$T"
+
+# --- FL20: timeline merges events, history wins on collisions ------------------
+start_case "timeline dedups event/history collisions and shows event-only entries"
+T="$(mktemp -d)"; FR="$T/fleetroot"; H1="$T/proj1"; mkdir -p "$H1"
+write_harness "$H1" "proj1" "1.0.0"
+HANDYMAN_ROOT="$FR" python3 "$FLEET" register "$H1" >/dev/null 2>&1
+# Collision: same closure as history (alpha 2026-06-01). Event-only: hotfix.
+HANDYMAN_ROOT="$FR" python3 "$FLEET" heartbeat --root "$H1" >/dev/null 2>&1
+HANDYMAN_ROOT="$FR" python3 "$FLEET" heartbeat --root "$H1" --feature hotfix --date 2026-06-20 >/dev/null 2>&1
+OUT="$(HANDYMAN_ROOT="$FR" python3 "$FLEET" timeline 2>&1)"; CODE=$?
+ALPHAS="$(printf '%s\n' "$OUT" | grep -c "alpha")"
+if [ "$CODE" -eq 0 ] && [ "$ALPHAS" = "1" ] \
+  && printf '%s' "$OUT" | grep -q "hotfix (heartbeat)" \
+  && printf '%s' "$OUT" | grep -q "2 closure(s)"; then
+  pass
+else
+  fail "exit=$CODE alphas=$ALPHAS out=$OUT"
+fi
+rm -rf "$T"
+
+# --- FL21: --run-verifier reports green/red/skipped; default stays silent -----
+start_case "status --run-verifier reports green/red/skipped per harness"
+T="$(mktemp -d)"; FR="$T/fleetroot"
+G="$T/green"; R="$T/red"; S="$T/skip"; mkdir -p "$G" "$R" "$S"
+write_harness "$G" "green" "1.0.0"
+write_harness "$R" "red" "1.0.0"
+write_harness "$S" "skip" "1.0.0"
+printf '#!/bin/sh\nexit 0\n' > "$G/init.sh"; chmod +x "$G/init.sh"
+printf '#!/bin/sh\nexit 3\n' > "$R/init.sh"; chmod +x "$R/init.sh"
+for H in "$G" "$R" "$S"; do
+  HANDYMAN_ROOT="$FR" python3 "$FLEET" register "$H" >/dev/null 2>&1
+done
+OUT0="$(HANDYMAN_ROOT="$FR" python3 "$FLEET" status 2>&1)"
+OUT1="$(HANDYMAN_ROOT="$FR" python3 "$FLEET" status --run-verifier 2>&1)"; C1=$?
+if [ "$C1" -eq 0 ] \
+  && ! printf '%s' "$OUT0" | grep -q "verifier:" \
+  && printf '%s' "$OUT1" | grep -q "verifier: green (exit 0)" \
+  && printf '%s' "$OUT1" | grep -q "verifier: red (exit 3)" \
+  && printf '%s' "$OUT1" | grep -q "verifier: skipped"; then
+  pass
+else
+  fail "c1=$C1 out0-has-verifier?=$(printf '%s' "$OUT0" | grep -c 'verifier:') out1=$OUT1"
+fi
+rm -rf "$T"
+
+# --- FL22: a hanging verifier is reported as timeout, exit stays 0 -------------
+start_case "status --run-verifier reports timeout past --verifier-timeout"
+T="$(mktemp -d)"; FR="$T/fleetroot"; H1="$T/slow"; mkdir -p "$H1"
+write_harness "$H1" "slow" "1.0.0"
+printf '#!/bin/sh\nsleep 5\n' > "$H1/init.sh"; chmod +x "$H1/init.sh"
+HANDYMAN_ROOT="$FR" python3 "$FLEET" register "$H1" >/dev/null 2>&1
+OUT="$(HANDYMAN_ROOT="$FR" python3 "$FLEET" status --run-verifier --verifier-timeout 1 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "verifier: timeout"; then
+  pass
+else
+  fail "exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
+# --- FL23: moc --html writes a self-contained page; default writes none -------
+start_case "moc --html emits index.html with fleet rows and no external assets"
+T="$(mktemp -d)"; FR="$T/fleetroot"; H1="$T/proj1"; mkdir -p "$H1"
+write_harness "$H1" "proj1" "1.0.0"
+HANDYMAN_ROOT="$FR" python3 "$FLEET" register "$H1" >/dev/null 2>&1
+HANDYMAN_ROOT="$FR" python3 "$FLEET" moc >/dev/null 2>&1
+NOHTML="no"; [ ! -f "$FR/index.html" ] && NOHTML="yes"
+HANDYMAN_ROOT="$FR" python3 "$FLEET" moc --html >/dev/null 2>&1; CODE=$?
+CONTENT="$(cat "$FR/index.html" 2>/dev/null)"
+if [ "$CODE" -eq 0 ] && [ "$NOHTML" = "yes" ] \
+  && printf '%s' "$CONTENT" | grep -q "<!DOCTYPE html>" \
+  && printf '%s' "$CONTENT" | grep -q "proj1" \
+  && printf '%s' "$CONTENT" | grep -q ">BEHIND<" \
+  && ! printf '%s' "$CONTENT" | grep -qE "https?://|<script|<link"; then
+  pass
+else
+  fail "exit=$CODE nohtml=$NOHTML content=$(printf '%s' "$CONTENT" | head -5)"
+fi
+rm -rf "$T"
+
 summary

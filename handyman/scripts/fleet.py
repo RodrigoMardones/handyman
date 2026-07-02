@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -317,8 +318,48 @@ def _session_line(session: dict | None) -> str:
             f"updated {session.get('updated') or '?'})")
 
 
-def cmd_status(hroot: Path, as_json: bool) -> int:
+def run_verifier(root: Path, timeout_s: int) -> dict:
+    """Opt-in live verification: execute the harness's own init.sh.
+
+    Only the exit code is observed (output discarded); a missing or
+    non-executable verifier is 'skipped'. Never raises.
+    """
+    init = root / "init.sh"
+    if not init.is_file() or not os.access(init, os.X_OK):
+        return {"result": "skipped", "exit_code": None}
+    try:
+        proc = subprocess.run(
+            [str(init)], cwd=str(root),
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            timeout=timeout_s,
+        )
+    except subprocess.TimeoutExpired:
+        return {"result": "timeout", "exit_code": None}
+    except OSError:
+        return {"result": "skipped", "exit_code": None}
+    result = "green" if proc.returncode == 0 else "red"
+    return {"result": result, "exit_code": proc.returncode}
+
+
+def _verifier_line(verifier: dict) -> str:
+    result = verifier.get("result")
+    if result == "green":
+        return "green (exit 0)"
+    if result == "red":
+        return f"red (exit {verifier.get('exit_code')})"
+    if result == "timeout":
+        return "timeout"
+    return "skipped (no executable init.sh)"
+
+
+def cmd_status(hroot: Path, as_json: bool, verify: bool = False,
+               verifier_timeout: int = 300) -> int:
     snaps, _registry, load_error = _snapshots(hroot)
+    if verify:
+        for snap in snaps:
+            if not snap.get("error"):
+                snap["verifier"] = run_verifier(
+                    Path(str(snap["project_root"])), verifier_timeout)
     fleet_counts = {status: 0 for status in STATUSES}
     unreadable = 0
     for snap in snaps:
@@ -353,6 +394,8 @@ def cmd_status(hroot: Path, as_json: bool) -> int:
         print(f"    status: {_counts_line(snap['status_counts'])}")
         print(f"    session: {_session_line(snap['session'])}")
         print(f"    last closure: {snap['last_closure'] or 'none'}")
+        if "verifier" in snap:
+            print(f"    verifier: {_verifier_line(snap['verifier'])}")
     print(f"--> fleet: harnesses={fleet['harnesses']} "
           f"unreadable={fleet['unreadable']} {_counts_line(fleet_counts)}")
     print("==> fleet status: read-only report complete (exit 0)")
@@ -466,6 +509,142 @@ def cmd_health(hroot: Path, as_json: bool, strict: bool, stale_days: int,
     return exit_code
 
 
+# --- heartbeat + timeline ------------------------------------------------------
+
+def events_path(hroot: Path) -> Path:
+    return hroot / "events.jsonl"
+
+
+def load_events(hroot: Path) -> list[dict]:
+    """Pushed closure events, one JSON object per line; bad lines are skipped."""
+    path = events_path(hroot)
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    events = []
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(event, dict) and event.get("project_root") \
+                and event.get("feature") and event.get("date"):
+            events.append(event)
+    return events
+
+
+def cmd_heartbeat(hroot: Path, root_str: str, feature: str | None,
+                  date_str: str | None) -> int:
+    """Append one closure event to $HANDYMAN_ROOT/events.jsonl.
+
+    Without --feature, the newest dated heading of progress/history.md is
+    reported — exactly the entry `feature.py done` just appended, which makes
+    this command a drop-in `post_run` hook.
+    """
+    root = Path(root_str).expanduser().resolve()
+    if not root.is_dir():
+        return err(f"root is not a directory: {root}")
+    workspace = resolve_workspace(root)
+    stamp = date_str
+    if feature is None:
+        closures = history_closures(workspace)
+        if not closures:
+            return err(f"no dated closures in {workspace}/progress/history.md "
+                       "and no --feature given")
+        latest = closures[-1]  # history.md is append-only
+        feature = latest["name"]
+        stamp = stamp or latest["date"]
+    event = {
+        "project_root": str(root),
+        "project_name": _project_name(root),
+        "feature": feature,
+        "date": stamp or date.today().isoformat(),
+    }
+    try:
+        hroot.mkdir(parents=True, exist_ok=True)
+        with events_path(hroot).open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(event, ensure_ascii=False) + "\n")
+    except OSError as exc:
+        return err(str(exc))
+    print(f"heartbeat recorded: {event['project_name']} "
+          f"{event['feature']} ({event['date']}) -> {events_path(hroot)}")
+    return 0
+
+
+def fleet_timeline(hroot: Path, snaps: list[dict]) -> list[dict]:
+    """Dated closures from every readable harness plus pushed events,
+    newest first. History wins on (project_root, feature, date) collisions."""
+    entries: list[dict] = []
+    seen: set[tuple] = set()
+    for snap in snaps:
+        if snap.get("error"):
+            continue
+        workspace = Path(str(snap.get("workspace", "")))
+        for closure in history_closures(workspace):
+            key = (snap["project_root"], closure["name"], closure["date"])
+            seen.add(key)
+            entries.append({
+                "date": closure["date"],
+                "project_name": snap["project_name"],
+                "project_root": snap["project_root"],
+                "feature": closure["name"],
+                "feature_id": closure["id"],
+                "source": "history",
+            })
+    for event in load_events(hroot):
+        key = (event["project_root"], event["feature"], event["date"])
+        if key in seen:
+            continue
+        seen.add(key)
+        entries.append({
+            "date": event["date"],
+            "project_name": event.get("project_name")
+            or Path(event["project_root"]).name,
+            "project_root": event["project_root"],
+            "feature": event["feature"],
+            "feature_id": None,
+            "source": "event",
+        })
+    entries.sort(
+        key=lambda e: (e["date"], e["project_name"], e["feature_id"] or 0),
+        reverse=True,
+    )
+    return entries
+
+
+def cmd_timeline(hroot: Path, as_json: bool, limit: int) -> int:
+    snaps, _registry, load_error = _snapshots(hroot)
+    entries = fleet_timeline(hroot, snaps)
+    total = len(entries)
+    if limit > 0:
+        entries = entries[:limit]
+    if as_json:
+        print(json.dumps({
+            "registry": str(registry_path(hroot)),
+            "registry_error": load_error,
+            "total": total,
+            "entries": entries,
+        }, indent=2, ensure_ascii=False))
+        return 0
+    if load_error:
+        print(f"NOTE: {load_error}")
+    readable = sum(1 for snap in snaps if not snap.get("error"))
+    print(f"==> fleet timeline: {total} closure(s) across "
+          f"{readable} readable harness(es)")
+    if not entries:
+        print("    (no dated closures found)")
+    for entry in entries:
+        origin = (f"feature {entry['feature_id']}"
+                  if entry["feature_id"] is not None else "heartbeat")
+        print(f"    {entry['date']}  {entry['project_name']:<16} "
+              f"{entry['feature']} ({origin})")
+    print("==> fleet timeline: read-only report complete (exit 0)")
+    return 0
+
+
 # --- moc ---------------------------------------------------------------------
 
 def _moc_links(snap: dict) -> str:
@@ -531,7 +710,88 @@ def build_fleet_moc(hroot: Path, snaps: list[dict]) -> str:
     return "\n".join(out).rstrip("\n") + "\n"
 
 
-def cmd_moc(hroot: Path) -> int:
+_HTML_STYLE = """
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 72rem;
+         padding: 0 1rem; background: #ffffff; color: #1a1a1a; }
+  h1 { font-size: 1.4rem; }
+  .meta { color: #555; font-size: 0.85rem; }
+  table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+  th, td { text-align: left; padding: 0.45rem 0.7rem;
+           border-bottom: 1px solid #d0d0d0; font-size: 0.9rem; }
+  th { font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .drift { font-weight: 600; }
+  .error { font-style: italic; }
+  code { font-size: 0.85em; }
+  @media (prefers-color-scheme: dark) {
+    body { background: #16181d; color: #e6e6e6; }
+    .meta { color: #9aa0a6; }
+    th, td { border-bottom-color: #3a3f47; }
+  }
+"""
+
+
+def build_fleet_html(hroot: Path, snaps: list[dict]) -> str:
+    """Self-contained static page: one table row per harness, no external
+    assets, textual BEHIND/OK labels (never color-only semantics)."""
+    from html import escape
+
+    rows: list[str] = []
+    for snap in snaps:
+        name = escape(str(snap["project_name"]))
+        root = escape(str(snap["project_root"]))
+        if snap.get("error"):
+            rows.append(
+                f'<tr><td>{name}</td>'
+                f'<td colspan="8" class="error">ERROR: '
+                f'{escape(str(snap["error"]))} — <code>{root}</code></td></tr>')
+            continue
+        version = snap.get("version", {})
+        drift = ("BEHIND" if version.get("behind") is True
+                 else "OK" if version.get("behind") is False else "?")
+        counts = snap["status_counts"]
+        rows.append(
+            "<tr>"
+            f'<td title="{root}">{name}</td>'
+            f'<td>{escape(str(version.get("installed") or "unsealed"))}</td>'
+            f'<td class="drift">{drift}</td>'
+            f'<td class="num">{counts.get("pending", 0)}</td>'
+            f'<td class="num">{counts.get("in_progress", 0)}</td>'
+            f'<td class="num">{counts.get("done", 0)}</td>'
+            f'<td class="num">{counts.get("blocked", 0)}</td>'
+            f'<td>{escape(_session_line(snap.get("session")))}</td>'
+            f'<td>{escape(str(snap.get("last_closure") or "none"))}</td>'
+            "</tr>")
+    if not rows:
+        rows.append('<tr><td colspan="9" class="error">'
+                    "no harnesses registered</td></tr>")
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handyman Fleet</title>
+<style>{_HTML_STYLE}</style>
+</head>
+<body>
+<h1>Handyman Fleet</h1>
+<p class="meta">Generated by <code>scripts/fleet.py moc --html</code> on
+{date.today().isoformat()} · registry: <code>{escape(str(registry_path(hroot)))}</code></p>
+<table>
+<thead><tr><th>Project</th><th>Version</th><th>Drift</th><th>Pending</th>
+<th>In progress</th><th>Done</th><th>Blocked</th><th>Session</th>
+<th>Last closure</th></tr></thead>
+<tbody>
+{chr(10).join(rows)}
+</tbody>
+</table>
+</body>
+</html>
+"""
+
+
+def cmd_moc(hroot: Path, html: bool = False) -> int:
     snaps, _registry, load_error = _snapshots(hroot)
     if load_error:
         print(f"NOTE: {load_error}")
@@ -542,6 +802,13 @@ def cmd_moc(hroot: Path) -> int:
     except (ValueError, OSError) as exc:
         return err(str(exc))
     print(f"regenerated {index_path}")
+    if html:
+        html_path = hroot / "index.html"
+        try:
+            html_path.write_text(build_fleet_html(hroot, snaps), encoding="utf-8")
+        except (ValueError, OSError) as exc:
+            return err(str(exc))
+        print(f"regenerated {html_path}")
     return 0
 
 
@@ -578,6 +845,12 @@ def main(argv: list[str] | None = None) -> int:
 
     p_status = sub.add_parser("status", help="Live fleet report (always exit 0).")
     p_status.add_argument("--json", action="store_true")
+    p_status.add_argument("--run-verifier", action="store_true",
+                          help="Opt-in: execute each harness's init.sh and "
+                               "report green/red/skipped/timeout.")
+    p_status.add_argument("--verifier-timeout", type=int, default=300,
+                          help="Seconds before a running verifier is reported "
+                               "as timeout (default 300).")
 
     p_health = sub.add_parser("health", help="Derived health signals.")
     p_health.add_argument("--json", action="store_true")
@@ -588,7 +861,25 @@ def main(argv: list[str] | None = None) -> int:
     p_health.add_argument("--today", default=None,
                           help="Override today for deterministic runs.")
 
-    sub.add_parser("moc", help="Regenerate the global fleet MOC index.md.")
+    p_heartbeat = sub.add_parser(
+        "heartbeat", help="Append a closure event (post_run hook).")
+    p_heartbeat.add_argument("--root", default=".",
+                             help="Harness project root (default: cwd).")
+    p_heartbeat.add_argument("--feature", default=None,
+                             help="Feature name (default: newest history closure).")
+    p_heartbeat.add_argument("--date", default=None,
+                             help="Event date YYYY-MM-DD (default: closure date "
+                                  "or today).")
+
+    p_timeline = sub.add_parser("timeline",
+                                help="Merged closure chronology across the fleet.")
+    p_timeline.add_argument("--json", action="store_true")
+    p_timeline.add_argument("--limit", type=int, default=0,
+                            help="Show only the newest N entries (0 = all).")
+
+    p_moc = sub.add_parser("moc", help="Regenerate the global fleet MOC index.md.")
+    p_moc.add_argument("--html", action="store_true",
+                       help="Also write a self-contained index.html.")
 
     args = parser.parse_args(argv)
     hroot = handyman_root(args.handyman_root)
@@ -603,12 +894,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "discover":
         return cmd_discover(hroot, args.scan, args.register, args.max_depth, stamp)
     if args.command == "status":
-        return cmd_status(hroot, args.json)
+        return cmd_status(hroot, args.json, args.run_verifier,
+                          args.verifier_timeout)
     if args.command == "health":
         return cmd_health(hroot, args.json, args.strict, args.stale_days,
                           args.idle_days, args.today)
+    if args.command == "heartbeat":
+        return cmd_heartbeat(hroot, args.root, args.feature, args.date)
+    if args.command == "timeline":
+        return cmd_timeline(hroot, args.json, args.limit)
     if args.command == "moc":
-        return cmd_moc(hroot)
+        return cmd_moc(hroot, args.html)
     return 2
 
 

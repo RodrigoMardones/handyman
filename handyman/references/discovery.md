@@ -113,6 +113,14 @@ a declared agent is checked as reliably as a skill: `check` reports it as
 file that is installed but not declared. This is the honest difference from MCP,
 whose availability is host-defined and therefore only a `NOTE`.
 
+**Undeclared-skill noise is summarized.** Installed-but-undeclared *skills* are
+informational, and on a machine with many global skills a one-NOTE-per-skill
+report buries the actionable lines (MISSING, host-provided MCP). `check`
+therefore prints a single summary NOTE with the count when more than three are
+undeclared (naming them inline at three or fewer); `check --verbose` restores
+the full one-per-skill listing. Declared-but-missing entries are never
+summarized — they stay individual and gating.
+
 ## The non-blocking advisory
 
 `init.sh` carries a `check_tools_discovery()` advisory (alongside the graphify,

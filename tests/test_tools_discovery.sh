@@ -267,4 +267,39 @@ else
 fi
 rm -rf "$T"
 
+# --- T17: >3 undeclared skills collapse to one summary NOTE; --verbose lists --
+start_case "check summarizes many undeclared skills; --verbose expands them"
+T="$(mktemp -d)"; write_skills "$T/skills"
+for extra in gamma delta epsilon; do
+  mkdir -p "$T/skills/$extra"
+  printf -- '---\nname: %s\ndescription: Extra fixture skill.\n---\n' "$extra" \
+    > "$T/skills/$extra/SKILL.md"
+done
+write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":[]}'
+OUT1="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; C1=$?
+OUT2="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check --verbose 2>&1)"; C2=$?
+if [ "$C1" -eq 0 ] && [ "$C2" -eq 0 ] \
+  && printf '%s' "$OUT1" | grep -q "NOTE: 4 installed skill(s) not declared under discovery" \
+  && ! printf '%s' "$OUT1" | grep -q "installed but not declared: beta" \
+  && printf '%s' "$OUT2" | grep -q "installed but not declared: beta" \
+  && printf '%s' "$OUT2" | grep -q "installed but not declared: epsilon"; then
+  pass
+else
+  fail "c1=$C1 c2=$C2 out1=$OUT1 out2=$OUT2"
+fi
+rm -rf "$T"
+
+# --- T18: <=3 undeclared skills are named inline in the summary NOTE ----------
+start_case "check names up to three undeclared skills inline"
+T="$(mktemp -d)"; write_skills "$T/skills"
+write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":[]}'
+OUT="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] \
+  && printf '%s' "$OUT" | grep -q "NOTE: 1 installed skill(s) not declared: beta"; then
+  pass
+else
+  fail "exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
 summary
