@@ -61,22 +61,87 @@ The rules below are the contract any panel change keeps.
 Every color, spacing and type value lives once as a `--hw-*` variable in the
 `:root` block of `_HTML_STYLE` (`scripts/fleet.py`), shared by the live panel
 and the static `moc --html` export; dark mode only reassigns variables. The
-suite holds the invariant: every hex value sits on a `--hw-` definition line
-(no stray colors), on both pages.
+values are the v2 "digital workshop" palette
+(`docs/analisis-ux-ui-workstation-2.md` §6.1): graphite surfaces, steel
+neutrals, a workshop-amber accent (also the SVG favicon square) and
+temperature-coded semantics — warm means attention, cool means information.
+The suite holds two invariants on both pages: every hex value sits on a
+`--hw-` definition line (no stray colors), and every `border-radius`
+consumes a `--hw-radius-*` token (no px literals).
 
-| Token | Role | Light / dark | Why |
+Contrast ratios come from the WCAG 2.x relative-luminance formula; AA asks
+4.5:1 for normal text and 3:1 for non-text UI (1.4.11). "Tint" is the badge
+background, mixed as `color-mix(in srgb, var(--hw-X) 15%, var(--hw-bg))` —
+a deterministic srgb interpolation, so the effective color is calculable
+and stays audited.
+
+| Token | Role | Light / dark | Contrast AA (light / dark) |
 |---|---|---|---|
-| `--hw-bg`, `--hw-surface` | page and raised surfaces (dialog, badges) | `#ffffff` `#f2f4f7` / `#16181d` `#1f232b` | one background pair themes both modes |
-| `--hw-fg`, `--hw-muted` | text and secondary text | `#1a1a1a` `#555555` / `#e6e6e6` `#9aa0a6` | two text levels, no ad-hoc grays |
-| `--hw-border` | rules and controls | `#d0d0d0` / `#3a3f47` | one border everywhere |
-| `--hw-accent` | links, focus, identity (favicon) | `#0a5dc2` / `#6cb2ff` | a single brand accent |
-| `--hw-ok`, `--hw-warn`, `--hw-danger` | semantic states | `#1a7f37` `#9a6700` `#b00020` / `#4ccf6a` `#e3b341` `#ff8a80` | color is a secondary cue on textual badges |
-| `--hw-space-1..4` | spacing scale | 0.25 / 0.5 / 1 / 2 rem | four steps replace ad-hoc values |
-| `--hw-text-s/m/l` | type scale | 0.85 / 0.95 / 1.3 rem | meta, body, wordmark |
+| `--hw-bg`, `--hw-surface` | page and raised surfaces (dialog, badges) | `#F7F8FA` `#ECEEF2` / `#16181D` `#1E222A` | fg on bg 15.71 / 14.60 · fg on surface 14.37 / 13.10 |
+| `--hw-fg`, `--hw-muted` | text and secondary text | `#1B1E24` `#50565F` / `#E7E9EC` `#9AA3AF` | muted on bg 6.96 / 6.96 · on surface 6.37 / 6.25 |
+| `--hw-border` | decorative rules (row separators) | `#C4CAD3` / `#3B424C` | 1.55 / 1.75 vs bg — deliberately sub-3:1, never a control boundary |
+| `--hw-border-strong` | control borders (buttons, inputs) | `#6F7885` / `#727D8C` | 4.20 / 4.25 vs bg (>= 3:1, WCAG 1.4.11) |
+| `--hw-accent` | links, focus, nav, wordmark, favicon | `#8A5300` / `#E8A33D` | on bg 5.96 / 8.23 · on surface 5.45 / 7.39 |
+| `--hw-ok` | semantic green | `#156C2C` / `#57C46F` | on surface 5.63 / 7.23 · on tint 4.93 / 6.15 |
+| `--hw-warn` | semantic amber-ochre (warm) | `#7A5900` / `#E0B94F` | on surface 5.55 / 8.52 · on tint 4.89 / 7.04 |
+| `--hw-danger` | semantic red (warm) | `#B3261E` / `#F2857D` | on surface 5.63 / 6.40 · on tint 4.80 / 5.61 |
+| `--hw-info` | semantic steel blue (cool) | `#2A5DA8` / `#82AEE8` | on surface 5.60 / 6.96 · on tint 4.93 / 5.97 |
+| `--hw-space-1..5` | spacing scale | 0.25 / 0.5 / 1 / 2 / 3 rem | — |
+| `--hw-text-xs/s/m/l/xl` | type scale (eyebrow, meta, body, section, wordmark) | 0.75 / 0.875 / 1 / 1.25 / 1.5 rem | — |
+| `--hw-radius-s/m` | radii (badges, buttons / cards, dialog) | 3 / 6 px | — |
+
+The worst pair in the whole palette is `danger` on its tint in light mode
+(4.80:1), still clear of the AA floor. `--hw-accent` and `--hw-warn` share
+the amber family by design; the two are separated by context and shape, not
+hue — warn lives only inside `.badge` text, accent never does.
+
+The five type steps map one-to-one to the panel's five real hierarchy
+levels: `--hw-text-xs` for eyebrows (the uppercase section `h2`, `.tl-date`),
+`--hw-text-s` for meta, badges and buttons, `--hw-text-m` for body and
+cells, `--hw-text-l` for section titles and the detail pagetitle, and
+`--hw-text-xl` for the view `h1` / wordmark. Radii pair the same way:
+`--hw-radius-s` on badges and buttons, `--hw-radius-m` on the dialog.
 
 Semantic states (drift, health signals, verifier results, queue statuses)
-render as `.badge` elements: the text is the primary encoding and the token
-color a secondary cue — never color-only.
+render as `.badge` elements: the text is the primary encoding, the token
+color a secondary cue — never color-only — and each severity carries its
+15 % `color-mix` tinted background.
+
+### Theme
+
+The panel offers a manual light/dark/system theme
+(`docs/analisis-ux-ui-workstation-2.md` §6.4), layered **on top of**
+`prefers-color-scheme` — never replacing it:
+
+```
+:root { /* light tokens */ }
+:root[data-theme="dark"] { /* dark tokens */ }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { /* dark tokens */ }
+}
+```
+
+The contract any theme change keeps:
+
+- **Single-sourced dark block**: the dark reassignments live once as a
+  Python string (`_DARK_TOKENS` in `scripts/fleet.py`) interpolated under
+  both selectors, so the manual and the OS-preference layers cannot drift.
+- **Versioned storage key**: `hw-theme:1` holds only `light` or `dark`; any
+  other value (including absence) means *system* and is ignored. The
+  `select#theme` control in the nav writes the key and the `data-theme`
+  attribute; choosing *system* removes both, handing control back to the
+  media query.
+- **Anti-flash**: an inline script at the top of `<head>`, before the
+  stylesheet, applies the stored value to
+  `document.documentElement.dataset.theme` ahead of first paint.
+- **DOM-safe**: the stored value is compared against the whitelist and
+  assigned as a `data-*` attribute only — never interpreted as markup.
+- **Browser chrome**: two `<meta name="theme-color">` tags, scoped by
+  `media`, mirror `--hw-bg` per scheme; their values derive from the
+  stylesheet itself and carry a `data-hw-token` annotation so the
+  no-stray-hex invariant stays greppable.
+- The static `moc --html` export inherits the `[data-theme]` selectors for
+  free by sharing `_HTML_STYLE` but ships **no toggle** (out of scope, §8).
 
 ### Interaction contract
 

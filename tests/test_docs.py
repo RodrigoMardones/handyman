@@ -630,7 +630,8 @@ def test_evals_reference() -> None:
 
 
 def test_workstation_reference() -> None:
-    """UX plan E: workstation.md carries the panel design guidelines."""
+    """UX plans E and F: workstation.md carries the panel design guidelines
+    and the token table ships the palette-v2 entries with a contrast column."""
     doc = os.path.join(ROOT, "references", "workstation.md")
     check("references/workstation.md exists", os.path.isfile(doc))
     if os.path.isfile(doc):
@@ -640,6 +641,18 @@ def test_workstation_reference() -> None:
                       "Interaction contract", "Action Nomenclature",
                       "#/harness/", "textContent", "state-first"):
             check(f"workstation.md documents '{token}'", token in body)
+        # Plan F (feature 86): palette-v2 tokens present in the table, and the
+        # table header carries the computed WCAG-AA contrast-ratio column.
+        for token in ("--hw-info", "--hw-border-strong", "--hw-text-xs",
+                      "--hw-text-xl", "--hw-space-1..5", "--hw-radius-s/m",
+                      "color-mix"):
+            check(f"workstation.md token table carries '{token}'",
+                  token in body)
+        check("workstation.md token table has a contrast column",
+              re.search(r"^\| Token \|.*\| Contrast[^|]*\|$",
+                        body, re.MULTILINE) is not None)
+        check("workstation.md contrast column carries computed AA ratios",
+              "4.80" in body and "15.71" in body)
     with open(os.path.join(ROOT, "references", "README.md"),
               encoding="utf-8") as fh:
         ref_readme = fh.read()
@@ -714,6 +727,7 @@ def main() -> int:
     test_preflight_advisory()
     test_discovery_reference()
     test_evals_reference()
+    test_workstation_reference()
     test_feature_request_tools_link()
     test_description_gate()
     test_token_budgets()

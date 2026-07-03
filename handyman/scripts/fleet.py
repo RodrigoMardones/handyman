@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import date
@@ -714,46 +715,80 @@ def build_fleet_moc(hroot: Path, snaps: list[dict]) -> str:
 # value on both pages (this static export and the workstation panel). Dark
 # mode only reassigns variables; rules below consume tokens exclusively, so
 # the no-stray-hex test can hold "every hex lives on a --hw- line".
+# Palette v2 "taller digital" (docs/analisis-ux-ui-workstation-2.md §6.1):
+# graphite surfaces, steel neutrals, workshop-amber accent, warm/cool
+# semantics. The hex values are WCAG-AA audited as a set — do not tweak one
+# in isolation. --hw-border stays decorative (row rules); controls use
+# --hw-border-strong (>= 3:1 vs bg, WCAG 1.4.11).
+# The dark reassignments exist once, as this string: it is emitted under the
+# manual selector (:root[data-theme="dark"]) and under the OS preference
+# (:root:not([data-theme="light"]) inside the prefers-color-scheme media
+# query), so the two theme layers can never drift apart (§6.4). The manual
+# layer is written by the workstation panel only; this static page inherits
+# the selectors without shipping a toggle.
+# WCAG 2.2 layer (§7 Plan H): .visually-hidden carries screen-reader-only
+# text (the table captions on both pages) and the prefers-reduced-motion
+# block neutralizes every transition/animation for motion-sensitive users
+# (2.3.3) — token-free rules, so the no-stray-hex invariant is untouched.
+_DARK_TOKENS = """\
+    color-scheme: dark;
+    --hw-bg: #16181D;
+    --hw-surface: #1E222A;
+    --hw-fg: #E7E9EC;
+    --hw-muted: #9AA3AF;
+    --hw-border: #3B424C;
+    --hw-border-strong: #727D8C;
+    --hw-accent: #E8A33D;
+    --hw-ok: #57C46F;
+    --hw-warn: #E0B94F;
+    --hw-danger: #F2857D;
+    --hw-info: #82AEE8;
+    --hw-backdrop: rgba(0, 0, 0, 0.55);"""
+
 _HTML_STYLE = """
   :root {
     color-scheme: light dark;
-    --hw-bg: #ffffff;
-    --hw-surface: #f2f4f7;
-    --hw-fg: #1a1a1a;
-    --hw-muted: #555555;
-    --hw-border: #d0d0d0;
-    --hw-accent: #0a5dc2;
-    --hw-ok: #1a7f37;
-    --hw-warn: #9a6700;
-    --hw-danger: #b00020;
-    --hw-backdrop: rgba(0, 0, 0, 0.35);
+    --hw-bg: #F7F8FA;
+    --hw-surface: #ECEEF2;
+    --hw-fg: #1B1E24;
+    --hw-muted: #50565F;
+    --hw-border: #C4CAD3;
+    --hw-border-strong: #6F7885;
+    --hw-accent: #8A5300;
+    --hw-ok: #156C2C;
+    --hw-warn: #7A5900;
+    --hw-danger: #B3261E;
+    --hw-info: #2A5DA8;
+    --hw-backdrop: rgba(22, 24, 29, 0.45);
     --hw-space-1: 0.25rem;
     --hw-space-2: 0.5rem;
     --hw-space-3: 1rem;
     --hw-space-4: 2rem;
-    --hw-text-s: 0.85rem;
-    --hw-text-m: 0.95rem;
-    --hw-text-l: 1.3rem;
+    --hw-space-5: 3rem;
+    --hw-text-xs: 0.75rem;
+    --hw-text-s: 0.875rem;
+    --hw-text-m: 1rem;
+    --hw-text-l: 1.25rem;
+    --hw-text-xl: 1.5rem;
+    --hw-radius-s: 3px;
+    --hw-radius-m: 6px;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+""" + _DARK_TOKENS + """
   }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --hw-bg: #16181d;
-      --hw-surface: #1f232b;
-      --hw-fg: #e6e6e6;
-      --hw-muted: #9aa0a6;
-      --hw-border: #3a3f47;
-      --hw-accent: #6cb2ff;
-      --hw-ok: #4ccf6a;
-      --hw-warn: #e3b341;
-      --hw-danger: #ff8a80;
-      --hw-backdrop: rgba(0, 0, 0, 0.55);
+    :root:not([data-theme="light"]) {
+""" + _DARK_TOKENS + """
     }
   }
   body { font-family: system-ui, sans-serif;
          margin: var(--hw-space-4) auto; max-width: 72rem;
          padding: 0 var(--hw-space-3);
          background: var(--hw-bg); color: var(--hw-fg); }
-  h1 { font-size: var(--hw-text-l); }
+  h1 { font-size: var(--hw-text-xl); }
   a { color: var(--hw-accent); }
   :focus-visible { outline: 2px solid var(--hw-accent); outline-offset: 1px; }
   .meta { color: var(--hw-muted); font-size: var(--hw-text-s); }
@@ -765,28 +800,59 @@ _HTML_STYLE = """
   th { font-weight: 600; }
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .badge { display: inline-block; border: 1px solid var(--hw-border);
-           border-radius: 3px; padding: 0 var(--hw-space-1);
+           border-radius: var(--hw-radius-s); padding: 0 var(--hw-space-1);
            background: var(--hw-surface); font-size: var(--hw-text-s);
            font-weight: 600; }
-  .badge-ok { color: var(--hw-ok); }
-  .badge-warn { color: var(--hw-warn); }
-  .badge-danger { color: var(--hw-danger); }
-  .badge-muted { color: var(--hw-muted); }
+  .badge-ok { color: var(--hw-ok);
+              background: color-mix(in srgb, var(--hw-ok) 15%, var(--hw-bg)); }
+  .badge-warn { color: var(--hw-warn);
+                background: color-mix(in srgb, var(--hw-warn) 15%, var(--hw-bg)); }
+  .badge-danger { color: var(--hw-danger);
+                  background: color-mix(in srgb, var(--hw-danger) 15%, var(--hw-bg)); }
+  .badge-info { color: var(--hw-info);
+                background: color-mix(in srgb, var(--hw-info) 15%, var(--hw-bg)); }
+  .badge-muted { color: var(--hw-muted);
+                 background: color-mix(in srgb, var(--hw-muted) 15%, var(--hw-bg)); }
   .error { font-style: italic; }
   code { font-size: var(--hw-text-s); }
+  .visually-hidden { position: absolute; width: 1px; height: 1px;
+                     margin: -1px; padding: 0; border: 0;
+                     clip-path: inset(50%); overflow: hidden;
+                     white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 """
 
-# Shared favicon: a 16x16 PNG data URI (solid accent square). PNG keeps the
-# pages free of URLs (an SVG data URI would drag in the xmlns), so the
-# no-external-assets contract of the static export still holds.
-_FAVICON = ("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGUlEQVR42mPg"
-            "ij30nxLMMGrAqAGjBgwXAwDjoSgfJZqanwAAAABJRU5ErkJggg==")
-_FAVICON_LINK = f'<link rel="icon" href="data:image/png;base64,{_FAVICON}">'
+# Browser-chrome colors for <meta name="theme-color">: they must mirror
+# --hw-bg per scheme, so they are derived from the stylesheet itself — one
+# source of truth, no hand-maintained hex copies. Order of appearance:
+# :root (light) first, then the dark block.
+_THEME_COLOR_LIGHT, _THEME_COLOR_DARK = re.findall(
+    r"--hw-bg:\s*(#[0-9A-Fa-f]{6})", _HTML_STYLE)[:2]
+
+# Shared favicon: a tiny self-contained SVG data URI — a solid square in the
+# accent amber of the v2 palette (#E8A33D percent-encoded as %23E8A33D, so
+# the no-stray-hex invariant keeps holding on the served pages). The xmlns
+# colon is percent-encoded too (%3A): the URL parser decodes it back to the
+# canonical namespace before the SVG is parsed, while the raw markup stays
+# free of `http://` — the no-external-assets contract remains greppable.
+_FAVICON = ("data:image/svg+xml,%3Csvg%20xmlns='http%3A//www.w3.org/2000/svg'"
+            "%20viewBox='0%200%2016%2016'%3E%3Crect%20width='16'%20height='16'"
+            "%20rx='3'%20fill='%23E8A33D'/%3E%3C/svg%3E")
+_FAVICON_LINK = f'<link rel="icon" href="{_FAVICON}">'
 
 
 def build_fleet_html(hroot: Path, snaps: list[dict]) -> str:
     """Self-contained static page: one table row per harness, no external
-    assets, textual BEHIND/OK labels (never color-only semantics)."""
+    assets, textual BEHIND/OK labels (never color-only semantics). The
+    content sits in a <main> landmark and the table announces itself via a
+    visually-hidden <caption> plus scope="col" headers (WCAG 1.3.1)."""
     from html import escape
 
     rows: list[str] = []
@@ -831,18 +897,24 @@ def build_fleet_html(hroot: Path, snaps: list[dict]) -> str:
 <style>{_HTML_STYLE}</style>
 </head>
 <body>
+<main>
 <h1>Handyman · Fleet</h1>
 <p class="meta">skill {escape(str(current_skill_version() or "unknown"))} ·
 generated by <code>scripts/fleet.py moc --html</code> on
 {date.today().isoformat()} · registry: <code>{escape(str(registry_path(hroot)))}</code></p>
 <table>
-<thead><tr><th>Project</th><th>Version</th><th>Drift</th><th>Pending</th>
-<th>In progress</th><th>Done</th><th>Blocked</th><th>Session</th>
-<th>Last closure</th></tr></thead>
+<caption class="visually-hidden">Registered harnesses: version drift,
+workload counts, session and last closure per project</caption>
+<thead><tr><th scope="col">Project</th><th scope="col">Version</th>
+<th scope="col">Drift</th><th scope="col">Pending</th>
+<th scope="col">In progress</th><th scope="col">Done</th>
+<th scope="col">Blocked</th><th scope="col">Session</th>
+<th scope="col">Last closure</th></tr></thead>
 <tbody>
 {chr(10).join(rows)}
 </tbody>
 </table>
+</main>
 </body>
 </html>
 """

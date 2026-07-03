@@ -44,6 +44,8 @@ from upgrade_harness import current_skill_version  # noqa: E402
 from fleet import (  # noqa: E402
     _FAVICON_LINK,
     _HTML_STYLE,
+    _THEME_COLOR_DARK,
+    _THEME_COLOR_LIGHT,
     _snapshots,
     fleet_timeline,
     handyman_root,
@@ -254,30 +256,37 @@ def draft_state(workspace: Path) -> dict:
 # Panel-only rules on top of the shared tokens. Every value comes from a
 # --hw-* variable, so the old dark-mode block disappears: the :root
 # reassignment in _HTML_STYLE already themes both pages.
+# WCAG 2.2 markup pass (§7 Plan H): the appbar wordmark is a <p> carrying
+# the same xl token the per-view <h1>s use — identical look, honest heading
+# outline — and buttons reserve --hw-space-4 (2rem = 32px) of height, above
+# the 24px target-size floor of 2.5.8.
 _PANEL_STYLE = _HTML_STYLE + """
-  h2 { font-size: var(--hw-text-m); margin-top: var(--hw-space-3);
+  h2 { font-size: var(--hw-text-xs); margin-top: var(--hw-space-3);
        text-transform: uppercase; letter-spacing: 0.04em;
        color: var(--hw-muted); }
   #statusline { min-height: 1.2em; font-size: var(--hw-text-s);
                 color: var(--hw-muted); }
   details { margin: var(--hw-space-1) 0 var(--hw-space-2);
-            border: 1px solid var(--hw-border); border-radius: 3px;
+            border: 1px solid var(--hw-border);
+            border-radius: var(--hw-radius-s);
             padding: var(--hw-space-1) var(--hw-space-2);
             width: fit-content; min-width: 18rem; }
   details summary { cursor: pointer; font-size: var(--hw-text-m); }
   ul { margin: var(--hw-space-1) 0; padding-left: 0; list-style: none; }
   li { font-size: var(--hw-text-m); padding: 0.1rem 0; }
-  .pagetitle { font-size: var(--hw-text-l); font-weight: 700;
-               margin: var(--hw-space-2) 0 0; }
+  .pagetitle { margin: var(--hw-space-2) 0 0; }
   button { font: inherit; font-size: var(--hw-text-s);
+           min-height: var(--hw-space-4);
            padding: var(--hw-space-1) var(--hw-space-2); cursor: pointer;
-           border: 1px solid var(--hw-border); border-radius: 3px;
+           border: 1px solid var(--hw-border-strong);
+           border-radius: var(--hw-radius-s);
            background: var(--hw-surface); color: var(--hw-fg); }
   button:hover:enabled { border-color: var(--hw-accent); }
   .muted { color: var(--hw-muted); }
   td .actions { display: flex; gap: var(--hw-space-1); flex-wrap: wrap; }
   dialog { max-width: 34rem; width: 90%;
-           border: 1px solid var(--hw-border); border-radius: 4px;
+           border: 1px solid var(--hw-border);
+           border-radius: var(--hw-radius-m);
            padding: var(--hw-space-3);
            background: var(--hw-bg); color: var(--hw-fg); }
   dialog::backdrop { background: var(--hw-backdrop); }
@@ -286,7 +295,9 @@ _PANEL_STYLE = _HTML_STYLE + """
   dialog label { display: grid; gap: 0.15rem; font-size: var(--hw-text-s); }
   dialog input[type=text], dialog textarea, dialog select {
     font: inherit; font-size: var(--hw-text-m); width: 100%;
-    box-sizing: border-box; }
+    box-sizing: border-box;
+    border: 1px solid var(--hw-border-strong);
+    border-radius: var(--hw-radius-s); }
   dialog textarea { min-height: 4.5em; }
   dialog .row { display: flex; gap: var(--hw-space-2);
                 justify-content: flex-end; }
@@ -300,7 +311,7 @@ _PANEL_STYLE = _HTML_STYLE + """
                   justify-content: space-between; gap: var(--hw-space-2);
                   border-bottom: 1px solid var(--hw-border);
                   padding-bottom: var(--hw-space-2); }
-  header.appbar h1 { margin: 0; }
+  .wordmark { margin: 0; font-size: var(--hw-text-xl); font-weight: 700; }
   footer { display: block; margin-top: var(--hw-space-4);
            border-top: 1px solid var(--hw-border);
            padding-top: var(--hw-space-2); }
@@ -314,8 +325,13 @@ _PANEL_STYLE = _HTML_STYLE + """
   nav a[aria-current="page"] { color: var(--hw-fg); font-weight: 600;
                                border-bottom-color: var(--hw-accent); }
   nav label { margin-left: auto; }
+  nav label + label { margin-left: 0; }
+  nav select { font: inherit; font-size: var(--hw-text-s);
+               border: 1px solid var(--hw-border-strong);
+               border-radius: var(--hw-radius-s);
+               background: var(--hw-surface); color: var(--hw-fg); }
   th.num { text-align: right; }
-  .tl-date { color: var(--hw-muted); font-size: var(--hw-text-s);
+  .tl-date { color: var(--hw-muted); font-size: var(--hw-text-xs);
              text-transform: uppercase; letter-spacing: 0.04em;
              margin-top: var(--hw-space-2); }
   .tl-item { padding-left: var(--hw-space-3); }
@@ -329,38 +345,72 @@ _PANEL_STYLE = _HTML_STYLE + """
 def build_panel_html(token: str, refresh_seconds: int) -> str:
     """Self-contained live panel. All harness data arrives via fetch and is
     rendered with textContent/createElement — text from harness files never
-    becomes markup."""
+    becomes markup.
+
+    Theme (§6.4): the inline script at the top of <head> runs before the
+    stylesheet, so a stored manual theme lands on <html data-theme=...>
+    before first paint (no flash). The stored value is only compared against
+    the light/dark whitelist and assigned as a data- attribute — it is never
+    interpreted as markup. The two scheme-scoped <meta name="theme-color">
+    mirror --hw-bg (annotated via data-hw-token, keeping the no-stray-hex
+    invariant greppable).
+
+    WCAG 2.2 markup (§7 Plan H): the three views live in a <main> landmark;
+    the appbar wordmark is a <p> (same xl token) so each view owns the only
+    <h1>, focusable via tabindex="-1" — every hashchange focuses it and
+    retitles the document. The <dialog> is named/described through
+    aria-labelledby/aria-describedby, returns focus to its opener on close,
+    field help hangs off aria-describedby and invalid fields carry
+    aria-invalid until fixed. Both tables ship a visually-hidden <caption>
+    and scope="col" headers; motion collapses under prefers-reduced-motion."""
     version = current_skill_version() or "unknown"
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>(function () {{
+  var t = localStorage.getItem("hw-theme:1");
+  if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+}})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="{_THEME_COLOR_LIGHT}" data-hw-token="--hw-bg">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="{_THEME_COLOR_DARK}" data-hw-token="--hw-bg">
 <title>Handyman Workstation</title>
 {_FAVICON_LINK}
 <style>{_PANEL_STYLE}</style>
 </head>
 <body>
 <header class="appbar">
-<h1>Handyman · Workstation <span class="badge badge-muted">skill {version}</span>
-<span id="stale"></span></h1>
+<p class="wordmark">Handyman · Workstation <span class="badge badge-muted">skill {version}</span>
+<span id="stale"></span></p>
 <span class="meta" id="updated">connecting…</span>
 </header>
 <p id="statusline" aria-live="polite"></p>
 <nav>
 <a href="#/fleet">Fleet</a>
 <a href="#/timeline">Timeline</a>
+<label class="meta">theme <select id="theme">
+<option value="system">system</option>
+<option value="light">light</option>
+<option value="dark">dark</option>
+</select></label>
 <label class="meta"><input type="checkbox" id="pause"> pause auto-refresh
  (every {refresh_seconds}s)</label>
 </nav>
 
+<main>
 <section id="view-fleet">
-<h2>Fleet</h2>
+<h1 id="h1-fleet" tabindex="-1">Fleet</h1>
 <table>
-<thead><tr><th>Project</th><th>Version</th><th>Drift</th>
-<th class="num">Pending</th><th class="num">In progress</th>
-<th class="num">Done</th><th class="num">Blocked</th>
-<th>Session</th></tr></thead>
+<caption class="visually-hidden">Registered harnesses: version drift,
+workload counts and live session per project</caption>
+<thead><tr><th scope="col">Project</th><th scope="col">Version</th>
+<th scope="col">Drift</th>
+<th class="num" scope="col">Pending</th>
+<th class="num" scope="col">In progress</th>
+<th class="num" scope="col">Done</th>
+<th class="num" scope="col">Blocked</th>
+<th scope="col">Session</th></tr></thead>
 <tbody id="fleet"></tbody>
 </table>
 <p class="meta" id="aggregate"></p>
@@ -368,18 +418,21 @@ def build_panel_html(token: str, refresh_seconds: int) -> str:
 
 <section id="view-harness" hidden>
 <p class="meta" id="crumb"></p>
+<h1 id="h1-harness" class="pagetitle" tabindex="-1"></h1>
 <div id="harness"></div>
 </section>
 
 <section id="view-timeline" hidden>
-<h2>Timeline</h2>
+<h1 id="h1-timeline" tabindex="-1">Timeline</h1>
 <ul id="timeline"></ul>
 </section>
+</main>
 
 <footer class="meta"><span id="registry"></span>Stop the server with Ctrl+C
 in its terminal · see references/workstation.md</footer>
 
-<dialog id="dlg"><form id="dlgform"></form></dialog>
+<dialog id="dlg" aria-labelledby="dlg-title" aria-describedby="dlg-help">
+<form id="dlgform"></form></dialog>
 
 <script>
 "use strict";
@@ -435,8 +488,30 @@ function route() {{
   if (h === "#/timeline") return {{view: "timeline"}};
   return {{view: "fleet"}};
 }}
+
+// Every view owns a real h1 (tabindex="-1" so script can focus it). A
+// hash navigation is a page change: focus lands on the new view's title and
+// document.title follows (WCAG 2.4.3 focus order, 4.1.3 status announced by
+// the heading itself, 2.4.6 one honest heading per view). Titles and focus
+// are plain textContent/focus() calls — no markup from state.
+const VIEW_H1 = {{fleet: "h1-fleet", harness: "h1-harness",
+                  timeline: "h1-timeline"}};
+
+function viewTitle(r) {{
+  return r.view === "harness" ? r.name
+    : r.view === "timeline" ? "Timeline" : "Fleet";
+}}
+
+function focusView() {{
+  const r = route();
+  document.title = viewTitle(r) + " \\u00b7 Handyman Workstation";
+  const heading = $(VIEW_H1[r.view]);
+  if (heading) heading.focus();
+}}
+
 window.addEventListener("hashchange", () => {{
   if (lastState) render(lastState);
+  focusView();
 }});
 
 // ---- fmt: the single formatting layer ---------------------------------------
@@ -548,7 +623,7 @@ function renderFleet(state) {{
 function actionButton(kind, snap) {{
   const btn = el("button", LABELS[kind],
                  {{type: "button", title: TITLES[kind]}});
-  btn.onclick = () => openForm(kind, snap);
+  btn.onclick = () => openForm(kind, snap, btn);
   return btn;
 }}
 
@@ -636,7 +711,7 @@ const HELP = {{
   unblock: "Returns the selected blocked feature to pending and clears "
     + "blocked_reason (feature.py unblock).",
 }};
-let dlgKind = null, dlgRoot = null;
+let dlgKind = null, dlgRoot = null, dlgOpener = null;
 
 function input(name, value, placeholder) {{
   const node = el("input", null, {{type: "text", name: name}});
@@ -651,11 +726,19 @@ function area(name, placeholder) {{
   return node;
 }}
 
+// Field help is programmatically tied to its control (WCAG 3.3.2): the
+// <small> gets an id derived from the field name — unique per form, and the
+// form is rebuilt on every open — and the control points at it via
+// aria-describedby.
 function labeled(text, node, help) {{
   const wrap = document.createElement("label");
   wrap.appendChild(el("span", text));
   wrap.appendChild(node);
-  if (help) wrap.appendChild(el("small", help, {{class: "muted"}}));
+  if (help) {{
+    const helpId = "help-" + (node.getAttribute("name") || "field");
+    node.setAttribute("aria-describedby", helpId);
+    wrap.appendChild(el("small", help, {{class: "muted", id: helpId}}));
+  }}
   return wrap;
 }}
 
@@ -682,12 +765,18 @@ function featureSelect(snap, statuses) {{
   return node;
 }}
 
-function openForm(kind, snap) {{
+function openForm(kind, snap, trigger) {{
   dlgKind = kind; dlgRoot = snap.project_root;
+  dlgOpener = trigger || null;
   const form = $("dlgform");
   form.replaceChildren();
-  form.appendChild(el("h3", LABELS[kind] + " \\u2014 " + snap.project_name));
-  form.appendChild(el("p", HELP[kind], {{class: "muted dlghelp"}}));
+  // The dialog's aria-labelledby/aria-describedby point at these two ids;
+  // replaceChildren above just removed the previous pair, so each stays
+  // unique in the document.
+  form.appendChild(el("h3", LABELS[kind] + " \\u2014 " + snap.project_name,
+                      {{id: "dlg-title"}}));
+  form.appendChild(el("p", HELP[kind], {{class: "muted dlghelp",
+                                          id: "dlg-help"}}));
   if (kind === "request") {{
     form.appendChild(slugInput());
     form.appendChild(labeled("title", input("title")));
@@ -794,6 +883,28 @@ $("dlgform").addEventListener("submit", async (ev) => {{
   }}
 }});
 
+// Focus returns to the button that opened the dialog on every close path —
+// Cancel, Esc and successful submit all end in the close event (WCAG 2.4.3).
+// A refresh may have re-rendered the view meanwhile; a detached opener is
+// skipped rather than focused.
+$("dlg").addEventListener("close", () => {{
+  if (dlgOpener && dlgOpener.isConnected) dlgOpener.focus();
+  dlgOpener = null;
+}});
+
+// Native validation surfaces to AT: when the browser blocks a submit, the
+// offending control is marked aria-invalid; the mark clears as soon as its
+// value validates again. invalid does not bubble, so it is captured.
+$("dlgform").addEventListener("invalid", (ev) => {{
+  ev.target.setAttribute("aria-invalid", "true");
+}}, true);
+$("dlgform").addEventListener("input", (ev) => {{
+  const field = ev.target;
+  if (field.willValidate && field.validity && field.validity.valid) {{
+    field.removeAttribute("aria-invalid");
+  }}
+}});
+
 function healthList(snap) {{
   const list = document.createElement("ul");
   if (!snap.signals || !snap.signals.length) {{
@@ -857,6 +968,8 @@ function queueSection(snap) {{
 // right after the identity — acting on the harness is what this view is
 // for — then a single status strip, then the queue and its timeline.
 function renderHarness(state, name) {{
+  // The view h1 is the harness name (assigned as textContent, never markup).
+  $("h1-harness").textContent = name;
   const crumb = $("crumb");
   crumb.replaceChildren();
   crumb.appendChild(el("a", "Fleet", {{href: "#/fleet"}}));
@@ -869,7 +982,6 @@ function renderHarness(state, name) {{
       "harness not found in the registry: " + name));
     return;
   }}
-  box.appendChild(el("p", name, {{class: "pagetitle"}}));
   if (snap.error) {{
     const err = el("p", "ERROR: " + snap.error);
     err.className = "error";
@@ -950,6 +1062,7 @@ function render(state) {{
       "panel outdated \\u2014 restart serve to update", "warn"));
   }}
   const r = route();
+  document.title = viewTitle(r) + " \\u00b7 Handyman Workstation";
   // Tabs mark the active view; the harness detail belongs to Fleet.
   const currentHref = r.view === "timeline" ? "#/timeline" : "#/fleet";
   for (const link of document.querySelectorAll("nav a")) {{
@@ -981,6 +1094,27 @@ async function refresh() {{
       "error: server unreachable \\u2014 retrying (" + e.message + ")";
   }}
 }}
+
+// Manual theme layered over prefers-color-scheme. The versioned key
+// hw-theme:1 stores only whitelisted values; anything else means "system",
+// which clears both the key and the data-theme attribute so the OS media
+// query takes over again. The head script already applied the stored value
+// pre-paint — this only syncs the control and handles changes.
+const themeControl = $("theme");
+const storedTheme = localStorage.getItem("hw-theme:1");
+if (storedTheme === "light" || storedTheme === "dark") {{
+  themeControl.value = storedTheme;
+}}
+themeControl.addEventListener("change", () => {{
+  const choice = themeControl.value;
+  if (choice === "light" || choice === "dark") {{
+    localStorage.setItem("hw-theme:1", choice);
+    document.documentElement.dataset.theme = choice;
+  }} else {{
+    localStorage.removeItem("hw-theme:1");
+    delete document.documentElement.dataset.theme;
+  }}
+}});
 
 refresh();
 setInterval(refresh, REFRESH_MS);

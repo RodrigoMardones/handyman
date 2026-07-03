@@ -423,11 +423,13 @@ fi
 rm -f "$BG_OUT" "$BG_OUT.code"
 stop_server; rm -rf "$T"
 
-# --- W15: design tokens, favicon and wordmark on both pages (feature 77) --------
+# --- W15: design tokens, favicon and wordmark on both pages (features 77, 86) ---
 # The --hw-* tokens in :root are the only place a color may live: every line
 # carrying a hex value must be a token definition. Both the live panel and the
-# static moc --html export share the tokens, the data-URI favicon and the
-# wordmark-with-skill-version header.
+# static moc --html export share the tokens (including the palette-v2 additions
+# --hw-info and --hw-text-xl), the amber SVG data-URI favicon and the
+# wordmark-with-skill-version header. Radii come from --hw-radius-* only:
+# no border-radius rule may carry a px literal.
 start_case "panel and fleet html share --hw- tokens, favicon and wordmark (no stray hex)"
 T="$(mktemp -d)"; FR="$T/fleetroot"; H1="$T/proj1"; mkdir -p "$H1"
 write_harness "$H1" "proj1" "1.0.0"
@@ -440,9 +442,15 @@ FLEETPAGE="$(cat "$FR/index.html" 2>/dev/null)"
 OK="yes"; WHY=""
 printf '%s' "$PANEL" | grep -q -- '--hw-bg' || { OK="no"; WHY="panel tokens"; }
 printf '%s' "$FLEETPAGE" | grep -q -- '--hw-bg' || { OK="no"; WHY="fleet tokens"; }
-printf '%s' "$PANEL" | grep -q 'rel="icon" href="data:image/png' \
+printf '%s' "$PANEL" | grep -q -- '--hw-info' || { OK="no"; WHY="panel --hw-info"; }
+printf '%s' "$FLEETPAGE" | grep -q -- '--hw-info' || { OK="no"; WHY="fleet --hw-info"; }
+printf '%s' "$PANEL" | grep -q -- '--hw-text-xl' \
+  || { OK="no"; WHY="panel --hw-text-xl"; }
+printf '%s' "$FLEETPAGE" | grep -q -- '--hw-text-xl' \
+  || { OK="no"; WHY="fleet --hw-text-xl"; }
+printf '%s' "$PANEL" | grep -q 'rel="icon" href="data:image/svg' \
   || { OK="no"; WHY="panel favicon"; }
-printf '%s' "$FLEETPAGE" | grep -q 'rel="icon" href="data:image/png' \
+printf '%s' "$FLEETPAGE" | grep -q 'rel="icon" href="data:image/svg' \
   || { OK="no"; WHY="fleet favicon"; }
 printf '%s' "$PANEL" | grep -q 'Handyman · Workstation' \
   || { OK="no"; WHY="panel wordmark"; }
@@ -454,6 +462,14 @@ STRAY_P="$(printf '%s' "$PANEL" | grep -E '#[0-9a-fA-F]{3,8}' | grep -v -- '--hw
 STRAY_F="$(printf '%s' "$FLEETPAGE" | grep -E '#[0-9a-fA-F]{3,8}' | grep -v -- '--hw-')"
 [ -z "$STRAY_P" ] || { OK="no"; WHY="stray hex in panel: $STRAY_P"; }
 [ -z "$STRAY_F" ] || { OK="no"; WHY="stray hex in fleet html: $STRAY_F"; }
+RAD_P="$(printf '%s' "$PANEL" | grep 'border-radius' | grep -E '[0-9]px')"
+RAD_F="$(printf '%s' "$FLEETPAGE" | grep 'border-radius' | grep -E '[0-9]px')"
+[ -z "$RAD_P" ] || { OK="no"; WHY="px radius literal in panel: $RAD_P"; }
+[ -z "$RAD_F" ] || { OK="no"; WHY="px radius literal in fleet html: $RAD_F"; }
+printf '%s' "$PANEL" | grep 'border-radius' | grep -qv 'var(--hw-radius-' \
+  && { OK="no"; WHY="panel border-radius without --hw-radius token"; }
+printf '%s' "$FLEETPAGE" | grep 'border-radius' | grep -qv 'var(--hw-radius-' \
+  && { OK="no"; WHY="fleet border-radius without --hw-radius token"; }
 if [ "$OK" = "yes" ]; then
   pass
 else
@@ -541,7 +557,9 @@ printf '%s' "$HTTP_BODY" | grep -q 'class="appbar"' || { OK="no"; WHY="appbar"; 
 printf '%s' "$HTTP_BODY" | grep -q '<footer' || { OK="no"; WHY="footer"; }
 printf '%s' "$HTTP_BODY" | grep -q 'id="registry"' || { OK="no"; WHY="registry in footer"; }
 printf '%s' "$HTTP_BODY" | grep -q 'aria-current' || { OK="no"; WHY="active tab state"; }
-printf '%s' "$HTTP_BODY" | grep -q '<th class="num">' || { OK="no"; WHY="right-aligned num headers"; }
+# (no trailing > in the pattern: since feature 88 the num headers also carry
+# scope="col", so the cell is <th class="num" scope="col">.)
+printf '%s' "$HTTP_BODY" | grep -q '<th class="num"' || { OK="no"; WHY="right-aligned num headers"; }
 printf '%s' "$HTTP_BODY" | grep -q 'tl-date' || { OK="no"; WHY="timeline date grouping"; }
 printf '%s' "$HTTP_BODY" | grep -qF '"updated "' || { OK="no"; WHY="compact updated time"; }
 printf '%s' "$HTTP_BODY" | grep -q '"num muted"' || { OK="no"; WHY="muted zeros"; }
@@ -631,6 +649,132 @@ printf '%s' "$HTTP_BODY" | grep -q "Verification — runs the target's own init.
   || { OK="no"; WHY="verify title"; }
 printf '%s' "$HTTP_BODY" | grep -q "blocked -> pending" \
   || { OK="no"; WHY="unblock title"; }
+if [ "$OK" = "yes" ]; then
+  pass
+else
+  fail "$WHY"
+fi
+stop_server; rm -rf "$T"
+
+# --- W22: manual light/dark/system theme without flash (feature 87) --------------
+# The dark token block ships under both selectors (manual [data-theme="dark"]
+# and the OS media query via :root:not([data-theme="light"])); the versioned
+# localStorage key hw-theme:1 and the select#theme control ship in the page;
+# the anti-flash theme script appears BEFORE the first <style> (positional
+# grep); the static fleet export inherits the [data-theme] selectors through
+# the shared stylesheet but ships no toggle.
+start_case "theme: layered dark selectors, hw-theme:1, anti-flash before <style>"
+T="$(mktemp -d)"; FR="$T/fleetroot"; H1="$T/proj1"; mkdir -p "$H1"
+write_harness "$H1" "proj1" "1.0.0"
+HANDYMAN_ROOT="$FR" python3 "$FLEET" register "$H1" >/dev/null 2>&1
+start_server "$FR"
+http GET /
+PANEL="$HTTP_BODY"
+HANDYMAN_ROOT="$FR" python3 "$FLEET" moc --html >/dev/null 2>&1
+FLEETPAGE="$(cat "$FR/index.html" 2>/dev/null)"
+OK="yes"; WHY=""
+printf '%s' "$PANEL" | grep -q ':root\[data-theme="dark"\]' \
+  || { OK="no"; WHY="panel manual dark selector"; }
+printf '%s' "$PANEL" | grep -q '@media (prefers-color-scheme: dark)' \
+  || { OK="no"; WHY="panel media query"; }
+printf '%s' "$PANEL" | grep -q ':root:not(\[data-theme="light"\])' \
+  || { OK="no"; WHY="panel system-dark selector"; }
+printf '%s' "$PANEL" | grep -q 'hw-theme:1' || { OK="no"; WHY="panel storage key"; }
+printf '%s' "$PANEL" | grep -q 'select id="theme"' \
+  || { OK="no"; WHY="panel theme select"; }
+for V in system light dark; do
+  printf '%s' "$PANEL" | grep -q "option value=\"$V\"" \
+    || { OK="no"; WHY="theme option $V"; }
+done
+[ "$(printf '%s' "$PANEL" | grep -c 'name="theme-color" media=')" = "2" ] \
+  || { OK="no"; WHY="two scheme-scoped theme-color metas"; }
+THEME_LINE="$(printf '%s\n' "$PANEL" | grep -n 'hw-theme:1' | head -1 | cut -d: -f1)"
+STYLE_LINE="$(printf '%s\n' "$PANEL" | grep -n '<style>' | head -1 | cut -d: -f1)"
+if [ -z "$THEME_LINE" ] || [ -z "$STYLE_LINE" ] \
+  || [ "$THEME_LINE" -ge "$STYLE_LINE" ]; then
+  OK="no"; WHY="theme script not before first <style> (theme=$THEME_LINE style=$STYLE_LINE)"
+fi
+printf '%s' "$FLEETPAGE" | grep -q ':root\[data-theme="dark"\]' \
+  || { OK="no"; WHY="fleet page inherits [data-theme] selectors"; }
+printf '%s' "$FLEETPAGE" | grep -q ':root:not(\[data-theme="light"\])' \
+  || { OK="no"; WHY="fleet page inherits system-dark selector"; }
+printf '%s' "$FLEETPAGE" | grep -q 'select id="theme"' \
+  && { OK="no"; WHY="fleet static page must not ship the toggle"; }
+if [ "$OK" = "yes" ]; then
+  pass
+else
+  fail "$WHY"
+fi
+stop_server; rm -rf "$T"
+
+# --- W23: WCAG 2.2 markup pass over both pages (feature 88) ----------------------
+# Shared contract (panel GET / and static moc --html export): a <main>
+# landmark, tables described by a visually-hidden <caption> and scope="col"
+# headers, the .visually-hidden utility and the prefers-reduced-motion block
+# in the shared stylesheet. Panel-only contract (the SPA, dialog and forms
+# exist only there): wordmark demoted to <p> so each view owns the single
+# <h1> (tabindex="-1", focused + document.title on hashchange), dialog
+# aria-labelledby/aria-describedby with focus return to the opener, field
+# help via aria-describedby and aria-invalid set on error / cleared on fix.
+start_case "a11y: main landmark, captions+scope, per-view h1 focus, dialog and field aria"
+T="$(mktemp -d)"; FR="$T/fleetroot"; H1="$T/proj1"; mkdir -p "$H1"
+write_harness "$H1" "proj1" "1.0.0"
+HANDYMAN_ROOT="$FR" python3 "$FLEET" register "$H1" >/dev/null 2>&1
+start_server "$FR"
+http GET /
+PANEL="$HTTP_BODY"
+HANDYMAN_ROOT="$FR" python3 "$FLEET" moc --html >/dev/null 2>&1
+FLEETPAGE="$(cat "$FR/index.html" 2>/dev/null)"
+OK="yes"; WHY=""
+# shared: both served pages
+printf '%s' "$PANEL" | grep -q '<main>' || { OK="no"; WHY="panel main landmark"; }
+printf '%s' "$FLEETPAGE" | grep -q '<main>' || { OK="no"; WHY="fleet main landmark"; }
+printf '%s' "$PANEL" | grep -q 'scope="col"' || { OK="no"; WHY="panel th scope"; }
+printf '%s' "$FLEETPAGE" | grep -q 'scope="col"' || { OK="no"; WHY="fleet th scope"; }
+printf '%s' "$PANEL" | grep -q '<caption class="visually-hidden"' \
+  || { OK="no"; WHY="panel table caption"; }
+printf '%s' "$FLEETPAGE" | grep -q '<caption class="visually-hidden"' \
+  || { OK="no"; WHY="fleet table caption"; }
+printf '%s' "$PANEL" | grep -q '\.visually-hidden' \
+  || { OK="no"; WHY="panel visually-hidden utility"; }
+printf '%s' "$FLEETPAGE" | grep -q '\.visually-hidden' \
+  || { OK="no"; WHY="fleet visually-hidden utility"; }
+printf '%s' "$PANEL" | grep -q 'prefers-reduced-motion' \
+  || { OK="no"; WHY="panel reduced-motion block"; }
+printf '%s' "$FLEETPAGE" | grep -q 'prefers-reduced-motion' \
+  || { OK="no"; WHY="fleet reduced-motion block"; }
+# panel-only: wordmark demoted, per-view h1s own the heading level
+printf '%s' "$PANEL" | grep -q '<p class="wordmark">' \
+  || { OK="no"; WHY="wordmark demoted to p"; }
+printf '%s' "$PANEL" | grep -q '<h1>' \
+  && { OK="no"; WHY="an attribute-less h1 remains (appbar?)"; }
+printf '%s' "$PANEL" | grep -q 'id="h1-fleet" tabindex="-1"' \
+  || { OK="no"; WHY="fleet view h1"; }
+printf '%s' "$PANEL" | grep -q 'id="h1-harness" class="pagetitle" tabindex="-1"' \
+  || { OK="no"; WHY="harness view h1"; }
+printf '%s' "$PANEL" | grep -q 'id="h1-timeline" tabindex="-1"' \
+  || { OK="no"; WHY="timeline view h1"; }
+# panel-only: hashchange moves focus to the view h1 and retitles the document
+printf '%s' "$PANEL" | grep -qF 'heading.focus()' || { OK="no"; WHY="h1 focus on hashchange"; }
+printf '%s' "$PANEL" | grep -qF 'document.title' || { OK="no"; WHY="document.title update"; }
+printf '%s' "$PANEL" | grep -qF '\u00b7 Handyman Workstation' \
+  || { OK="no"; WHY="view-scoped title template"; }
+# panel-only: dialog naming, description and focus return to the opener
+printf '%s' "$PANEL" | grep -q 'aria-labelledby="dlg-title"' \
+  || { OK="no"; WHY="dialog aria-labelledby"; }
+printf '%s' "$PANEL" | grep -q 'aria-describedby="dlg-help"' \
+  || { OK="no"; WHY="dialog aria-describedby"; }
+printf '%s' "$PANEL" | grep -q 'dlgOpener' || { OK="no"; WHY="dialog opener focus return"; }
+# panel-only: field help tied to its control; aria-invalid set and cleared
+printf '%s' "$PANEL" | grep -qF 'setAttribute("aria-describedby"' \
+  || { OK="no"; WHY="field help aria-describedby"; }
+printf '%s' "$PANEL" | grep -qF 'setAttribute("aria-invalid"' \
+  || { OK="no"; WHY="aria-invalid on error"; }
+printf '%s' "$PANEL" | grep -qF 'removeAttribute("aria-invalid")' \
+  || { OK="no"; WHY="aria-invalid cleared when fixed"; }
+# panel-only: buttons reserve a >=24px target height from a token (2.5.8)
+printf '%s' "$PANEL" | grep -q 'min-height: var(--hw-space-4)' \
+  || { OK="no"; WHY="button min-height token"; }
 if [ "$OK" = "yes" ]; then
   pass
 else
