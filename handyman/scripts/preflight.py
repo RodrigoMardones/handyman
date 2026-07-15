@@ -8,6 +8,7 @@ deterministic scripts instead of reimplementing them:
   - drift    : scripts/upgrade_harness.py --check  (version drift vs the skill)
   - sync     : scripts/update_harness.py --check   (config <-> role-file audit)
   - discovery: scripts/tools_discovery.py check    (declared skills + MCPs)
+  - worklist : scripts/feature.py ready            (claimable work + loop stop)
 
 It writes nothing. It is a *stability* report, not a quality gate: the
 blocking checks already live in `validate` (a phase of `init.sh`), so this
@@ -118,11 +119,30 @@ def preflight(root: Path, strict: bool = False) -> int:
     if rc != 0:
         problems.append("discovery MISSING")
 
+    # --- worklist: claimable work + the unattended-loop stop condition -------
+    # Advisory only (never in strict problems): a drained backlog is a stop
+    # signal for an external loop, not harness instability.
+    rc, out = _run([py, str(SCRIPT_DIR / "feature.py"), "--root", str(root), "ready"])
+    status = "OK" if rc == 0 else "NOTE"
+    _block("worklist", status, out)
+    if rc == 3:
+        print("    loop stop condition: nothing pending is ready - blocked or "
+              "dependency-gated work needs a human decision, not another session")
+
     if strict and problems:
         print(f"==> preflight: STRICT failure ({', '.join(problems)})")
+        print("next: fix the reported problems above, then re-run")
+        print("status: error")
         return 1
     print("==> preflight: stability report complete "
           + ("(strict; stable)" if strict else "(read-only; exit 0)"))
+    # Observation shape: a stable machine-readable tail (next: hint when
+    # applicable, status: always last) so callers never parse prose.
+    if problems:
+        print("next: act on the NOTE blocks above before starting feature work")
+        print("status: warn")
+    else:
+        print("status: ok")
     return 0
 
 

@@ -242,7 +242,33 @@ def cmd_measure(args) -> int:
     print(f"accuracy={accuracy:.2f}")
     print(f"positives mean_rate={pos_mean:.2f} stddev={_stddev(pos_rates, pos_mean):.2f}")
     print(f"negatives mean_rate={neg_mean:.2f} stddev={_stddev(neg_rates, neg_mean):.2f}")
+    if args.report_passk:
+        _report_passk(pos_rates, neg_rates, runs)
     return 0
+
+
+def _report_passk(pos_rates: list[float], neg_rates: list[float], k: int) -> None:
+    """Derive pass@k metrics from the per-query trigger rates already measured.
+
+    pass@k = the probability of at least one success in k independent attempts,
+    approximated from the observed single-attempt rate r as 1 - (1 - r)^k. The
+    approximation is standard for stochastic trigger measurement; it needs no
+    additional model calls. pass@1 is the mean rate itself. A query that never
+    fired across `k` runs scores 0.0; one that fired every time scores 1.0."""
+    def _pass_at(rates: list[float], k: int) -> float:
+        if not rates:
+            return 0.0
+        return sum(1.0 - (1.0 - r) ** k for r in rates) / len(rates)
+
+    p1 = _pass_at(pos_rates, 1)
+    pk = _pass_at(pos_rates, k)
+    print(f"pass@1={p1:.2f} pass@{k}={pk:.2f}  (positives; n={len(pos_rates)})")
+    if neg_rates:
+        # For negatives the relevant signal is the false-positive rate at k:
+        # the chance of spuriously triggering at least once in k tries.
+        fp1 = sum(neg_rates) / len(neg_rates)
+        fpk = _pass_at(neg_rates, k)
+        print(f"fp@1={fp1:.2f} fp@{k}={fpk:.2f}  (negatives; n={len(neg_rates)})")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -266,6 +292,8 @@ def build_parser() -> argparse.ArgumentParser:
                        help="Trigger-rate threshold for a positive prediction (default 0.5).")
     p_mea.add_argument("--runner", default=None,
                        help="Command that prints TRIGGER/NO for an appended query.")
+    p_mea.add_argument("--report-passk", dest="report_passk", action="store_true",
+                       help="Also derive pass@1/pass@k from the measured rates (no extra calls).")
     p_mea.set_defaults(func=cmd_measure)
     return parser
 

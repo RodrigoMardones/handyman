@@ -81,6 +81,19 @@ two safeguards from `skill-creator`:
   candidate by a **held-out** split it was not tuned on. Tuning and scoring on the
   same queries overfits the wording to those few phrases instead of to the intent.
 
+## pass@k (completion reliability)
+
+`measure --report-passk` derives `pass@1` and `pass@k` (where k = `--runs`) from the
+trigger rates it already measured — no additional model calls. The metric comes from
+the eval-harness literature: `pass@k` is the probability of at least one success in k
+independent attempts, approximated from the observed single-attempt rate r as
+`1 - (1 - r)^k`. `pass@1` is the mean rate itself. For positive queries it answers
+"will a retry reliably reach the skill?"; for negative queries it reports the
+false-positive rate at k (`fp@k`), the chance of spuriously triggering at least once
+across retries. Unlike a confusion matrix (a single threshold), pass@k exposes
+*reliability under retry*, which is the property that matters when the skill loads
+inside a long-running harness.
+
 ## The non-blocking advisory
 
 `init.sh` carries a `check_evals()` advisory beside the graphify, version, business,

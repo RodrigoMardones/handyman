@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -108,6 +109,49 @@ def check_feature_list(workspace: Path, gaps: list[str]) -> None:
         if status is not None and status not in VALID_STATUS:
             ident = feature.get("name", feature.get("id", "?"))
             gaps.append(f"feature '{ident}' has invalid status '{status}'")
+
+    check_depends_on(workspace, features, gaps)
+
+
+def _archived_ids(workspace: Path) -> set:
+    """Feature ids already moved to archive/feature_archive.json by sprint
+    closes. Archived ids stay valid dependency targets."""
+    path = workspace / "archive" / "feature_archive.json"
+    if not path.is_file():
+        return set()
+    try:
+        archive = json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return set()
+    return {
+        f["id"]
+        for sprint in (archive.get("sprints") or {}).values()
+        if isinstance(sprint, list)
+        for f in sprint
+        if isinstance(f, dict) and isinstance(f.get("id"), int)
+    }
+
+
+def check_depends_on(workspace: Path, features: list, gaps: list[str]) -> None:
+    """Every depends_on id must reference a real feature: itself is a cycle,
+    and an id that exists neither live nor in the sprint archive is dangling
+    (the schema only checks the shape; this checks the references)."""
+    known = {f.get("id") for f in features if isinstance(f, dict)}
+    known |= _archived_ids(workspace)
+    for feature in features:
+        if not isinstance(feature, dict):
+            continue
+        deps = feature.get("depends_on")
+        if not isinstance(deps, list):
+            continue
+        ident = feature.get("name", feature.get("id", "?"))
+        for dep in deps:
+            if dep == feature.get("id"):
+                gaps.append(f"feature '{ident}' depends on itself")
+            elif dep not in known:
+                gaps.append(
+                    f"feature '{ident}' depends_on unknown feature id {dep} "
+                    f"(not live, not archived)")
 
 
 def _feature_list_schema_path() -> Path:
@@ -236,6 +280,48 @@ def check_frontmatter_advisory(workspace: Path) -> None:
                   file=sys.stderr)
 
 
+def check_branch_advisory(root: Path, workspace: Path) -> None:
+    """Non-blocking advisory: the session in progress/current.md records the
+    branch it started on; when that differs from the currently checked-out
+    branch, the session belongs to another line of work (the workspace is one
+    per checkout, shared across branches). Prints a NOTE and never contributes
+    to the gap list. Resolution stays a human decision: resume on the original
+    branch, `feature.py block` the stale session, or use git worktrees for
+    real parallelism."""
+    current = workspace / "progress" / "current.md"
+    if not current.is_file():
+        return
+    try:
+        text = current.read_text(encoding="utf-8")
+    except OSError:
+        return
+    recorded = None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("- **Branch:**"):
+            value = stripped[len("- **Branch:**"):].strip()
+            if value and value != "_-_":
+                recorded = value
+            break
+    if recorded is None:
+        return
+    try:
+        result = subprocess.run(
+            ["git", "symbolic-ref", "--short", "-q", "HEAD"],
+            cwd=str(root), capture_output=True, text=True, check=False,
+        )
+    except OSError:
+        return
+    actual = result.stdout.strip()
+    if result.returncode != 0 or not actual:
+        return
+    if actual != recorded:
+        print(f"NOTE: progress/current.md session belongs to branch "
+              f"'{recorded}' but '{actual}' is checked out - resume there, "
+              f"block the session (feature.py block), or use a git worktree.",
+              file=sys.stderr)
+
+
 def validate(root: Path) -> list[str]:
     gaps: list[str] = []
     workspace = resolve_workspace(root)
@@ -263,6 +349,7 @@ def main(argv: list[str] | None = None) -> int:
     workspace = resolve_workspace(root)
     gaps = validate(root)
     check_frontmatter_advisory(workspace)
+    check_branch_advisory(root, workspace)
 
     if gaps:
         print(f"validate_harness: FAIL (HARNESS_WORKSPACE={workspace})", file=sys.stderr)

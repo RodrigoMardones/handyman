@@ -309,4 +309,86 @@ else
 fi
 rm -rf "$T16"
 
+# --- T17: branch advisory flags a session from another branch ----------------
+start_case "validate_harness: foreign-branch session prints NOTE, exit stays 0"
+T17="$(mktemp -d)"
+write_workspace_files "$T17/.handyman" 1
+git -C "$T17" init -q -b main 2>/dev/null || git -C "$T17" init -q
+cat > "$T17/.handyman/progress/current.md" <<'MD'
+---
+feature: x
+status: in_progress
+role: leader
+updated: 2026-01-01
+tags: [handyman/session/current]
+---
+
+# Current Session
+
+- **Feature in progress:** x (id 1)
+- **Start:** 2026-01-01
+- **Agent:** leader
+- **Branch:** some-other-branch
+
+## Log
+MD
+OUT="$(python3 "$VALIDATOR" --root "$T17" 2>&1)"; CODE=$?
+# same fixture, branch line matching the checkout -> silent
+ACTUAL="$(git -C "$T17" symbolic-ref --short -q HEAD)"
+sed -i.bak "s/some-other-branch/$ACTUAL/" "$T17/.handyman/progress/current.md" && rm -f "$T17/.handyman/progress/current.md.bak"
+OUT2="$(python3 "$VALIDATOR" --root "$T17" 2>&1)"; CODE2=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "belongs to branch" \
+  && [ "$CODE2" -eq 0 ] && ! printf '%s' "$OUT2" | grep -q "belongs to branch"; then
+  pass
+else
+  fail "foreign=$CODE/$OUT same=$CODE2/$OUT2"
+fi
+rm -rf "$T17"
+
+# --- T18: scaffold creates the sprint docs split ------------------------------
+start_case "scaffold creates docs/current and docs/sprints in the workspace"
+T18="$(mktemp -d)"
+"$SUITE_DIR/../handyman/scripts/scaffold.sh" local "$T18" demo >/dev/null 2>&1
+if [ -d "$T18/.handyman/docs/current" ] && [ -d "$T18/.handyman/docs/sprints" ]; then
+  pass
+else
+  fail "missing docs split dirs under $T18/.handyman/docs"
+fi
+rm -rf "$T18"
+
+# --- T19: validator flags dangling depends_on, accepts archived targets -------
+start_case "validate_harness: flags dangling depends_on, accepts archived ids"
+T19="$(mktemp -d)"
+write_workspace_files "$T19/.handyman" 1
+mkdir -p "$T19/.handyman/archive"
+cat > "$T19/.handyman/archive/feature_archive.json" <<'JSON'
+{ "sprints": { "2026-SP1": [ { "id": 7, "name": "old", "status": "done" } ] } }
+JSON
+cat > "$T19/.handyman/feature_list.json" <<'JSON'
+{
+  "project": "t",
+  "features": [
+    { "id": 1, "name": "a", "status": "pending", "depends_on": [99] },
+    { "id": 2, "name": "b", "status": "pending", "depends_on": [7] }
+  ]
+}
+JSON
+OUT="$(python3 "$VALIDATOR" --root "$T19" 2>&1)"; CODE=$?
+python3 - "$T19/.handyman/feature_list.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+d = json.load(open(path))
+d["features"][0]["depends_on"] = [2]
+json.dump(d, open(path, "w"), indent=2)
+PY
+OUT2="$(python3 "$VALIDATOR" --root "$T19" 2>&1)"; CODE2=$?
+if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "depends_on unknown feature id 99" \
+  && ! printf '%s' "$OUT" | grep -q "'b' depends_on" \
+  && [ "$CODE2" -eq 0 ]; then
+  pass
+else
+  fail "dangling=$CODE/$OUT fixed=$CODE2/$OUT2"
+fi
+rm -rf "$T19"
+
 summary

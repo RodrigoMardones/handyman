@@ -419,6 +419,174 @@ def test_discovery_config() -> None:
           any(Draft7Validator(cfg_schema).iter_errors(bad)))
 
 
+def test_sprint_config() -> None:
+    """Plan A (sprints): optional sprint label on features, current_sprint in config.
+
+    The sprint is a declared partition label (not a date): the feature contract
+    stays a four-state machine and gains one optional key. Legacy files without
+    labels keep validating.
+    """
+    schemas_dir = os.path.join(ROOT, "assets", "schemas")
+    assets_dir = os.path.join(ROOT, "assets")
+
+    with open(os.path.join(schemas_dir, "feature_list.schema.json"),
+              encoding="utf-8") as fh:
+        fl_schema = json.load(fh)
+    feature_def = (fl_schema.get("definitions", {})
+                   .get("feature", {}))
+    check("feature definition declares sprint",
+          "sprint" in feature_def.get("properties", {}))
+    check("sprint stays optional in the feature contract",
+          "sprint" not in feature_def.get("required", []))
+    check("feature definition still rejects unknown keys",
+          feature_def.get("additionalProperties") is False)
+    sprint_prop = feature_def.get("properties", {}).get("sprint", {})
+    check("sprint carries a partition-label pattern",
+          "SP" in str(sprint_prop.get("pattern", "")))
+    config_props = (fl_schema.get("definitions", {})
+                    .get("config", {}).get("properties", {}))
+    check("feature_list config schema declares current_sprint",
+          "current_sprint" in config_props)
+
+    with open(os.path.join(schemas_dir, "harness.config.schema.json"),
+              encoding="utf-8") as fh:
+        cfg_schema = json.load(fh)
+    check("harness.config schema declares current_sprint",
+          "current_sprint" in cfg_schema.get("properties", {}))
+    check("current_sprint stays optional in harness.config schema",
+          "current_sprint" not in cfg_schema.get("required", []))
+
+    for name in ("harness.config.local.template.json",
+                 "harness.config.global.template.json"):
+        with open(os.path.join(assets_dir, name), encoding="utf-8") as fh:
+            data = json.load(fh)
+        check(f"template '{name}' carries the current_sprint sentinel",
+              "current_sprint" in data and data["current_sprint"] is None)
+    with open(os.path.join(assets_dir, "feature_list.template.json"),
+              encoding="utf-8") as fh:
+        fl_template = json.load(fh)
+    check("feature_list template config carries the current_sprint sentinel",
+          "current_sprint" in fl_template.get("config", {})
+          and fl_template["config"]["current_sprint"] is None)
+
+    if not _HAVE_JSONSCHEMA:
+        print("       NOTE: jsonschema not installed - sprint pattern "
+              "rejection checked in CI.")
+        return
+    validator = Draft7Validator(fl_schema)
+    good = json.loads(json.dumps(fl_template))
+    good["config"]["current_sprint"] = "2026-SP1"
+    good["features"][0]["sprint"] = "2026-SP1"
+    check("a labeled feature and open sprint validate",
+          not any(validator.iter_errors(good)))
+    bad = json.loads(json.dumps(fl_template))
+    bad["features"][0]["sprint"] = "sprint-one"
+    check("a malformed sprint label is rejected",
+          any(validator.iter_errors(bad)))
+
+
+def test_depends_on_contract() -> None:
+    """Plan A (harness ecosystem): optional depends_on on features + ready.
+
+    Dependencies are declared in the contract; readiness is derived by
+    `feature.py ready`. The feature stays a four-state machine and gains one
+    optional key; legacy files without it keep validating.
+    """
+    schemas_dir = os.path.join(ROOT, "assets", "schemas")
+    with open(os.path.join(schemas_dir, "feature_list.schema.json"),
+              encoding="utf-8") as fh:
+        fl_schema = json.load(fh)
+    feature_def = fl_schema.get("definitions", {}).get("feature", {})
+    dep = feature_def.get("properties", {}).get("depends_on", {})
+    check("feature definition declares depends_on", bool(dep))
+    check("depends_on stays optional in the feature contract",
+          "depends_on" not in feature_def.get("required", []))
+    check("depends_on is an array of integer ids",
+          dep.get("type") == "array"
+          and dep.get("items", {}).get("type") == "integer")
+    check("depends_on ids are unique", dep.get("uniqueItems") is True)
+    check("feature definition still rejects unknown keys",
+          feature_def.get("additionalProperties") is False)
+
+    with open(os.path.join(ROOT, "references", "anatomy.md"),
+              encoding="utf-8") as fh:
+        anatomy = fh.read()
+    check("anatomy.md documents depends_on", "depends_on" in anatomy)
+    check("anatomy.md points readiness at feature.py ready",
+          "feature.py ready" in anatomy)
+
+    if not _HAVE_JSONSCHEMA:
+        print("       NOTE: jsonschema not installed - depends_on shape "
+              "rejection checked in CI.")
+        return
+    validator = Draft7Validator(fl_schema)
+    doc = {"project": "t", "features": [
+        {"id": 1, "name": "a", "status": "done"},
+        {"id": 2, "name": "b", "status": "pending", "depends_on": [1]},
+    ]}
+    check("a feature with integer depends_on validates",
+          not any(validator.iter_errors(doc)))
+    bad = {"project": "t", "features": [
+        {"id": 2, "name": "b", "status": "pending", "depends_on": ["a"]},
+    ]}
+    check("a non-integer depends_on entry is rejected",
+          any(validator.iter_errors(bad)))
+
+
+def test_unattended_loop_reference() -> None:
+    """Plan B (harness ecosystem): the unattended-loop contract is documented.
+
+    Handyman ships no runner; workflow.md carries the loop contract (ready as
+    work detector, exit 3 as stop signal) and preflight surfaces the stop
+    condition through its worklist block.
+    """
+    with open(os.path.join(ROOT, "references", "workflow.md"),
+              encoding="utf-8") as fh:
+        workflow = fh.read()
+    check("workflow.md has the Unattended Loop section",
+          "## Unattended Loop" in workflow)
+    for token in ("feature.py ready", "exit 3", "stop", "One feature per iteration"):
+        check(f"Unattended Loop documents '{token}'", token in workflow)
+    check("stability check lists the worklist control",
+          "**Worklist**" in workflow)
+
+    with open(os.path.join(ROOT, "scripts", "preflight.py"),
+              encoding="utf-8") as fh:
+        preflight = fh.read()
+    check("preflight runs the worklist block", '"worklist"' in preflight)
+    check("preflight prints the loop stop condition",
+          "loop stop condition" in preflight)
+
+
+def test_two_stage_review() -> None:
+    """Plan C (harness ecosystem): the review happens in two ordered stages.
+
+    Stage 1 checks spec compliance, Stage 2 code quality, and a Stage 1
+    failure ends the review. Template + protocol only; backlog.py unchanged.
+    """
+    with open(os.path.join(ROOT, "assets", "backlog-review.template.md"),
+              encoding="utf-8") as fh:
+        template = fh.read()
+    check("review template has Stage 1: Spec Compliance",
+          "## Stage 1: Spec Compliance" in template)
+    check("review template has Stage 2: Code Quality",
+          "## Stage 2: Code Quality" in template)
+    check("Stage 1 cut rule is stated in the template",
+          "without moving to Stage 2" in template)
+    check("Stage 1 checks the acceptance criteria",
+          "acceptance criterion" in template)
+    check("Stage 2 keeps the verifier gate", "Verifier exits 0" in template)
+
+    with open(os.path.join(ROOT, "references", "workflow.md"),
+              encoding="utf-8") as fh:
+        workflow = fh.read()
+    check("Reviewer Protocol prescribes the two ordered stages",
+          "Stage 1 — spec compliance" in workflow
+          and "Stage 2 — code quality" in workflow)
+    check("Reviewer Protocol states the Stage 1 cut",
+          "without continuing to Stage 2" in workflow)
+
+
 def test_eval_set() -> None:
     """Plan A: the trigger-eval set has a schema and a deterministic structural contract.
 
@@ -685,6 +853,10 @@ def main() -> int:
     test_json_schemas()
     test_harness_version()
     test_discovery_config()
+    test_sprint_config()
+    test_depends_on_contract()
+    test_unattended_loop_reference()
+    test_two_stage_review()
     test_eval_set()
     test_upgrade_advisory()
     test_markdown_links()

@@ -13,6 +13,7 @@
     "handyman_root": { "type": ["string", "null"] },
     "harness_workspace": { "type": "string", "minLength": 1 },
     "harness_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "current_sprint": { "type": ["string", "null"], "pattern": "^\\d{4}-SP\\d+$" },
     "models": { "$ref": "#/definitions/role_models" },
     "tools": { "$ref": "#/definitions/role_tools" },
     "discovery": { "$ref": "#/definitions/discovery" },

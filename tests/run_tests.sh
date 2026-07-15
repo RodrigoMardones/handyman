@@ -29,6 +29,7 @@ run_suite bash "$SUITE_DIR/test_tools_discovery.sh"
 run_suite bash "$SUITE_DIR/test_evals.sh"
 run_suite bash "$SUITE_DIR/test_preflight.sh"
 run_suite bash "$SUITE_DIR/test_metrics.sh"
+run_suite bash "$SUITE_DIR/test_sprint.sh"
 
 echo "=============================================="
 if [ "$FAILED" -eq 0 ]; then

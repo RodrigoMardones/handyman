@@ -92,4 +92,23 @@ else
 fi
 rm -rf "$T"
 
+# --- T8: --report-passk derives pass@1/pass@k from the measured rates -------
+start_case "measure --report-passk prints pass@1/pass@k without extra calls"
+T="$(mktemp -d)"
+cat > "$T/runner.sh" <<'EOF'
+#!/usr/bin/env bash
+case "$*" in *harness*|*handyman*) echo TRIGGER ;; *) echo NO ;; esac
+EOF
+printf '[{"query":"bootstrap a handyman harness","should_trigger":true},{"query":"refactor a python module","should_trigger":false}]\n' > "$T/good.json"
+OUT="$(python3 "$EV" measure --eval-set "$T/good.json" --runner "bash $T/runner.sh" --runs 3 --report-passk 2>&1)"; CODE=$?
+# positives always fired -> pass@1=pass@3=1.00; negatives never fired -> fp@1=fp@3=0.00
+if [ "$CODE" -eq 0 ] \
+  && printf '%s' "$OUT" | grep -q "pass@1=1.00 pass@3=1.00" \
+  && printf '%s' "$OUT" | grep -q "fp@1=0.00 fp@3=0.00"; then
+  pass
+else
+  fail "exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
 summary
