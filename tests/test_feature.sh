@@ -302,11 +302,67 @@ HIST="$F18/.handyman/progress/history.md"
 python3 "$FEATURE" --root "$F18" start b >/dev/null 2>&1
 python3 "$FEATURE" --root "$F18" "done" b --verifier "$F18/pass.sh" --date 2026-02-03 >/dev/null 2>&1
 if grep -q -- "- \*\*Tools:\*\* skills: handyman, ponytail; agents: reviewer" "$HIST" \
-  && grep -A4 "Feature 2: b" "$HIST" | grep -q -- "- \*\*Tools:\*\* \.\.\."; then
+  && grep -A5 "Feature 2: b" "$HIST" | grep -q -- "- \*\*Tools:\*\* \.\.\."; then
   pass
 else
   fail "Tools provenance wrong in history: $(cat "$HIST")"
 fi
 rm -rf "$F18"
+
+# --- F19: start records the git branch in current.md ------------------------
+start_case "start: records the git branch; placeholder outside a repo"
+F19="$(mktemp -d)"
+write_harness "$F19"
+git -C "$F19" init -q -b prov-branch 2>/dev/null || {
+  git -C "$F19" init -q && git -C "$F19" checkout -q -b prov-branch
+}
+python3 "$FEATURE" --root "$F19" start a >/dev/null 2>&1
+CUR="$F19/.handyman/progress/current.md"
+# and a non-git fixture keeps the placeholder
+F19B="$(mktemp -d)"
+write_harness "$F19B"
+python3 "$FEATURE" --root "$F19B" start a >/dev/null 2>&1
+if grep -q -- "- \*\*Branch:\*\* prov-branch" "$CUR" \
+  && grep -q -- "- \*\*Branch:\*\* _-_" "$F19B/.handyman/progress/current.md"; then
+  pass
+else
+  fail "branch lines: $(grep 'Branch' "$CUR" "$F19B/.handyman/progress/current.md")"
+fi
+rm -rf "$F19" "$F19B"
+
+# --- F20: done carries the session branch into the history entry ------------
+start_case "done: carries the session branch into the history entry"
+F20="$(mktemp -d)"
+write_harness "$F20"
+write_verifier "$F20/pass.sh" 0
+git -C "$F20" init -q -b prov-close 2>/dev/null || {
+  git -C "$F20" init -q && git -C "$F20" checkout -q -b prov-close
+}
+python3 "$FEATURE" --root "$F20" start a >/dev/null 2>&1
+python3 "$FEATURE" --root "$F20" "done" a --verifier "$F20/pass.sh" --date 2026-02-04 >/dev/null 2>&1
+HIST="$F20/.handyman/progress/history.md"
+if grep -A2 "Feature 1: a" "$HIST" | grep -q -- "- \*\*Branch:\*\* prov-close"; then
+  pass
+else
+  fail "expected branch in history entry: $(cat "$HIST")"
+fi
+rm -rf "$F20"
+
+# --- F21: add never reuses an archived feature id ----------------------------
+start_case "add: id continues past the archive high-water mark"
+F21="$(mktemp -d)"
+write_harness "$F21"
+mkdir -p "$F21/.handyman/archive"
+cat > "$F21/.handyman/archive/feature_archive.json" <<'JSON'
+{ "sprints": { "2026-SP1": [ { "id": 9, "name": "old", "status": "done" } ] } }
+JSON
+python3 "$FEATURE" --root "$F21" add --name fresh >/dev/null 2>&1
+NEW_ID="$(python3 -c "import json;d=json.load(open('$F21/.handyman/feature_list.json'));print(next(f['id'] for f in d['features'] if f['name']=='fresh'))")"
+if [ "$NEW_ID" = "10" ]; then
+  pass
+else
+  fail "expected id 10 (archive max 9 beats live max 2), got $NEW_ID"
+fi
+rm -rf "$F21"
 
 summary

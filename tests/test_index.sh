@@ -106,4 +106,20 @@ python3 "$INDEX" --root "$T" >/dev/null 2>&1; CODE=$?
 if [ "$CODE" -ne 0 ]; then pass; else fail "expected non-zero exit"; fi
 rm -rf "$T"
 
+# --- I6: lists sprint and current-period docs as wikilinks ------------------
+start_case "lists docs/sprints and docs/current files as wikilinks"
+T="$(mktemp -d)"; write_harness "$T"
+mkdir -p "$T/.handyman/docs/sprints" "$T/.handyman/docs/current"
+: > "$T/.handyman/docs/sprints/sprint.2026-SP1.md"
+: > "$T/.handyman/docs/current/draft-topic.md"
+python3 "$INDEX" --root "$T" >/dev/null 2>&1
+IDX="$T/.handyman/index.md"
+if grep -q "\[\[docs/sprints/sprint.2026-SP1\]\]" "$IDX" \
+  && grep -q "\[\[docs/current/draft-topic\]\]" "$IDX"; then
+  pass
+else
+  fail "sprint/current docs not listed: $(grep 'docs/' "$IDX")"
+fi
+rm -rf "$T"
+
 summary

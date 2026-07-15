@@ -8,6 +8,7 @@
     "handyman_root": null,
     "harness_workspace": ".handyman",
     "harness_version": "0.0.0",
+    "current_sprint": null,
     "discovery": { "skills": [], "mcp": [], "agents": [] },
     "post_run": []
   },

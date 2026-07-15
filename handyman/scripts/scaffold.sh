@@ -135,6 +135,8 @@ make_dir "$HARNESS_WORKSPACE"
 make_dir "$HARNESS_WORKSPACE/progress"
 make_dir "$HARNESS_WORKSPACE/backlog"
 make_dir "$HARNESS_WORKSPACE/docs"
+make_dir "$HARNESS_WORKSPACE/docs/current"
+make_dir "$HARNESS_WORKSPACE/docs/sprints"
 
 # --- Mutable state templates ------------------------------------------------
 echo "==> copying harness state templates"

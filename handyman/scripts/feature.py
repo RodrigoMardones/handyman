@@ -59,6 +59,7 @@ This file is reset when a session closes and its summary moves to `[[history]]`.
 - **Feature in progress:** {in_progress}
 - **Start:** {start}
 - **Agent:** {agent}
+- **Branch:** {branch}
 
 ## Plan
 
@@ -167,9 +168,46 @@ def _find(features: list, name: str):
     return None
 
 
+def _git_branch(root: Path) -> str | None:
+    """The current git branch of the project root, or None outside a repo
+    or on a detached HEAD.
+
+    Branch provenance: a session belongs to a branch, a feature does not
+    (the feature contract carries no branch key). `symbolic-ref` also works
+    on a fresh repo with no commits yet (unborn HEAD)."""
+    try:
+        result = subprocess.run(
+            ["git", "symbolic-ref", "--short", "-q", "HEAD"],
+            cwd=str(root), capture_output=True, text=True, check=False,
+        )
+    except OSError:
+        return None
+    branch = result.stdout.strip()
+    return branch if result.returncode == 0 and branch else None
+
+
+def _session_branch(workspace: Path) -> str | None:
+    """The branch recorded in progress/current.md, or None when absent."""
+    current = workspace / "progress" / "current.md"
+    if not current.is_file():
+        return None
+    try:
+        text = current.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("- **Branch:**"):
+            value = stripped[len("- **Branch:**"):].strip()
+            if value and value != "_-_":
+                return value
+            return None
+    return None
+
+
 def _write_current(workspace: Path, *, feature: str, status: str,
                    in_progress: str, start: str, agent: str,
-                   today: str) -> None:
+                   today: str, branch: str = "_-_") -> None:
     current = workspace / "progress" / "current.md"
     if not current.parent.is_dir():
         return
@@ -177,6 +215,7 @@ def _write_current(workspace: Path, *, feature: str, status: str,
         SESSION_TEMPLATE.format(
             feature=feature, status=status, updated=today,
             in_progress=in_progress, start=start, agent=agent,
+            branch=branch,
         ),
         encoding="utf-8",
     )
@@ -273,12 +312,35 @@ def cmd_next(args, workspace: Path) -> int:
     return 0
 
 
+def _archived_max_id(workspace: Path) -> int:
+    """Highest feature id in archive/feature_archive.json (sprint closes move
+    done features there). Keeps ids unique across live and archived features
+    so a new feature never reuses an archived id. 0 when there is no archive."""
+    path = workspace / "archive" / "feature_archive.json"
+    if not path.is_file():
+        return 0
+    try:
+        archive = json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return 0
+    return max(
+        (f.get("id", 0)
+         for sprint in (archive.get("sprints") or {}).values()
+         if isinstance(sprint, list)
+         for f in sprint if isinstance(f, dict)),
+        default=0,
+    )
+
+
 def cmd_add(args, workspace: Path) -> int:
     data, path = _load(workspace)
     features = data.setdefault("features", [])
     if _find(features, args.name) is not None:
         return err(f"feature '{args.name}' already exists")
-    next_id = max((f.get("id", 0) for f in features), default=0) + 1
+    next_id = max(
+        max((f.get("id", 0) for f in features), default=0),
+        _archived_max_id(workspace),
+    ) + 1
     feature = {
         "id": next_id,
         "name": args.name,
@@ -316,6 +378,7 @@ def cmd_start(args, workspace: Path, root: Path) -> int:
         workspace, feature=args.name, status="in_progress",
         in_progress=f"{args.name} (id {feature.get('id')})",
         start=today, agent="leader", today=today,
+        branch=_git_branch(root) or "_-_",
     )
     print(f"started feature {feature.get('id')} '{args.name}' (in_progress)")
     return 0
@@ -365,9 +428,14 @@ def cmd_done(args, workspace: Path, root: Path) -> int:
         # so future selection can be derived from real usage. Optional flag;
         # omitted keeps the narrative placeholder.
         tools = args.tools.strip() if args.tools else "..."
+        # Branch provenance: the session's branch recorded at start, falling
+        # back to the branch at close time (sessions belong to branches;
+        # the feature contract does not).
+        branch = _session_branch(workspace) or _git_branch(root) or "..."
         entry = (
             f"\n## {today} - Feature {feature.get('id')}: {args.name}\n"
             f"- **Agent:** leader -> implementer -> reviewer\n"
+            f"- **Branch:** {branch}\n"
             f"- **Plan:** ...\n"
             f"- **Changes:** ...\n"
             f"- **Tools:** {tools}\n"

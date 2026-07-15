@@ -28,6 +28,7 @@
         "handyman_root": { "type": ["string", "null"] },
         "harness_workspace": { "type": "string", "minLength": 1 },
         "harness_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "current_sprint": { "type": ["string", "null"], "pattern": "^\\d{4}-SP\\d+$" },
         "discovery": { "$ref": "#/definitions/discovery" },
         "post_run": { "$ref": "#/definitions/command_list" }
       }
@@ -73,7 +74,8 @@
           "items": { "type": "string" }
         },
         "status": { "type": "string", "enum": ["pending", "in_progress", "done", "blocked"] },
-        "blocked_reason": { "type": "string" }
+        "blocked_reason": { "type": "string" },
+        "sprint": { "type": "string", "pattern": "^\\d{4}-SP\\d+$" }
       }
     }
   }

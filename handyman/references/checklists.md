@@ -73,6 +73,15 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] Declared post-run hooks (the `post_run` list in `harness.config.json`) ran after the close, or none were declared.
 - [ ] Every stage left its artifact (see the stages table in [workflow.md](./workflow.md)): intake entry, session file, verifier output, `impl_`/`review_` reports, dated history heading.
 
+## Sprint-Close Checklist
+
+- [ ] No labeled feature is `in_progress` (finish or block it first; `scripts/sprint.py close` refuses otherwise).
+- [ ] `scripts/sprint.py close --dry-run` previewed the close before applying it.
+- [ ] `docs/sprints/sprint.<id>.md` exists with the derived sections (features, metrics, tools and branch provenance, carry-over).
+- [ ] The manual sections (achievements, lessons) are filled from the period's history entries.
+- [ ] The sprint's `done` features moved to `archive/feature_archive.json` and left `feature_list.json`; carry-over features lost the label.
+- [ ] `current_sprint` is cleared and `docs/current/` was compressed into the sprint document (see the Sprint Protocol in [workflow.md](./workflow.md)).
+
 ## Review Checklist
 
 - [ ] Implementation report names changed files and test output.

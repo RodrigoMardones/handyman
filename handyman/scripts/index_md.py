@@ -104,6 +104,13 @@ def build_index(workspace: Path) -> str:
     for doc in DOCS:
         if (workspace / "docs" / f"{doc}.md").is_file():
             out.append(f"- [[docs/{doc}]]")
+    # Work-period docs: closed sprints and unreviewed open-sprint drafts.
+    sprints_dir = workspace / "docs" / "sprints"
+    for path in (sorted(sprints_dir.glob("*.md")) if sprints_dir.is_dir() else []):
+        out.append(f"- [[docs/sprints/{path.stem}]]")
+    current_dir = workspace / "docs" / "current"
+    for path in (sorted(current_dir.glob("*.md")) if current_dir.is_dir() else []):
+        out.append(f"- [[docs/current/{path.stem}]]")
 
     out += ["", "## Progress", ""]
     for prog in ("current", "history"):

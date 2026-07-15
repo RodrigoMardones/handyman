@@ -419,6 +419,72 @@ def test_discovery_config() -> None:
           any(Draft7Validator(cfg_schema).iter_errors(bad)))
 
 
+def test_sprint_config() -> None:
+    """Plan A (sprints): optional sprint label on features, current_sprint in config.
+
+    The sprint is a declared partition label (not a date): the feature contract
+    stays a four-state machine and gains one optional key. Legacy files without
+    labels keep validating.
+    """
+    schemas_dir = os.path.join(ROOT, "assets", "schemas")
+    assets_dir = os.path.join(ROOT, "assets")
+
+    with open(os.path.join(schemas_dir, "feature_list.schema.json"),
+              encoding="utf-8") as fh:
+        fl_schema = json.load(fh)
+    feature_def = (fl_schema.get("definitions", {})
+                   .get("feature", {}))
+    check("feature definition declares sprint",
+          "sprint" in feature_def.get("properties", {}))
+    check("sprint stays optional in the feature contract",
+          "sprint" not in feature_def.get("required", []))
+    check("feature definition still rejects unknown keys",
+          feature_def.get("additionalProperties") is False)
+    sprint_prop = feature_def.get("properties", {}).get("sprint", {})
+    check("sprint carries a partition-label pattern",
+          "SP" in str(sprint_prop.get("pattern", "")))
+    config_props = (fl_schema.get("definitions", {})
+                    .get("config", {}).get("properties", {}))
+    check("feature_list config schema declares current_sprint",
+          "current_sprint" in config_props)
+
+    with open(os.path.join(schemas_dir, "harness.config.schema.json"),
+              encoding="utf-8") as fh:
+        cfg_schema = json.load(fh)
+    check("harness.config schema declares current_sprint",
+          "current_sprint" in cfg_schema.get("properties", {}))
+    check("current_sprint stays optional in harness.config schema",
+          "current_sprint" not in cfg_schema.get("required", []))
+
+    for name in ("harness.config.local.template.json",
+                 "harness.config.global.template.json"):
+        with open(os.path.join(assets_dir, name), encoding="utf-8") as fh:
+            data = json.load(fh)
+        check(f"template '{name}' carries the current_sprint sentinel",
+              "current_sprint" in data and data["current_sprint"] is None)
+    with open(os.path.join(assets_dir, "feature_list.template.json"),
+              encoding="utf-8") as fh:
+        fl_template = json.load(fh)
+    check("feature_list template config carries the current_sprint sentinel",
+          "current_sprint" in fl_template.get("config", {})
+          and fl_template["config"]["current_sprint"] is None)
+
+    if not _HAVE_JSONSCHEMA:
+        print("       NOTE: jsonschema not installed - sprint pattern "
+              "rejection checked in CI.")
+        return
+    validator = Draft7Validator(fl_schema)
+    good = json.loads(json.dumps(fl_template))
+    good["config"]["current_sprint"] = "2026-SP1"
+    good["features"][0]["sprint"] = "2026-SP1"
+    check("a labeled feature and open sprint validate",
+          not any(validator.iter_errors(good)))
+    bad = json.loads(json.dumps(fl_template))
+    bad["features"][0]["sprint"] = "sprint-one"
+    check("a malformed sprint label is rejected",
+          any(validator.iter_errors(bad)))
+
+
 def test_eval_set() -> None:
     """Plan A: the trigger-eval set has a schema and a deterministic structural contract.
 
@@ -685,6 +751,7 @@ def main() -> int:
     test_json_schemas()
     test_harness_version()
     test_discovery_config()
+    test_sprint_config()
     test_eval_set()
     test_upgrade_advisory()
     test_markdown_links()
