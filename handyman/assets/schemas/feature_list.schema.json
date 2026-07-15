@@ -75,7 +75,12 @@
         },
         "status": { "type": "string", "enum": ["pending", "in_progress", "done", "blocked"] },
         "blocked_reason": { "type": "string" },
-        "sprint": { "type": "string", "pattern": "^\\d{4}-SP\\d+$" }
+        "sprint": { "type": "string", "pattern": "^\\d{4}-SP\\d+$" },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 },
+          "uniqueItems": true
+        }
       }
     }
   }

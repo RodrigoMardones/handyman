@@ -15,6 +15,8 @@ Operations:
              Rejects a second open sprint and malformed ids.
   close      Derive docs/sprints/sprint.<ID>.md inside the workspace, archive
              the sprint's done features to archive/feature_archive.json,
+             compact the archived features' history entries to one-line
+             stubs (the narrative just moved into the sprint document),
              strip the label from carry-over features, and clear
              current_sprint. --dry-run previews without writing.
   status     Report the open sprint and its features. Read-only.
@@ -247,6 +249,55 @@ def _archive(workspace: Path, sid: str, done: list[dict]) -> Path:
     return path
 
 
+def _compact_history(workspace: Path, sid: str, done_names: set,
+                     dry_run: bool = False) -> int:
+    """Compress the history bodies of the sprint's archived features to a
+    one-line stub (memory decay at period close).
+
+    The dated heading stays byte-identical: `metrics.history_closures` and the
+    sprint renderer key on it, so throughput stays derivable forever. Only the
+    body is replaced - its narrative was captured moments earlier in the
+    derived sprint document. Idempotent: a body that already is the stub is
+    left alone. Returns how many entries would be (or were) compacted."""
+    path = workspace / "progress" / "history.md"
+    if not path.is_file():
+        return 0
+    try:
+        lines = path.read_text(encoding="utf-8").split("\n")
+    except OSError:
+        return 0
+    stub = f"- archived to sprint {sid}; narrative in docs/sprints/sprint.{sid}.md"
+    out: list[str] = []
+    compacted = 0
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        match = _HISTORY_HEADING.match(line)
+        if match and match.group(1).strip() in done_names:
+            j = i + 1
+            body = []
+            while j < len(lines) and not lines[j].startswith("## "):
+                body.append(lines[j])
+                j += 1
+            meaningful = [b for b in body if b.strip()]
+            out.append(line)
+            if meaningful and not (len(meaningful) == 1
+                                   and meaningful[0].strip().startswith(
+                                       "- archived to sprint")):
+                out.append(stub)
+                out.append("")
+                compacted += 1
+            else:
+                out.extend(body)
+            i = j
+        else:
+            out.append(line)
+            i += 1
+    if compacted and not dry_run:
+        path.write_text("\n".join(out), encoding="utf-8")
+    return compacted
+
+
 def cmd_open(args, workspace: Path, root: Path) -> int:
     sid = args.sprint_id
     if not SPRINT_ID.match(sid):
@@ -297,10 +348,13 @@ def cmd_close(args, workspace: Path, root: Path) -> int:
         return err(f"sprint document already exists: {doc_path}")
 
     content = _render_doc(sid, labeled, workspace)
+    done_names = {f.get("name", "") for f in done}
     if args.dry_run:
         print(f"DRY RUN: would write {doc_path}")
         print(f"DRY RUN: would archive {len(done)} done feature(s) to "
               f"{workspace / 'archive' / 'feature_archive.json'}")
+        n = _compact_history(workspace, sid, done_names, dry_run=True)
+        print(f"DRY RUN: would compact {n} history entrie(s) to archive stubs")
         print(f"DRY RUN: would strip the label from {len(carry)} "
               f"carry-over feature(s)")
         print(f"DRY RUN: would clear current_sprint ({sid})")
@@ -309,6 +363,9 @@ def cmd_close(args, workspace: Path, root: Path) -> int:
     doc_path.parent.mkdir(parents=True, exist_ok=True)
     doc_path.write_text(content, encoding="utf-8")
     archive_path = _archive(workspace, sid, done)
+    # Compact AFTER the sprint document is rendered and written: the stub
+    # points at the document that now holds the full narrative.
+    compacted = _compact_history(workspace, sid, done_names)
     data["features"] = [
         f for f in features
         if not (f.get("sprint") == sid and f.get("status") == "done")
@@ -321,6 +378,7 @@ def cmd_close(args, workspace: Path, root: Path) -> int:
     print(f"closed sprint {sid} -> {doc_path}")
     print(f"archived {len(done)} done feature(s) -> {archive_path}; "
           f"{len(carry)} carried over")
+    print(f"compacted {compacted} history entrie(s) to archive stubs")
     return 0
 
 

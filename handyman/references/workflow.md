@@ -35,13 +35,14 @@ The workspace is one per checkout and shared across branches (it is not versione
 
 ### Stability check before feature work
 
-Before selecting a feature, confirm the harness is well-formed and stable across versions. This is a read-only review that surfaces drift and desynchronization; it does not apply fixes (those stay a human decision). Run `scripts/preflight.py --root <project_root>` (or read the non-blocking advisories the verifier prints at the end of `init.sh`), which orchestrates five controls:
+Before selecting a feature, confirm the harness is well-formed and stable across versions. This is a read-only review that surfaces drift and desynchronization; it does not apply fixes (those stay a human decision). Run `scripts/preflight.py --root <project_root>` (or read the non-blocking advisories the verifier prints at the end of `init.sh`), which orchestrates six controls:
 
 - **Format** — `scripts/validate_harness.py`: structure, core files, `feature_list.json` parses, at most one `in_progress`, role files in the platform path.
 - **Feature-list contract** — the live `feature_list.json` validates against `assets/schemas/feature_list.schema.json` (`additionalProperties:false` rejects out-of-contract keys).
 - **Version drift** — `scripts/upgrade_harness.py --check`: the installed `harness_version` against the current skill; a `BEHIND` report means run `scripts/upgrade_harness.py` (with `--dry-run`) to apply migrations and re-seal.
 - **Config ↔ role-file sync** — `scripts/update_harness.py --check`: the `models`/`tools` maps of `harness.config.json` against the role files; if they drifted, run `scripts/update_harness.py --sync` to reconcile the role files to the config (deterministic, config is the source of truth).
 - **Discovery** — `scripts/tools_discovery.py check`: the declared `discovery` skills and MCP servers against what is installed; install or declare what is missing.
+- **Worklist** — `scripts/feature.py ready`: the `pending` features whose `depends_on` are all satisfied; a drained report (exit 3) is the unattended-loop stop condition, and blocked-only work needs a human decision, not another session.
 
 `preflight.py` always exits 0 (it reports stability, it does not gate): the blocking checks already live in the verifier's `validate` phase. Treat the report as the stability review that precedes feature work, and act on `BEHIND`/drift before starting.
 
@@ -97,7 +98,7 @@ The reviewer validates and does not edit code. It runs under its assigned model,
 3. Read `$HARNESS_WORKSPACE/progress/current.md` and the implementation report.
 4. Inspect changed files.
 5. Run the verifier from `PROJECT_ROOT`.
-6. Mark checklist items as pass or fail.
+6. Review in two stages, in order. **Stage 1 — spec compliance:** every acceptance criterion, the feature's declared scope, and the required reports. **Stage 2 — code quality:** architecture, conventions, tests, verifier. A Stage 1 failure is reported immediately as `CHANGES_REQUESTED` without continuing to Stage 2, so spec drift is never buried under style feedback; the review template carries one checklist per stage.
 7. Write `$HARNESS_WORKSPACE/backlog/review_<feature>.md` with YAML frontmatter (`feature`, `status: approved` or `status: changes_requested`, `role: reviewer`, `updated`, `tags`) and `APPROVED` or `CHANGES_REQUESTED` in the body. Create it with `scripts/backlog.py review <feature> --status approved|changes_requested`, which keeps the status, tag, and verdict coherent.
 8. Return only `APPROVED -> $HARNESS_WORKSPACE/backlog/review_<feature>.md` or `CHANGES_REQUESTED -> $HARNESS_WORKSPACE/backlog/review_<feature>.md`.
 
@@ -121,13 +122,30 @@ Closure steps:
 6. Run any declared post-run hooks. The optional `post_run` list in `harness.config.json` holds shell commands that run automatically after a verified close (`scripts/feature.py done` executes them, always with exit 0 — a failing custom step only WARNs and never reverts the close). Typical uses: regenerate `index.md` (`scripts/index_md.py`), refresh a context graph (`/graphify --update`), or re-measure a description trigger (`scripts/evals.py measure`). Leave the list empty (`[]`) when no custom steps are wanted.
 7. Report concise final status to the user.
 
+## Unattended Loop
+
+The harness state is designed so an **external** runner can chain sessions without a human relaunching each one (the pattern the ecosystem calls a "ralph loop"). Handyman deliberately ships no runner: the loop is the operator's responsibility — a shell `while`, CI, or the platform's own scheduler — and the harness contributes the contract that makes looping safe:
+
+- **Work detection** — `scripts/feature.py ready [--json]` lists the `pending` features whose `depends_on` are all satisfied. Exit 0 means claimable work exists; exit 3 means the backlog is drained and the loop must stop.
+- **One feature per iteration** — each session works exactly one feature; the single-`in_progress` invariant applies to unattended sessions too.
+- **The verifier still gates** — `scripts/feature.py done` refuses to close without a green verifier, attended or not.
+- **Stop conditions** — stop when `ready` exits 3. If features remain `blocked`, the stability report (`scripts/preflight.py`, worklist block) says so explicitly: blocked work needs a human decision, not another iteration.
+
+```bash
+while python3 scripts/feature.py --root . ready; do
+  run_one_session   # start -> implement -> review -> done, one feature
+done
+```
+
+Keep `scripts/preflight.py --strict` in the loop's CI so drift stops the loop instead of compounding, and never point an unattended loop at a checkout with uncommitted work that matters.
+
 ## Sprint Protocol
 
 A sprint is a work period: a declared partition label on features, opened and closed deterministically by `scripts/sprint.py` (stage 7 in the table above). The label says which period a feature belongs to — it is not a date, and the contract stays a four-state machine; everything in the sprint document is derived at close time from the artifacts stages 0-6 already left on disk.
 
 1. **Open** — `scripts/sprint.py open <id>` (id format `2026-SP1`): stamps every unlabeled `pending`/`in_progress` feature with the sprint label, records `current_sprint` in `harness.config.json` (mirrored to the `feature_list.json` config block), and rejects a second open sprint.
 2. **Work** — features flow through stages 0-6 unchanged. `scripts/feature.py add` during the sprint leaves new features unlabeled; re-running `open` is not needed — label membership is decided at open time, and unlabeled features simply carry over to the next period. Unreviewed period documentation drafts belong in `docs/current/`.
-3. **Close** — `scripts/sprint.py close` (preview with `--dry-run`): derives `docs/sprints/sprint.<id>.md` from `feature_list.json`, `progress/history.md`, and `backlog/` frontmatter (features table, period, throughput, review verdicts, tools and branch provenance, carry-over); archives the sprint's `done` features to `archive/feature_archive.json` and removes them from `feature_list.json`; strips the label from carry-over features; clears `current_sprint`. It refuses to close while a labeled feature is `in_progress`.
+3. **Close** — `scripts/sprint.py close` (preview with `--dry-run`): derives `docs/sprints/sprint.<id>.md` from `feature_list.json`, `progress/history.md`, and `backlog/` frontmatter (features table, period, throughput, review verdicts, tools and branch provenance, carry-over); archives the sprint's `done` features to `archive/feature_archive.json` and removes them from `feature_list.json`; compacts the archived features' `history.md` entries to one-line stubs (the dated heading stays, so throughput remains derivable; the narrative lives on in the sprint document); strips the label from carry-over features; clears `current_sprint`. It refuses to close while a labeled feature is `in_progress`.
 4. **Manual pass** — the generated document leaves two sections for the operator: achievements and lessons. Fill them from the period's history entries, then empty `docs/current/` by compressing what mattered into the sprint document.
 
 The derived sections are regenerated, never hand-maintained; a hand-kept copy of state the artifacts already carry is the drift the harness exists to avoid. See the research and data-shape rationale in `docs/analisis-sprints-cierre-periodo.md` at the skill repo root.

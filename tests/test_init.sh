@@ -356,4 +356,39 @@ else
 fi
 rm -rf "$T18"
 
+# --- T19: validator flags dangling depends_on, accepts archived targets -------
+start_case "validate_harness: flags dangling depends_on, accepts archived ids"
+T19="$(mktemp -d)"
+write_workspace_files "$T19/.handyman" 1
+mkdir -p "$T19/.handyman/archive"
+cat > "$T19/.handyman/archive/feature_archive.json" <<'JSON'
+{ "sprints": { "2026-SP1": [ { "id": 7, "name": "old", "status": "done" } ] } }
+JSON
+cat > "$T19/.handyman/feature_list.json" <<'JSON'
+{
+  "project": "t",
+  "features": [
+    { "id": 1, "name": "a", "status": "pending", "depends_on": [99] },
+    { "id": 2, "name": "b", "status": "pending", "depends_on": [7] }
+  ]
+}
+JSON
+OUT="$(python3 "$VALIDATOR" --root "$T19" 2>&1)"; CODE=$?
+python3 - "$T19/.handyman/feature_list.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+d = json.load(open(path))
+d["features"][0]["depends_on"] = [2]
+json.dump(d, open(path, "w"), indent=2)
+PY
+OUT2="$(python3 "$VALIDATOR" --root "$T19" 2>&1)"; CODE2=$?
+if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "depends_on unknown feature id 99" \
+  && ! printf '%s' "$OUT" | grep -q "'b' depends_on" \
+  && [ "$CODE2" -eq 0 ]; then
+  pass
+else
+  fail "dangling=$CODE/$OUT fixed=$CODE2/$OUT2"
+fi
+rm -rf "$T19"
+
 summary

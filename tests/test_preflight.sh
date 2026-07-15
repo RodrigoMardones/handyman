@@ -162,4 +162,61 @@ else
 fi
 rm -rf "$T"
 
+# --- T9: worklist block reports claimable work via feature.py ready ---------
+start_case "worklist block reports ready features and stays out of strict"
+T="$(mktemp -d)"; write_fixture "$T"
+python3 - "$T/.handyman/feature_list.json" <<'PY'
+import json, sys
+p = sys.argv[1]
+d = json.loads(open(p).read())
+d["features"] = [{"id": 1, "name": "work_me", "status": "pending"}]
+open(p, "w").write(json.dumps(d, indent=2))
+PY
+OUT="$(python3 "$PF" --root "$T" --strict 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] \
+  && printf '%s' "$OUT" | grep -q "worklist: OK" \
+  && printf '%s' "$OUT" | grep -q "work_me"; then
+  pass
+else
+  fail "expected worklist OK with the ready feature; exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
+# --- T10: drained backlog surfaces the loop stop condition (advisory) -------
+start_case "worklist NOTEs the loop stop condition on a drained backlog"
+T="$(mktemp -d)"; write_fixture "$T"
+# fixture ships an empty features array -> ready exits 3 (drained)
+OUT="$(python3 "$PF" --root "$T" --strict 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] \
+  && printf '%s' "$OUT" | grep -q "worklist: NOTE" \
+  && printf '%s' "$OUT" | grep -q "loop stop condition"; then
+  pass
+else
+  fail "expected drained NOTE + exit 0 under strict; exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
+# --- T11: observation shape - status tail ok/warn/error ---------------------
+start_case "observation shape: report ends with status (ok, warn, strict error)"
+T="$(mktemp -d)"; write_fixture "$T"
+OK_TAIL="$(python3 "$PF" --root "$T" 2>/dev/null | tail -n1)"
+python3 - "$T/harness.config.json" <<'PY'
+import json, sys
+p = sys.argv[1]
+d = json.loads(open(p).read())
+d["harness_version"] = "0.0.1"
+open(p, "w").write(json.dumps(d, indent=2))
+PY
+WARN_OUT="$(python3 "$PF" --root "$T" 2>/dev/null)"
+WARN_TAIL="$(printf '%s' "$WARN_OUT" | tail -n1)"
+ERR_TAIL="$(python3 "$PF" --root "$T" --strict 2>/dev/null | tail -n1)"
+if [ "$OK_TAIL" = "status: ok" ] && [ "$WARN_TAIL" = "status: warn" ] \
+  && [ "$ERR_TAIL" = "status: error" ] \
+  && printf '%s' "$WARN_OUT" | grep -q "^next:"; then
+  pass
+else
+  fail "ok=$OK_TAIL warn=$WARN_TAIL err=$ERR_TAIL"
+fi
+rm -rf "$T"
+
 summary

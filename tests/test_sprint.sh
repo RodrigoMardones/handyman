@@ -192,4 +192,112 @@ else
 fi
 rm -rf "$S8"
 
+# --- S9: close compacts archived history entries, keeps the rest --------------
+start_case "close: compacts archived history bodies, leaves other entries alone"
+S9="$(mktemp -d)"
+write_harness "$S9"
+cat >> "$S9/.handyman/progress/history.md" <<'MD'
+
+## 2026-07-11 - Feature 2: b
+- **Agent:** leader
+- **Tools:** skills: untouched-marker
+- **Closure:** done
+MD
+python3 "$SPRINT" --root "$S9" open 2026-SP1 >/dev/null 2>&1
+python3 - "$S9/.handyman/feature_list.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+d = json.load(open(path))
+for f in d["features"]:
+    if f["name"] == "a":
+        f["status"] = "done"
+json.dump(d, open(path, "w"), indent=2)
+PY
+OUT="$(python3 "$SPRINT" --root "$S9" close 2>&1)"; CODE=$?
+HIST="$S9/.handyman/progress/history.md"
+# a: archived -> heading intact, body reduced to the stub, old bullets gone
+# b: not archived (carry-over) -> full body untouched
+if [ "$CODE" -eq 0 ] \
+  && printf '%s' "$OUT" | grep -q "compacted 1 history" \
+  && grep -q "^## 2026-07-10 - Feature 1: a$" "$HIST" \
+  && grep -A1 "Feature 1: a" "$HIST" | grep -q "archived to sprint 2026-SP1" \
+  && ! grep -q "skills: handyman" "$HIST" \
+  && grep -q "skills: untouched-marker" "$HIST"; then
+  pass
+else
+  fail "exit=$CODE output: $OUT history: $(cat "$HIST")"
+fi
+rm -rf "$S9"
+
+# --- S10: --dry-run previews the compaction without writing --------------------
+start_case "close: --dry-run reports the compaction and leaves history intact"
+S10="$(mktemp -d)"
+write_harness "$S10"
+python3 "$SPRINT" --root "$S10" open 2026-SP1 >/dev/null 2>&1
+python3 - "$S10/.handyman/feature_list.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+d = json.load(open(path))
+for f in d["features"]:
+    if f["name"] == "a":
+        f["status"] = "done"
+json.dump(d, open(path, "w"), indent=2)
+PY
+OUT="$(python3 "$SPRINT" --root "$S10" close --dry-run 2>&1)"; CODE=$?
+HIST="$S10/.handyman/progress/history.md"
+if [ "$CODE" -eq 0 ] \
+  && printf '%s' "$OUT" | grep -q "would compact 1 history" \
+  && grep -q "skills: handyman" "$HIST" \
+  && ! grep -q "archived to sprint" "$HIST"; then
+  pass
+else
+  fail "exit=$CODE output: $OUT history: $(cat "$HIST")"
+fi
+rm -rf "$S10"
+
+# --- S11: compaction is idempotent across a second sprint close ----------------
+start_case "close: a second sprint close does not re-compact earlier stubs"
+S11="$(mktemp -d)"
+write_harness "$S11"
+python3 "$SPRINT" --root "$S11" open 2026-SP1 >/dev/null 2>&1
+python3 - "$S11/.handyman/feature_list.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+d = json.load(open(path))
+for f in d["features"]:
+    if f["name"] == "a":
+        f["status"] = "done"
+json.dump(d, open(path, "w"), indent=2)
+PY
+python3 "$SPRINT" --root "$S11" close >/dev/null 2>&1
+# second period: feature a is archived, but its (already compacted) entry
+# would match again if 'a' were re-archived; instead close b in SP2 and
+# assert a's stub still points at SP1 and appears exactly once.
+python3 "$SPRINT" --root "$S11" open 2026-SP2 >/dev/null 2>&1
+python3 - "$S11/.handyman/feature_list.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+d = json.load(open(path))
+for f in d["features"]:
+    if f["name"] == "b":
+        f["status"] = "done"
+json.dump(d, open(path, "w"), indent=2)
+PY
+cat >> "$S11/.handyman/progress/history.md" <<'MD'
+
+## 2026-07-12 - Feature 2: b
+- **Agent:** leader
+- **Closure:** done
+MD
+OUT="$(python3 "$SPRINT" --root "$S11" close 2>&1)"; CODE=$?
+HIST="$S11/.handyman/progress/history.md"
+N_SP1="$(grep -c "archived to sprint 2026-SP1" "$HIST")"
+N_SP2="$(grep -c "archived to sprint 2026-SP2" "$HIST")"
+if [ "$CODE" -eq 0 ] && [ "$N_SP1" = "1" ] && [ "$N_SP2" = "1" ]; then
+  pass
+else
+  fail "exit=$CODE sp1=$N_SP1 sp2=$N_SP2 history: $(cat "$HIST")"
+fi
+rm -rf "$S11"
+
 summary

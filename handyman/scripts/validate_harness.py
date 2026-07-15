@@ -110,6 +110,49 @@ def check_feature_list(workspace: Path, gaps: list[str]) -> None:
             ident = feature.get("name", feature.get("id", "?"))
             gaps.append(f"feature '{ident}' has invalid status '{status}'")
 
+    check_depends_on(workspace, features, gaps)
+
+
+def _archived_ids(workspace: Path) -> set:
+    """Feature ids already moved to archive/feature_archive.json by sprint
+    closes. Archived ids stay valid dependency targets."""
+    path = workspace / "archive" / "feature_archive.json"
+    if not path.is_file():
+        return set()
+    try:
+        archive = json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return set()
+    return {
+        f["id"]
+        for sprint in (archive.get("sprints") or {}).values()
+        if isinstance(sprint, list)
+        for f in sprint
+        if isinstance(f, dict) and isinstance(f.get("id"), int)
+    }
+
+
+def check_depends_on(workspace: Path, features: list, gaps: list[str]) -> None:
+    """Every depends_on id must reference a real feature: itself is a cycle,
+    and an id that exists neither live nor in the sprint archive is dangling
+    (the schema only checks the shape; this checks the references)."""
+    known = {f.get("id") for f in features if isinstance(f, dict)}
+    known |= _archived_ids(workspace)
+    for feature in features:
+        if not isinstance(feature, dict):
+            continue
+        deps = feature.get("depends_on")
+        if not isinstance(deps, list):
+            continue
+        ident = feature.get("name", feature.get("id", "?"))
+        for dep in deps:
+            if dep == feature.get("id"):
+                gaps.append(f"feature '{ident}' depends on itself")
+            elif dep not in known:
+                gaps.append(
+                    f"feature '{ident}' depends_on unknown feature id {dep} "
+                    f"(not live, not archived)")
+
 
 def _feature_list_schema_path() -> Path:
     """Locate the bundled feature_list JSON Schema.

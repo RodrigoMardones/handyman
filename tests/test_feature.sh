@@ -365,4 +365,91 @@ else
 fi
 rm -rf "$F21"
 
+# --- F22: ready derives the frontier from depends_on --------------------------
+start_case "ready: lists only pending features whose depends_on are satisfied"
+F22="$(mktemp -d)"
+write_harness "$F22"
+mkdir -p "$F22/.handyman/archive"
+cat > "$F22/.handyman/archive/feature_archive.json" <<'JSON'
+{ "sprints": { "2026-SP1": [ { "id": 9, "name": "old", "status": "done" } ] } }
+JSON
+python3 "$FEATURE" --root "$F22" add --name gated --depends-on 2 >/dev/null 2>&1
+python3 "$FEATURE" --root "$F22" add --name unlocked --depends-on 9 >/dev/null 2>&1
+DEPS="$(python3 -c "import json;d=json.load(open('$F22/.handyman/feature_list.json'));print(next(f.get('depends_on') for f in d['features'] if f['name']=='gated'))")"
+OUT="$(python3 "$FEATURE" --root "$F22" ready 2>&1)"; CODE=$?
+# a and b have no deps (ready); unlocked's dep 9 is archived (ready);
+# gated's dep 2 (b) is still pending (not ready).
+if [ "$CODE" -eq 0 ] && [ "$DEPS" = "[2]" ] \
+  && printf '%s' "$OUT" | grep -q "unlocked" \
+  && ! printf '%s' "$OUT" | grep -q "gated"; then
+  pass
+else
+  fail "exit=$CODE deps=$DEPS output: $OUT"
+fi
+rm -rf "$F22"
+
+# --- F23: ready exits 3 when the backlog is drained ---------------------------
+start_case "ready: exits 3 with a drained backlog and prints [] under --json"
+F23="$(mktemp -d)"
+write_harness "$F23"
+python3 - "$F23/.handyman/feature_list.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+d = json.load(open(path))
+for f in d["features"]:
+    f["status"] = "blocked" if f["name"] == "a" else "done"
+json.dump(d, open(path, "w"), indent=2)
+PY
+OUT="$(python3 "$FEATURE" --root "$F23" ready --json 2>/dev/null)"; CODE=$?
+PARSED="$(printf '%s' "$OUT" | python3 -c "import json,sys;print(len(json.load(sys.stdin)))")"
+if [ "$CODE" -eq 3 ] && [ "$PARSED" = "0" ]; then
+  pass
+else
+  fail "expected exit 3 + empty JSON, exit=$CODE out=$OUT"
+fi
+rm -rf "$F23"
+
+# --- F24: start warns on unmet dependencies but does not block ---------------
+start_case "start: warns about unmet dependencies without blocking"
+F24="$(mktemp -d)"
+write_harness "$F24"
+python3 "$FEATURE" --root "$F24" add --name gated --depends-on 1 >/dev/null 2>&1
+OUT="$(python3 "$FEATURE" --root "$F24" start gated 2>&1)"; CODE=$?
+ST="$(status_of "$F24/.handyman/feature_list.json" gated)"
+if [ "$CODE" -eq 0 ] && [ "$ST" = "in_progress" ] \
+  && printf '%s' "$OUT" | grep -q "WARN.*unmet dependencies.*1"; then
+  pass
+else
+  fail "exit=$CODE status=$ST output: $OUT"
+fi
+rm -rf "$F24"
+
+# --- F25: observation shape - stable status tail, JSON mode exempt -----------
+start_case "observation shape: status tail on ok/warn/error, none under --json"
+F25="$(mktemp -d)"
+write_harness "$F25"
+OK_TAIL="$(python3 "$FEATURE" --root "$F25" add --name shaped 2>/dev/null | tail -n1)"
+python3 "$FEATURE" --root "$F25" start a >/dev/null 2>&1
+ERR_TAIL="$(python3 "$FEATURE" --root "$F25" start b 2>/dev/null | tail -n1)"
+python3 - "$F25/.handyman/feature_list.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+d = json.load(open(path))
+for f in d["features"]:
+    f["status"] = "blocked"
+json.dump(d, open(path, "w"), indent=2)
+PY
+WARN_OUT="$(python3 "$FEATURE" --root "$F25" ready 2>/dev/null)"
+WARN_TAIL="$(printf '%s' "$WARN_OUT" | tail -n1)"
+JSON_OUT="$(python3 "$FEATURE" --root "$F25" ready --json 2>/dev/null)"
+if [ "$OK_TAIL" = "status: ok" ] && [ "$ERR_TAIL" = "status: error" ] \
+  && [ "$WARN_TAIL" = "status: warn" ] \
+  && printf '%s' "$WARN_OUT" | grep -q "^next:" \
+  && ! printf '%s' "$JSON_OUT" | grep -q "status:"; then
+  pass
+else
+  fail "ok=$OK_TAIL err=$ERR_TAIL warn=$WARN_TAIL json=$JSON_OUT"
+fi
+rm -rf "$F25"
+
 summary

@@ -12,19 +12,27 @@ Operations:
   block  Mark a feature blocked and record the reason.
   done   Run the verifier; only on exit 0 mark the feature done, append a
          rich progress/history.md entry, and reset progress/current.md.
+  ready  List the pending features whose depends_on are all satisfied
+         (done or archived). The unattended-loop work detector: exit 0
+         means claimable work exists, exit 3 means the backlog is drained.
   log    Append a bullet to the Log section of progress/current.md.
   next   Set the Next Step section of progress/current.md.
 
+Observation shape: the last stdout line is always `status: ok|warn|error`
+(preceded by a `next:` hint when one applies), except in --json modes where
+the JSON payload is the observation.
+
 Usage:
   scripts/feature.py [--root PATH] add --name NAME [--title T] [--description D]
-                     [--acceptance LINE]...
+                     [--acceptance LINE]... [--depends-on ID]...
   scripts/feature.py [--root PATH] start NAME
   scripts/feature.py [--root PATH] block NAME --reason WHY
   scripts/feature.py [--root PATH] done NAME [--verifier PATH] [--date YYYY-MM-DD]
+  scripts/feature.py [--root PATH] ready [--json]
   scripts/feature.py [--root PATH] log LINE
   scripts/feature.py [--root PATH] next STEP
 
-Exit codes: 0 ok, 1 error, 2 usage.
+Exit codes: 0 ok, 1 error, 2 usage, 3 no ready work (ready only).
 """
 from __future__ import annotations
 
@@ -312,24 +320,45 @@ def cmd_next(args, workspace: Path) -> int:
     return 0
 
 
+def _archived_ids(workspace: Path) -> set[int]:
+    """Every feature id in archive/feature_archive.json (sprint closes move
+    done features there). Archived features count as satisfied dependencies
+    and their ids stay reserved. Empty set when there is no archive."""
+    path = workspace / "archive" / "feature_archive.json"
+    if not path.is_file():
+        return set()
+    try:
+        archive = json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return set()
+    return {
+        f["id"]
+        for sprint in (archive.get("sprints") or {}).values()
+        if isinstance(sprint, list)
+        for f in sprint
+        if isinstance(f, dict) and isinstance(f.get("id"), int)
+    }
+
+
 def _archived_max_id(workspace: Path) -> int:
     """Highest feature id in archive/feature_archive.json (sprint closes move
     done features there). Keeps ids unique across live and archived features
     so a new feature never reuses an archived id. 0 when there is no archive."""
-    path = workspace / "archive" / "feature_archive.json"
-    if not path.is_file():
-        return 0
-    try:
-        archive = json.loads(path.read_text(encoding="utf-8"))
-    except (ValueError, OSError):
-        return 0
-    return max(
-        (f.get("id", 0)
-         for sprint in (archive.get("sprints") or {}).values()
-         if isinstance(sprint, list)
-         for f in sprint if isinstance(f, dict)),
-        default=0,
-    )
+    return max(_archived_ids(workspace), default=0)
+
+
+def _unmet_deps(feature: dict, features: list, archived: set[int]) -> list[int]:
+    """The depends_on ids not yet satisfied. A dependency is satisfied when
+    the referenced feature is done or already archived by a sprint close."""
+    by_id = {f.get("id"): f for f in features}
+    unmet = []
+    for dep in feature.get("depends_on", []):
+        if dep in archived:
+            continue
+        target = by_id.get(dep)
+        if target is None or target.get("status") != "done":
+            unmet.append(dep)
+    return unmet
 
 
 def cmd_add(args, workspace: Path) -> int:
@@ -349,10 +378,49 @@ def cmd_add(args, workspace: Path) -> int:
         "acceptance": list(args.acceptance or []),
         "status": "pending",
     }
+    if args.depends_on:
+        feature["depends_on"] = sorted(set(args.depends_on))
     features.append(feature)
     _save(path, data)
     print(f"added feature {next_id} '{args.name}' (pending)")
     return 0
+
+
+def cmd_ready(args, workspace: Path) -> int:
+    """List the pending features whose dependencies are all satisfied.
+
+    The work detector of the unattended-loop contract (references/workflow.md):
+    exit 0 with the ready list on stdout means claimable work exists; exit 3
+    means the backlog is drained (nothing pending is ready) and an external
+    loop must stop. --json prints only the JSON payload on stdout."""
+    data, _ = _load(workspace)
+    features = data.get("features", [])
+    archived = _archived_ids(workspace)
+    ready = [
+        f for f in features
+        if f.get("status") == "pending" and not _unmet_deps(f, features, archived)
+    ]
+    ready.sort(key=lambda f: f.get("id", 0))
+    if args.json:
+        print(json.dumps(
+            [{"id": f.get("id"), "name": f.get("name"),
+              "title": f.get("title", "")} for f in ready],
+            indent=2, ensure_ascii=False))
+    else:
+        for f in ready:
+            print(f"{f.get('id')} {f.get('name')}")
+    if ready:
+        if not args.json:
+            print(f"ready: {len(ready)} feature(s)")
+        return 0
+    counts = {s: sum(1 for f in features if f.get("status") == s)
+              for s in VALID_STATUS}
+    print(
+        f"no ready features (pending: {counts['pending']}, "
+        f"blocked: {counts['blocked']}, in_progress: {counts['in_progress']})",
+        file=sys.stderr,
+    )
+    return 3
 
 
 def cmd_start(args, workspace: Path, root: Path) -> int:
@@ -370,6 +438,15 @@ def cmd_start(args, workspace: Path, root: Path) -> int:
     if others:
         names = ", ".join(str(f.get("name")) for f in others)
         return err(f"another feature is already in_progress: {names}")
+    unmet = _unmet_deps(feature, features, _archived_ids(workspace))
+    if unmet:
+        # Advisory, never a gate: dependency order is a recommendation the
+        # operator may consciously override (mirror of the branch advisory).
+        print(
+            f"WARN: feature '{args.name}' has unmet dependencies: "
+            + ", ".join(str(d) for d in unmet),
+            file=sys.stderr,
+        )
     feature["status"] = "in_progress"
     feature.pop("blocked_reason", None)
     _save(path, data)
@@ -469,6 +546,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_add.add_argument("--description", default=None)
     p_add.add_argument("--acceptance", action="append", default=None,
                        help="Acceptance criterion (repeatable).")
+    p_add.add_argument("--depends-on", dest="depends_on", action="append",
+                       type=int, default=None,
+                       help="Feature id that must be done first (repeatable).")
 
     p_start = sub.add_parser("start", help="Mark a feature in_progress.")
     p_start.add_argument("name")
@@ -489,6 +569,11 @@ def build_parser() -> argparse.ArgumentParser:
                              "'skills: handyman, ponytail; agents: reviewer'.")
     p_done.add_argument("--date", default=None, help=argparse.SUPPRESS)
 
+    p_ready = sub.add_parser(
+        "ready", help="List pending features whose dependencies are satisfied.")
+    p_ready.add_argument("--json", action="store_true",
+                         help="Print the ready list as JSON only.")
+
     p_log = sub.add_parser("log", help="Append a bullet to current.md's Log.")
     p_log.add_argument("line")
     p_log.add_argument("--date", default=None, help=argparse.SUPPRESS)
@@ -503,8 +588,23 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     root = Path(args.root).resolve()
     if not root.is_dir():
-        return err(f"root is not a directory: {root}")
-    workspace = resolve_workspace(root)
+        rc = err(f"root is not a directory: {root}")
+    else:
+        workspace = resolve_workspace(root)
+        rc = _dispatch(args, workspace, root)
+    # Observation shape: a stable machine-readable last line, so callers and
+    # loop runners never parse prose. --json modes are exempt - there the
+    # JSON payload is the observation.
+    if not getattr(args, "json", False):
+        if rc == 3:
+            print("next: add features, finish their dependencies, or unblock "
+                  "blocked work")
+        status = "ok" if rc == 0 else ("warn" if rc == 3 else "error")
+        print(f"status: {status}")
+    return rc
+
+
+def _dispatch(args, workspace: Path, root: Path) -> int:
     try:
         if args.command == "add":
             return cmd_add(args, workspace)
@@ -514,6 +614,8 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_block(args, workspace)
         if args.command == "done":
             return cmd_done(args, workspace, root)
+        if args.command == "ready":
+            return cmd_ready(args, workspace)
         if args.command == "log":
             return cmd_log(args, workspace)
         if args.command == "next":
