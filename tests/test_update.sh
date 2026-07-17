@@ -61,8 +61,8 @@ tools: [vscode, execute, read, edit, search, todo]
 MD
 }
 
-json_get() { # $1=file $2=python expression over `d`
-  python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print($2)" "$1"
+json_get() { # $1=file $2=JS expression over `d`
+  node "$SUITE_DIR/lib/jsonget.js" read "$1" "$2"
 }
 
 # --- T1: --list audits config and role files ---------------------------------
@@ -103,7 +103,7 @@ T3="$(mktemp -d)"
 write_installed_harness "$T3"
 node "$UPDATER" --root "$T3" --model implementer="New Model" >/dev/null 2>&1
 CODE=$?
-CFG="$(json_get "$T3/harness.config.json" "d['models']['implementer']")"
+CFG="$(json_get "$T3/harness.config.json" "d.models.implementer")"
 if [ "$CODE" -eq 0 ] && [ "$CFG" = "New Model" ] \
   && grep -q '^model: New Model$' "$T3/.github/agents/implementer.agent.md" \
   && grep -q '^model: New Model$' "$T3/.claude/agents/implementer.md" \
@@ -120,7 +120,7 @@ T4="$(mktemp -d)"
 write_installed_harness "$T4"
 node "$UPDATER" --root "$T4" --tools implementer=vscode,read,todo >/dev/null 2>&1
 CODE=$?
-CFG="$(json_get "$T4/harness.config.json" "','.join(d['tools']['implementer'])")"
+CFG="$(json_get "$T4/harness.config.json" "d.tools.implementer.join(',')")"
 if [ "$CODE" -eq 0 ] && [ "$CFG" = "vscode,read,todo" ] \
   && grep -q '^tools: \[vscode, read, todo\]$' "$T4/.github/agents/implementer.agent.md" \
   && grep -q '^tools: \[vscode, read, todo\]$' "$T4/.claude/agents/implementer.md"; then
@@ -136,7 +136,7 @@ T5="$(mktemp -d)"
 write_installed_harness "$T5"
 node "$UPDATER" --root "$T5" --set project_name=renamed >/dev/null 2>&1
 OK_CODE=$?
-NAME="$(json_get "$T5/harness.config.json" "d['project_name']")"
+NAME="$(json_get "$T5/harness.config.json" "d.project_name")"
 node "$UPDATER" --root "$T5" --set bogus_key=1 >/dev/null 2>&1
 BAD_CODE=$?
 if [ "$OK_CODE" -eq 0 ] && [ "$NAME" = "renamed" ] && [ "$BAD_CODE" -eq 2 ]; then
@@ -157,8 +157,8 @@ cp "$SKILL_ROOT/assets/harness.config.global.template.json" "$T6/assets/"
 cp "$SKILL_ROOT/assets/role-implementer.template.md" "$T6/assets/"
 node "$UPDATER" --root "$T6" --model implementer="New Model" >/dev/null 2>&1
 CODE=$?
-LOCAL_CFG="$(json_get "$T6/assets/harness.config.local.template.json" "d['models']['implementer']")"
-GLOBAL_CFG="$(json_get "$T6/assets/harness.config.global.template.json" "d['models']['implementer']")"
+LOCAL_CFG="$(json_get "$T6/assets/harness.config.local.template.json" "d.models.implementer")"
+GLOBAL_CFG="$(json_get "$T6/assets/harness.config.global.template.json" "d.models.implementer")"
 if [ "$CODE" -eq 0 ] && [ "$LOCAL_CFG" = "New Model" ] && [ "$GLOBAL_CFG" = "New Model" ] \
   && grep -q '^model: New Model$' "$T6/assets/role-implementer.template.md"; then
   pass
@@ -200,12 +200,7 @@ start_case "--check exits non-zero and reports drift when a role file diverges"
 T9="$(mktemp -d)"
 write_installed_harness "$T9"
 # diverge the role-file model from the config without touching the config
-python3 - "$T9/.github/agents/implementer.agent.md" <<'PY'
-import re, sys
-p = sys.argv[1]
-t = open(p).read()
-open(p, "w").write(re.sub(r"^model: .*$", "model: Drifted Model", t, count=1, flags=re.M))
-PY
+node -e 'const fs=require("fs");const p=process.argv[1];let t=fs.readFileSync(p,"utf8");t=t.replace(/^model: .*$/m,"model: Drifted Model");fs.writeFileSync(p,t);' "$T9/.github/agents/implementer.agent.md"
 OUT="$(node "$UPDATER" --root "$T9" --check 2>&1)"; CODE=$?
 if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "DRIFT" \
   && printf '%s' "$OUT" | grep -q "implementer.agent.md"; then
@@ -235,11 +230,7 @@ start_case "--sync writes config models into role files and clears the drift"
 T11="$(mktemp -d)"
 write_installed_harness "$T11"
 # diverge the role-file model from the config
-python3 - "$T11/.github/agents/implementer.agent.md" <<'PY'
-import re, sys
-p = sys.argv[1]; t = open(p).read()
-open(p, "w").write(re.sub(r"^model: .*$", "model: Drifted", t, count=1, flags=re.M))
-PY
+node -e 'const fs=require("fs");const p=process.argv[1];let t=fs.readFileSync(p,"utf8");t=t.replace(/^model: .*$/m,"model: Drifted");fs.writeFileSync(p,t);' "$T11/.github/agents/implementer.agent.md"
 node "$UPDATER" --root "$T11" --sync >/dev/null 2>&1; CODE=$?
 node "$UPDATER" --root "$T11" --check >/dev/null 2>&1; CHECK=$?
 if [ "$CODE" -eq 0 ] && [ "$CHECK" -eq 0 ] \
@@ -254,11 +245,7 @@ rm -rf "$T11"
 start_case "--sync --dry-run previews without touching any file"
 T12="$(mktemp -d)"
 write_installed_harness "$T12"
-python3 - "$T12/.github/agents/implementer.agent.md" <<'PY'
-import re, sys
-p = sys.argv[1]; t = open(p).read()
-open(p, "w").write(re.sub(r"^model: .*$", "model: Drifted", t, count=1, flags=re.M))
-PY
+node -e 'const fs=require("fs");const p=process.argv[1];let t=fs.readFileSync(p,"utf8");t=t.replace(/^model: .*$/m,"model: Drifted");fs.writeFileSync(p,t);' "$T12/.github/agents/implementer.agent.md"
 BEFORE="$(cat "$T12/.github/agents/implementer.agent.md")"
 node "$UPDATER" --root "$T12" --sync --dry-run >/dev/null 2>&1; CODE=$?
 if [ "$CODE" -eq 0 ] && [ "$BEFORE" = "$(cat "$T12/.github/agents/implementer.agent.md")" ]; then

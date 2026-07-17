@@ -212,13 +212,12 @@ rm -rf "$T12"
 
 # --- T13: validator rejects an out-of-contract feature field ---------------
 # The schema sets additionalProperties:false, so an invented field such as the
-# start_date the docs warn about must fail validation. Guarded by jsonschema
-# availability: validate_harness degrades to a skip when it is absent.
-if python3 -c "import jsonschema" >/dev/null 2>&1; then
-  start_case "validate_harness: extra feature field rejected by schema"
-  T13="$(mktemp -d)"
-  write_workspace_files "$T13/.handyman" 1
-  cat > "$T13/.handyman/feature_list.json" <<'JSON'
+# start_date the docs warn about must fail validation. validate_harness now
+# validates with ajv (bundled in dist/), so this runs unconditionally.
+start_case "validate_harness: extra feature field rejected by schema"
+T13="$(mktemp -d)"
+write_workspace_files "$T13/.handyman" 1
+cat > "$T13/.handyman/feature_list.json" <<'JSON'
 {
   "project": "t",
   "features": [
@@ -226,23 +225,19 @@ if python3 -c "import jsonschema" >/dev/null 2>&1; then
   ]
 }
 JSON
-  OUT="$(node "$VALIDATOR" --root "$T13" 2>&1)"; CODE=$?
-  if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "schema violation"; then
-    pass
-  else
-    fail "expected schema failure, exit=$CODE output: $OUT"
-  fi
-  rm -rf "$T13"
+OUT="$(node "$VALIDATOR" --root "$T13" 2>&1)"; CODE=$?
+if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "schema violation"; then
+  pass
 else
-  echo "  NOTE jsonschema not installed - skipping schema rejection test (T13)"
+  fail "expected schema failure, exit=$CODE output: $OUT"
 fi
+rm -rf "$T13"
 
 # --- T14: validator accepts a contract-complete feature_list ---------------
-if python3 -c "import jsonschema" >/dev/null 2>&1; then
-  start_case "validate_harness: contract-complete feature_list passes schema"
-  T14="$(mktemp -d)"
-  write_workspace_files "$T14/.handyman" 1
-  cat > "$T14/.handyman/feature_list.json" <<'JSON'
+start_case "validate_harness: contract-complete feature_list passes schema"
+T14="$(mktemp -d)"
+write_workspace_files "$T14/.handyman" 1
+cat > "$T14/.handyman/feature_list.json" <<'JSON'
 {
   "project": "t",
   "description": "d",
@@ -264,16 +259,13 @@ if python3 -c "import jsonschema" >/dev/null 2>&1; then
   ]
 }
 JSON
-  OUT="$(node "$VALIDATOR" --root "$T14" 2>&1)"; CODE=$?
-  if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "OK"; then
-    pass
-  else
-    fail "expected pass, exit=$CODE output: $OUT"
-  fi
-  rm -rf "$T14"
+OUT="$(node "$VALIDATOR" --root "$T14" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "OK"; then
+  pass
 else
-  echo "  NOTE jsonschema not installed - skipping schema acceptance test (T14)"
+  fail "expected pass, exit=$CODE output: $OUT"
 fi
+rm -rf "$T14"
 
 # --- T15: frontmatter advisory NOTEs an incomplete report (non-blocking) ----
 start_case "validate_harness: frontmatter advisory NOTEs an incomplete report but stays green"
@@ -374,13 +366,7 @@ cat > "$T19/.handyman/feature_list.json" <<'JSON'
 }
 JSON
 OUT="$(node "$VALIDATOR" --root "$T19" 2>&1)"; CODE=$?
-python3 - "$T19/.handyman/feature_list.json" <<'PY'
-import json, sys
-path = sys.argv[1]
-d = json.load(open(path))
-d["features"][0]["depends_on"] = [2]
-json.dump(d, open(path, "w"), indent=2)
-PY
+node -e 'const fs=require("fs");const p=process.argv[1];const d=JSON.parse(fs.readFileSync(p,"utf8"));d.features[0].depends_on=[2];fs.writeFileSync(p,JSON.stringify(d,null,2))' "$T19/.handyman/feature_list.json"
 OUT2="$(node "$VALIDATOR" --root "$T19" 2>&1)"; CODE2=$?
 if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "depends_on unknown feature id 99" \
   && ! printf '%s' "$OUT" | grep -q "'b' depends_on" \

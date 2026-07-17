@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Feature-state CLI tests for the Handyman skill.
-# Exercises scripts/feature.py against fixture harnesses: add, start (with the
+# Exercises dist/feature.js against fixture harnesses: add, start (with the
 # single-in_progress invariant), block, and done (verifier-gated close with
 # history append + current.md reset). Stub verifiers avoid recursing into the
 # real test suite.
@@ -39,7 +39,7 @@ write_verifier() {
 }
 
 status_of() { # $1=feature_list.json  $2=feature name
-  python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(next((f['status'] for f in d['features'] if f['name']==sys.argv[2]),''))" "$1" "$2"
+  node "$SUITE_DIR/lib/jsonget.js" read "$1" "(d.features.find(f=>f.name===a[0])||{}).status||''" "$2"
 }
 
 # --- F1: start marks in_progress --------------------------------------------
@@ -77,7 +77,7 @@ F3="$(mktemp -d)"
 write_harness "$F3"
 OUT="$(node "$FEATURE" --root "$F3" block b --reason "waiting on api" 2>&1)"; CODE=$?
 ST="$(status_of "$F3/.handyman/feature_list.json" b)"
-REASON="$(python3 -c "import json;d=json.load(open('$F3/.handyman/feature_list.json'));print(next(f.get('blocked_reason','') for f in d['features'] if f['name']=='b'))")"
+REASON="$(node "$SUITE_DIR/lib/jsonget.js" read "$F3/.handyman/feature_list.json" "(d.features.find(f=>f.name==='b')||{}).blocked_reason||''")"
 if [ "$CODE" -eq 0 ] && [ "$ST" = "blocked" ] && [ "$REASON" = "waiting on api" ]; then
   pass
 else
@@ -98,7 +98,7 @@ start_case "add: appends a pending feature with an auto-incremented id"
 F5="$(mktemp -d)"
 write_harness "$F5"
 OUT="$(node "$FEATURE" --root "$F5" add --name c --title C --acceptance crit1 2>&1)"; CODE=$?
-NEWID="$(python3 -c "import json;d=json.load(open('$F5/.handyman/feature_list.json'));print(next(f['id'] for f in d['features'] if f['name']=='c'))")"
+NEWID="$(node "$SUITE_DIR/lib/jsonget.js" read "$F5/.handyman/feature_list.json" "(d.features.find(f=>f.name==='c')||{}).id")"
 ST="$(status_of "$F5/.handyman/feature_list.json" c)"
 if [ "$CODE" -eq 0 ] && [ "$NEWID" = "3" ] && [ "$ST" = "pending" ]; then
   pass
@@ -357,7 +357,7 @@ cat > "$F21/.handyman/archive/feature_archive.json" <<'JSON'
 { "sprints": { "2026-SP1": [ { "id": 9, "name": "old", "status": "done" } ] } }
 JSON
 node "$FEATURE" --root "$F21" add --name fresh >/dev/null 2>&1
-NEW_ID="$(python3 -c "import json;d=json.load(open('$F21/.handyman/feature_list.json'));print(next(f['id'] for f in d['features'] if f['name']=='fresh'))")"
+NEW_ID="$(node "$SUITE_DIR/lib/jsonget.js" read "$F21/.handyman/feature_list.json" "(d.features.find(f=>f.name==='fresh')||{}).id")"
 if [ "$NEW_ID" = "10" ]; then
   pass
 else
@@ -375,7 +375,7 @@ cat > "$F22/.handyman/archive/feature_archive.json" <<'JSON'
 JSON
 node "$FEATURE" --root "$F22" add --name gated --depends-on 2 >/dev/null 2>&1
 node "$FEATURE" --root "$F22" add --name unlocked --depends-on 9 >/dev/null 2>&1
-DEPS="$(python3 -c "import json;d=json.load(open('$F22/.handyman/feature_list.json'));print(next(f.get('depends_on') for f in d['features'] if f['name']=='gated'))")"
+DEPS="$(node "$SUITE_DIR/lib/jsonget.js" read "$F22/.handyman/feature_list.json" "JSON.stringify((d.features.find(f=>f.name==='gated')||{}).depends_on)")"
 OUT="$(node "$FEATURE" --root "$F22" ready 2>&1)"; CODE=$?
 # a and b have no deps (ready); unlocked's dep 9 is archived (ready);
 # gated's dep 2 (b) is still pending (not ready).
@@ -392,16 +392,9 @@ rm -rf "$F22"
 start_case "ready: exits 3 with a drained backlog and prints [] under --json"
 F23="$(mktemp -d)"
 write_harness "$F23"
-python3 - "$F23/.handyman/feature_list.json" <<'PY'
-import json, sys
-path = sys.argv[1]
-d = json.load(open(path))
-for f in d["features"]:
-    f["status"] = "blocked" if f["name"] == "a" else "done"
-json.dump(d, open(path, "w"), indent=2)
-PY
+node -e 'const fs=require("fs");const p=process.argv[1];const d=JSON.parse(fs.readFileSync(p,"utf8"));for(const f of d.features){f.status=f.name==="a"?"blocked":"done";}fs.writeFileSync(p,JSON.stringify(d,null,2)+"\n");' "$F23/.handyman/feature_list.json"
 OUT="$(node "$FEATURE" --root "$F23" ready --json 2>/dev/null)"; CODE=$?
-PARSED="$(printf '%s' "$OUT" | python3 -c "import json,sys;print(len(json.load(sys.stdin)))")"
+PARSED="$(printf '%s' "$OUT" | node -e 'const d=JSON.parse(require("fs").readFileSync(0,"utf8"));process.stdout.write(String(Array.isArray(d)?d.length:Object.keys(d).length))')"
 if [ "$CODE" -eq 3 ] && [ "$PARSED" = "0" ]; then
   pass
 else
@@ -431,14 +424,7 @@ write_harness "$F25"
 OK_TAIL="$(node "$FEATURE" --root "$F25" add --name shaped 2>/dev/null | tail -n1)"
 node "$FEATURE" --root "$F25" start a >/dev/null 2>&1
 ERR_TAIL="$(node "$FEATURE" --root "$F25" start b 2>/dev/null | tail -n1)"
-python3 - "$F25/.handyman/feature_list.json" <<'PY'
-import json, sys
-path = sys.argv[1]
-d = json.load(open(path))
-for f in d["features"]:
-    f["status"] = "blocked"
-json.dump(d, open(path, "w"), indent=2)
-PY
+node -e 'const fs=require("fs");const p=process.argv[1];const d=JSON.parse(fs.readFileSync(p,"utf8"));for(const f of d.features){f.status="blocked";}fs.writeFileSync(p,JSON.stringify(d,null,2)+"\n");' "$F25/.handyman/feature_list.json"
 WARN_OUT="$(node "$FEATURE" --root "$F25" ready 2>/dev/null)"
 WARN_TAIL="$(printf '%s' "$WARN_OUT" | tail -n1)"
 JSON_OUT="$(node "$FEATURE" --root "$F25" ready --json 2>/dev/null)"

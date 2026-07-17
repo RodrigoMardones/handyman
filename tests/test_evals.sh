@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Trigger-evaluation tests for the Handyman skill.
-# Exercises scripts/evals.py:
+# Exercises dist/evals.js:
 #   validate  the deterministic eval-set contract (shipped set + failure modes)
 #   measure   the graceful NOTE degradation and the runner-driven confusion matrix
 set -u

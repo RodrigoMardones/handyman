@@ -47,8 +47,8 @@ summary() {
   [ "$TESTS_FAILED" -eq 0 ]
 }
 
-# Portable JSON reader for the test harness: prefers node, falls back to
-# python3, so the suite needs no jq. Usage: _json FILE VERB [ARG]
+# Portable JSON reader for the test harness: node is the sole runtime, so the
+# suite needs no jq or python. Usage: _json FILE VERB [ARG]
 #   str PATH          print the string at a dotted PATH (numeric parts index
 #                     arrays); empty when the key is missing or null.
 #   len [PATH]        print the array length at PATH (root when omitted); 0 when
@@ -82,46 +82,5 @@ if (verb === "str") {
   process.stdout.write(String(f.filter(x => x && x.status === arg).length));
 } else { process.exit(3); }
 ' "$_jf" "$_jv" "$_ja"
-  elif command -v python3 >/dev/null 2>&1; then
-    python3 -c '
-import json, sys
-file, verb = sys.argv[1], sys.argv[2]
-arg = sys.argv[3] if len(sys.argv) > 3 else ""
-try:
-    d = json.load(open(file))
-except Exception:
-    sys.exit(2)
-def get(obj, path):
-    if not path:
-        return obj
-    cur = obj
-    for k in path.split("."):
-        if isinstance(cur, list):
-            try:
-                cur = cur[int(k)]
-            except (ValueError, IndexError):
-                return None
-        elif isinstance(cur, dict):
-            cur = cur.get(k)
-        else:
-            return None
-    return cur
-if verb == "valid":
-    sys.exit(0)
-if verb == "str":
-    v = get(d, arg)
-    sys.stdout.write("" if v is None else str(v))
-elif verb == "len":
-    v = get(d, arg)
-    sys.stdout.write(str(len(v) if isinstance(v, list) else 0))
-elif verb == "count_status":
-    feats = d.get("features") if isinstance(d, dict) else None
-    feats = feats if isinstance(feats, list) else []
-    sys.stdout.write(str(sum(1 for x in feats if isinstance(x, dict) and x.get("status") == arg)))
-else:
-    sys.exit(3)
-' "$_jf" "$_jv" "$_ja"
-  else
-    return 127
   fi
 }

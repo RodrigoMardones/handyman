@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Metrics aggregator tests for the Handyman skill.
-# Exercises scripts/metrics.py: read-only aggregation of feature_list.json,
+# Exercises dist/metrics.js: read-only aggregation of feature_list.json,
 # progress/history.md dated headings and backlog/*.md frontmatter into
 # status counts, throughput, review verdicts and report coverage. ALWAYS exit 0.
 set -u
@@ -114,14 +114,14 @@ rm -rf "$T"
 start_case "--json emits parseable JSON with the four metric keys"
 T="$(mktemp -d)"; write_fixture "$T"
 OUT="$("${RUN[@]}" --root "$T" --json 2>&1)"; CODE=$?
-JSON_OK="$(printf '%s' "$OUT" | python3 -c '
-import json, sys
-d = json.load(sys.stdin)
-keys = {"status_counts", "throughput", "review_verdicts", "coverage"}
-ok = keys.issubset(d) and d["throughput"].get("2026-06-17") == 2 \
-  and d["review_verdicts"]["approval_rate"] == 0.5 \
-  and d["coverage"]["missing"] == ["beta"]
-print("yes" if ok else "no")
+JSON_OK="$(printf '%s' "$OUT" | node -e '
+const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
+const keys = new Set(Object.keys(d));
+const ok = ["status_counts","throughput","review_verdicts","coverage"].every(k => keys.has(k))
+  && d.throughput["2026-06-17"] === 2
+  && d.review_verdicts.approval_rate === 0.5
+  && JSON.stringify(d.coverage.missing) === JSON.stringify(["beta"]);
+process.stdout.write(ok ? "yes" : "no");
 ' 2>/dev/null)"
 if [ "$CODE" -eq 0 ] && [ "$JSON_OK" = "yes" ]; then
   pass

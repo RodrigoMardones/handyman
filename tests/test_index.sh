@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # index.md (Obsidian MOC) regenerator tests for the Handyman skill.
-# Exercises scripts/index_md.py against a fixture harness: frontmatter/title,
+# Exercises dist/index_md.js against a fixture harness: frontmatter/title,
 # features grouped by status, backlog wikilinks, Notes preservation, and the
 # existence-gated markdown links.
 set -u
@@ -74,13 +74,7 @@ T="$(mktemp -d)"; write_harness "$T"
 "${RUN[@]}" --root "$T" >/dev/null 2>&1
 IDX="$T/.handyman/index.md"
 # Replace the generated Notes block with a custom note, then regenerate.
-python3 - "$IDX" <<'PY'
-import sys
-p = sys.argv[1]
-lines = open(p, encoding="utf-8").read().split("\n")
-i = next(k for k, l in enumerate(lines) if l.strip() == "## Notes")
-open(p, "w", encoding="utf-8").write("\n".join(lines[:i]) + "\n## Notes\n\nKEEP THIS NOTE\n")
-PY
+node -e 'const fs=require("fs");const p=process.argv[1];const lines=fs.readFileSync(p,"utf8").split("\n");const i=lines.findIndex(l=>l.trim()==="## Notes");fs.writeFileSync(p,lines.slice(0,i).join("\n")+"\n## Notes\n\nKEEP THIS NOTE\n");' "$IDX"
 "${RUN[@]}" --root "$T" >/dev/null 2>&1
 if grep -q "KEEP THIS NOTE" "$IDX"; then
   pass

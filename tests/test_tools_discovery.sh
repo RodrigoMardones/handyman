@@ -50,7 +50,7 @@ rm -rf "$T"
 start_case "list --json emits valid JSON with the skills"
 T="$(mktemp -d)"; write_skills "$T/skills"
 OUT="$(node "$TD" --skills-dir "$T/skills" list --json 2>&1)"
-if printf '%s' "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert {s['name'] for s in d}=={'alpha','beta'}" 2>/dev/null; then
+if printf '%s' "$OUT" | node -e 'const d=JSON.parse(require("fs").readFileSync(0,"utf8"));const s=new Set(d.map(x=>x.name));if(!(s.size===2&&s.has("alpha")&&s.has("beta")))throw 1' 2>/dev/null; then
   pass
 else
   fail "invalid or unexpected JSON: $OUT"
@@ -111,12 +111,12 @@ printf -- '---\nname: local_only\ndescription: only local.\n---\n' > "$T/.agents
 printf -- '---\nname: shared\ndescription: shared-global\n---\n' > "$G/shared/SKILL.md"
 printf -- '---\nname: global_only\ndescription: only global.\n---\n' > "$G/global_only/SKILL.md"
 OUT="$(HANDYMAN_SKILL_ROOTS="$G" node "$TD" --root "$T" list --json 2>&1)"
-if printf '%s' "$OUT" | python3 -c "
-import json,sys
-d={s['name']:s['description'] for s in json.load(sys.stdin)}
-assert d.get('shared')=='shared-local', d  # local shadows global
-assert 'local_only' in d and 'global_only' in d, d
-" 2>/dev/null; then
+if printf '%s' "$OUT" | node -e '
+const d = {};
+for (const s of JSON.parse(require("fs").readFileSync(0, "utf8"))) d[s.name] = s.description;
+if (!(d.shared === "shared-local")) throw 1;
+if (!("local_only" in d && "global_only" in d)) throw 1;
+' 2>/dev/null; then
   pass
 else
   fail "local-then-global precedence wrong: $OUT"
@@ -206,11 +206,7 @@ start_case "declare skill appends to discovery.skills via json round-trip"
 T="$(mktemp -d)"
 write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":[]}'
 OUT="$(node "$TD" --root "$T" declare skill beta 2>&1)"; CODE=$?
-LISTED="$(python3 -c "
-import json,sys
-d=json.load(open('$T/harness.config.json'))
-print('yes' if d['discovery']['skills']==['alpha','beta'] else 'no')
-" 2>/dev/null)"
+LISTED="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/harness.config.json" "JSON.stringify(d.discovery.skills)===JSON.stringify([\"alpha\",\"beta\"])?'yes':'no'")"
 if [ "$CODE" -eq 0 ] && [ "$LISTED" = "yes" ] \
   && printf '%s' "$OUT" | grep -q "declared skill 'beta' in discovery.skills"; then
   pass
@@ -255,12 +251,7 @@ start_case "declare on a config without discovery creates the block"
 T="$(mktemp -d)"
 write_config "$T" ''
 OUT="$(node "$TD" --root "$T" declare agent leader 2>&1)"; CODE=$?
-LISTED="$(python3 -c "
-import json,sys
-d=json.load(open('$T/harness.config.json'))
-disc=d.get('discovery',{})
-print('yes' if disc.get('agents')==['leader'] and disc.get('skills')==[] and disc.get('mcp')==[] else 'no')
-" 2>/dev/null)"
+LISTED="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/harness.config.json" "(d.discovery&&d.discovery.agents&&JSON.stringify(d.discovery.agents)===JSON.stringify([\"leader\"])&&JSON.stringify(d.discovery.skills||[])===JSON.stringify([])&&JSON.stringify(d.discovery.mcp||[])===JSON.stringify([]))?'yes':'no'")"
 if [ "$CODE" -eq 0 ] && [ "$LISTED" = "yes" ]; then
   pass
 else

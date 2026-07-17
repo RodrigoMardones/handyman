@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Backlog-generator tests for the Handyman skill.
-# Exercises scripts/backlog.py against a fixture harness: impl / review (both
+# Exercises dist/backlog.js against a fixture harness: impl / review (both
 # verdicts) / explore entries, the no-overwrite invariant, and input guards.
 set -u
 

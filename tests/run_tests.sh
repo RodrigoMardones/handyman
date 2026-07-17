@@ -18,7 +18,7 @@ run_suite() {
   echo
 }
 
-run_suite python3 "$SUITE_DIR/test_docs.py"
+run_suite node "$SUITE_DIR/test_docs.js"
 run_suite bash "$SUITE_DIR/test_init.sh"
 run_suite bash "$SUITE_DIR/test_update.sh"
 run_suite bash "$SUITE_DIR/test_feature.sh"
