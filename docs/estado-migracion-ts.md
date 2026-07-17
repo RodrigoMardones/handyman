@@ -67,8 +67,12 @@ gantt
 | `backlog` | #6 | ✅ done | argparse exit-2, template stamping |
 | `feature` | #7 | ✅ done | state machine + subprocess fan-out |
 | `sprint` | #8 | ✅ done | lifecycle, history compaction |
-| `validate_harness` | #9 | ✅ done | `PLATFORM_ROLE_DIRS` promovido al core; shim para hermanos Python |
+| `validate_harness` | #9 | ✅ done | `PLATFORM_ROLE_DIRS` promovido al core |
+| `update_harness` | #11 | ✅ done | `difflib` → `core/unifiedDiff` |
+| `upgrade_harness` | #12 | ✅ done | `difflib` → `core/unifiedDiff` |
+| `preflight` | #10 | ✅ done | fan-out de 5 hermanos via `node dist` |
 | `evals` | #14 | ✅ done | shlex shim, `formatHalfEven`, ajv |
+| `tools_discovery` | #13 | ✅ done | serializador propio `asciiStringify` (`ensure_ascii=True`); `unifiedDiff` para `declare --dry-run` |
 
 El **core** (`handyman/src/core/`) está completo y probado (vitest):
 
@@ -78,24 +82,26 @@ El **core** (`handyman/src/core/`) está completo y probado (vitest):
 - `rounding.ts` — `formatHalfEven` (banker's rounding).
 - `schema.ts` — `validateFeatureList` / `validateHarnessConfig` sobre ajv
   (mismos `assets/schemas/*.json`).
-- `workspace.ts` — `resolveWorkspace` + `PLATFORM_ROLE_DIRS` + `VALID_STATUS` (compartidos por validate_harness y el futuro tools_discovery).
+- `workspace.ts` — `resolveWorkspace` + `PLATFORM_ROLE_DIRS` + `VALID_STATUS` (compartidos por validate_harness y tools_discovery).
 - `version.ts` — sello de versión.
 
-Salud de la línea base al **2026-07-16**: `npm run typecheck && npm test &&
+Salud de la línea base al **2026-07-17**: `npm run typecheck && npm test &&
 npm run lint && npm run build` verde; `bash tests/run_tests.sh` =
 **ALL SUITES PASSED**; `./init.sh` exit 0; sin worktrees estancados.
 
-### Pendiente (4 scripts + cutover)
+### Migración completada (0 CLIs Python)
 
-Estos `.py` siguen en `handyman/scripts/` y **sus oráculos siguen apuntando a
-`python3`**:
+Los **12 CLIs** viven en `handyman/src/` y se ejecutan como `node dist/x.js`.
+`handyman/scripts/` queda solo con `scaffold.sh`. El shim temporal
+`scripts/_resolve_compat.py` (deuda del port #9) se eliminó al cerrar #13:
+ya no quedan hermanos Python que importen `resolve_workspace`/`PLATFORM_ROLE_DIRS`.
 
-| # | Script | Riesgo | Nota técnica |
-|---|--------|--------|--------------|
-| 11 | `update_harness` | alto | `difflib.unified_diff` → `core/unifiedDiff` |
-| 12 | `upgrade_harness` | alto | `difflib.unified_diff` → `core/unifiedDiff` |
-| 10 | `preflight` | alto | Fan-out de 5 hermanos por subprocess — **portear al final** para que todas las llamadas vayan a `node dist` |
-| 13 | `tools_discovery` | alto | `ensure_ascii=True` + `difflib` + depende de `PLATFORM_ROLE_DIRS` del #9 |
+### Cutover final (pendiente)
+
+Queda el **cutover** single-track Node: reescribir las invocaciones en
+`SKILL.md`/references que aún citan el runtime, **publicar `dist/`** (commitear
+el build o añadir un release step), y **quitar `jq`** de `assets/init.template.sh`
+(`check_tools_discovery` y `_json` aún lo usan para leer el bloque `discovery`).
 
 ## 3. Orden recomendado para cerrar
 
