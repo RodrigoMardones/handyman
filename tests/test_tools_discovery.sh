@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # Skill/MCP discovery tests for the Handyman skill.
-# Exercises scripts/tools_discovery.py against fixture skill roots and a fixture
-# harness: list, find (keyword filter), check (declared-present, declared-missing,
-# and no-discovery-block), local-then-global skill-root precedence, MCP
-# validation against a fixture .vscode/mcp.json (configured -> ok, host-provided
-# -> non-gating NOTE), and agent verification against fixture .github/agents role
-# files (present -> ok + resolved path, declared-missing -> gates, undeclared -> NOTE).
+# Exercises dist/tools_discovery.js (Node port of scripts/tools_discovery.py)
+# against fixture skill roots and a fixture harness: list, find (keyword filter),
+# check (declared-present, declared-missing, and no-discovery-block), local-then-global
+# skill-root precedence, MCP validation against a fixture .vscode/mcp.json
+# (configured -> ok, host-provided -> non-gating NOTE), and agent verification
+# against fixture .github/agents role files (present -> ok + resolved path,
+# declared-missing -> gates, undeclared -> NOTE).
 set -u
 
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
-TD="$SUITE_DIR/../handyman/scripts/tools_discovery.py"
+TD="$SUITE_DIR/../handyman/dist/tools_discovery.js"
 
 echo "Tools-discovery suite (test_tools_discovery.sh)"
 
@@ -36,7 +37,7 @@ write_config() { # $1=root $2=discovery_json_or_empty
 # --- T1: list enumerates installed skills -----------------------------------
 start_case "list enumerates installed skills (name + description)"
 T="$(mktemp -d)"; write_skills "$T/skills"
-OUT="$(python3 "$TD" --skills-dir "$T/skills" list 2>&1)"; CODE=$?
+OUT="$(node "$TD" --skills-dir "$T/skills" list 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "^alpha	" \
   && printf '%s' "$OUT" | grep -q "^beta	"; then
   pass
@@ -48,7 +49,7 @@ rm -rf "$T"
 # --- T2: list --json emits valid JSON ---------------------------------------
 start_case "list --json emits valid JSON with the skills"
 T="$(mktemp -d)"; write_skills "$T/skills"
-OUT="$(python3 "$TD" --skills-dir "$T/skills" list --json 2>&1)"
+OUT="$(node "$TD" --skills-dir "$T/skills" list --json 2>&1)"
 if printf '%s' "$OUT" | python3 -c "import json,sys;d=json.load(sys.stdin);assert {s['name'] for s in d}=={'alpha','beta'}" 2>/dev/null; then
   pass
 else
@@ -59,7 +60,7 @@ rm -rf "$T"
 # --- T3: find filters by keyword (case-insensitive) -------------------------
 start_case "find filters skills by keyword and excludes non-matches"
 T="$(mktemp -d)"; write_skills "$T/skills"
-OUT="$(python3 "$TD" --skills-dir "$T/skills" find FIRST 2>&1)"
+OUT="$(node "$TD" --skills-dir "$T/skills" find FIRST 2>&1)"
 if printf '%s' "$OUT" | grep -q "^alpha	" && ! printf '%s' "$OUT" | grep -q "^beta	"; then
   pass
 else
@@ -71,7 +72,7 @@ rm -rf "$T"
 start_case "check exits 0 when every declared skill is installed"
 T="$(mktemp -d)"; write_skills "$T/skills"
 write_config "$T" '{"skills":["alpha","beta"],"mcp":["nx"]}'
-python3 "$TD" --root "$T" --skills-dir "$T/skills" check >/dev/null 2>&1
+node "$TD" --root "$T" --skills-dir "$T/skills" check >/dev/null 2>&1
 assert_exit 0 $? "check should pass with all skills present"
 rm -rf "$T"
 
@@ -79,7 +80,7 @@ rm -rf "$T"
 start_case "check exits non-zero and names a declared-but-missing skill"
 T="$(mktemp -d)"; write_skills "$T/skills"
 write_config "$T" '{"skills":["alpha","gamma"],"mcp":[]}'
-OUT="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
+OUT="$(node "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
 if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "gamma" \
   && printf '%s' "$OUT" | grep -q "MISSING"; then
   pass
@@ -92,7 +93,7 @@ rm -rf "$T"
 start_case "check exits 0 when no discovery block is declared"
 T="$(mktemp -d)"; write_skills "$T/skills"
 write_config "$T" ''
-OUT="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
+OUT="$(node "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "nothing to verify"; then
   pass
 else
@@ -109,7 +110,7 @@ printf -- '---\nname: shared\ndescription: shared-local\n---\n' > "$T/.agents/sk
 printf -- '---\nname: local_only\ndescription: only local.\n---\n' > "$T/.agents/skills/local_only/SKILL.md"
 printf -- '---\nname: shared\ndescription: shared-global\n---\n' > "$G/shared/SKILL.md"
 printf -- '---\nname: global_only\ndescription: only global.\n---\n' > "$G/global_only/SKILL.md"
-OUT="$(HANDYMAN_SKILL_ROOTS="$G" python3 "$TD" --root "$T" list --json 2>&1)"
+OUT="$(HANDYMAN_SKILL_ROOTS="$G" node "$TD" --root "$T" list --json 2>&1)"
 if printf '%s' "$OUT" | python3 -c "
 import json,sys
 d={s['name']:s['description'] for s in json.load(sys.stdin)}
@@ -128,7 +129,7 @@ T="$(mktemp -d)"; write_skills "$T/skills"
 mkdir -p "$T/.vscode"
 printf '{"servers":{"nx":{"command":"x","type":"stdio"}},"inputs":[]}\n' > "$T/.vscode/mcp.json"
 write_config "$T" '{"skills":["alpha"],"mcp":["nx"]}'
-OUT="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
+OUT="$(node "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "mcp nx: ok (configured in vscode)"; then
   pass
 else
@@ -142,7 +143,7 @@ T="$(mktemp -d)"; write_skills "$T/skills"
 mkdir -p "$T/.vscode"
 printf '{"servers":{"mcparmory":{"command":"x","type":"stdio"}},"inputs":[]}\n' > "$T/.vscode/mcp.json"
 write_config "$T" '{"skills":["alpha"],"mcp":["other"]}'
-OUT="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
+OUT="$(node "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] \
   && printf '%s' "$OUT" | grep -q "mcp other: NOTE not configured" \
   && printf '%s' "$OUT" | grep -q "configured but not declared: mcparmory"; then
@@ -158,7 +159,7 @@ T="$(mktemp -d)"; write_skills "$T/skills"
 mkdir -p "$T/.github/agents"
 printf -- '---\nname: leader\ndescription: Orchestrates the harness.\nmodel: x\ntools: [read]\n---\n# Leader\n' > "$T/.github/agents/leader.agent.md"
 write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":["leader"]}'
-OUT="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
+OUT="$(node "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] \
   && printf '%s' "$OUT" | grep -q "agent leader: ok -> " \
   && printf '%s' "$OUT" | grep -q "leader.agent.md"; then
@@ -174,7 +175,7 @@ T="$(mktemp -d)"; write_skills "$T/skills"
 mkdir -p "$T/.github/agents"
 printf -- '---\nname: leader\ndescription: Orchestrates.\n---\n' > "$T/.github/agents/leader.agent.md"
 write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":["leader","ghost"]}'
-OUT="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
+OUT="$(node "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
 if [ "$CODE" -ne 0 ] \
   && printf '%s' "$OUT" | grep -q "agent ghost: MISSING" \
   && printf '%s' "$OUT" | grep -q "agent leader: ok"; then
@@ -191,7 +192,7 @@ mkdir -p "$T/.github/agents"
 printf -- '---\nname: leader\ndescription: Orchestrates.\n---\n' > "$T/.github/agents/leader.agent.md"
 printf -- '---\nname: reviewer\ndescription: Reviews.\n---\n' > "$T/.github/agents/reviewer.agent.md"
 write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":["leader"]}'
-OUT="$(python3 "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
+OUT="$(node "$TD" --root "$T" --skills-dir "$T/skills" check 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] \
   && printf '%s' "$OUT" | grep -q "installed but not declared: agent reviewer"; then
   pass
@@ -204,7 +205,7 @@ rm -rf "$T"
 start_case "declare skill appends to discovery.skills via json round-trip"
 T="$(mktemp -d)"
 write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":[]}'
-OUT="$(python3 "$TD" --root "$T" declare skill beta 2>&1)"; CODE=$?
+OUT="$(node "$TD" --root "$T" declare skill beta 2>&1)"; CODE=$?
 LISTED="$(python3 -c "
 import json,sys
 d=json.load(open('$T/harness.config.json'))
@@ -223,7 +224,7 @@ start_case "declare rejects a duplicate and leaves the config untouched"
 T="$(mktemp -d)"
 write_config "$T" '{"skills":["alpha"],"mcp":[],"agents":[]}'
 BEFORE="$(cat "$T/harness.config.json")"
-OUT="$(python3 "$TD" --root "$T" declare skill alpha 2>&1)"; CODE=$?
+OUT="$(node "$TD" --root "$T" declare skill alpha 2>&1)"; CODE=$?
 AFTER="$(cat "$T/harness.config.json")"
 if [ "$CODE" -ne 0 ] && [ "$BEFORE" = "$AFTER" ] \
   && printf '%s' "$OUT" | grep -q "already declared"; then
@@ -238,7 +239,7 @@ start_case "declare --dry-run previews and does not write"
 T="$(mktemp -d)"
 write_config "$T" '{"skills":[],"mcp":[],"agents":[]}'
 BEFORE="$(cat "$T/harness.config.json")"
-OUT="$(python3 "$TD" --root "$T" declare mcp nx --dry-run 2>&1)"; CODE=$?
+OUT="$(node "$TD" --root "$T" declare mcp nx --dry-run 2>&1)"; CODE=$?
 AFTER="$(cat "$T/harness.config.json")"
 if [ "$CODE" -eq 0 ] && [ "$BEFORE" = "$AFTER" ] \
   && printf '%s' "$OUT" | grep -q '^+.*"nx"' \
@@ -253,7 +254,7 @@ rm -rf "$T"
 start_case "declare on a config without discovery creates the block"
 T="$(mktemp -d)"
 write_config "$T" ''
-OUT="$(python3 "$TD" --root "$T" declare agent leader 2>&1)"; CODE=$?
+OUT="$(node "$TD" --root "$T" declare agent leader 2>&1)"; CODE=$?
 LISTED="$(python3 -c "
 import json,sys
 d=json.load(open('$T/harness.config.json'))

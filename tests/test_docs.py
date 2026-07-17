@@ -771,7 +771,7 @@ def test_discovery_reference() -> None:
     if os.path.isfile(doc):
         with open(doc, encoding="utf-8") as fh:
             body = fh.read()
-        for token in ("discovery", "tools_discovery.py", "progressive disclosure",
+        for token in ("discovery", "tools_discovery.js", "progressive disclosure",
                       "tool_search", "discovery.agents", "Consultation agents"):
             check(f"discovery.md documents '{token}'", token in body)
         check("discovery.md documents the contract-vs-resolution path boundary",
@@ -813,13 +813,13 @@ def test_feature_request_tools_link() -> None:
     with open(os.path.join(ROOT, "references", "examples.md"),
               encoding="utf-8") as fh:
         examples = fh.read()
-    check("examples.md points to tools_discovery.py for skill verification",
-          "tools_discovery.py" in examples)
+    check("examples.md points to tools_discovery.js for skill verification",
+          "tools_discovery.js" in examples)
     with open(os.path.join(ROOT, "assets", "feature-request.template.md"),
               encoding="utf-8") as fh:
         form = fh.read()
     check("feature-request template ties Tools>skills to discovery",
-          "discovery.skills" in form and "tools_discovery.py" in form)
+          "discovery.skills" in form and "tools_discovery.js" in form)
     check("feature-request template ties Tools>agents to discovery.agents",
           "discovery.agents" in form)
     with open(os.path.join(ROOT, "references", "workflow.md"),

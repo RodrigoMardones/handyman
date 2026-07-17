@@ -9,11 +9,10 @@
  *   - format   : node dist/validate_harness.js   (structure + feature_list contract)
  *   - drift    : node dist/upgrade_harness.js --check  (version drift vs the skill)
  *   - sync     : node dist/update_harness.js --check   (config <-> role-file audit)
- *   - discovery: python3 scripts/tools_discovery.py check    (declared skills + MCPs)
+ *   - discovery: node dist/tools_discovery.js check    (declared skills + MCPs)
  *   - worklist : node dist/feature.js ready       (claimable work + loop stop)
  *
- * `tools_discovery` is the last Python sibling left (#13); once it is ported
- * this block repoints to `node dist/tools_discovery.js` too.
+ * Every sibling CLI now runs on Node (`dist/`); there are no Python siblings left.
  *
  * It writes nothing. It is a *stability* report, not a quality gate: the
  * blocking checks already live in `validate` (a phase of `init.sh`), so this
@@ -44,9 +43,9 @@ import { resolveWorkspace } from "./core/index.js";
 /**
  * Package root: both `src/` (vitest) and `dist/` (built) sit one level below
  * it, so `..` from either resolves to the same `handyman/` directory that
- * holds `dist/` (the Node siblings) and `scripts/` (the remaining Python
- * sibling), mirroring Python `SCRIPT_DIR.parent` (`SCRIPT_DIR` was
- * `scripts/`, since `preflight.py` lived there).
+ * holds `dist/` (all the Node sibling CLIs), mirroring Python
+ * `SCRIPT_DIR.parent` (`SCRIPT_DIR` was `scripts/`, since `preflight.py`
+ * lived there).
  */
 const HANDYMAN_ROOT = fileURLToPath(new URL("..", import.meta.url));
 
@@ -181,8 +180,8 @@ function preflight(root: string, strict: boolean): number {
   }
 
   // --- discovery: declared skills + MCPs --------------------------------------
-  const toolsDiscoveryPy = join(HANDYMAN_ROOT, "scripts", "tools_discovery.py");
-  [rc, out] = run(["python3", toolsDiscoveryPy, "--root", root, "check"]);
+  const toolsDiscoveryJs = join(HANDYMAN_ROOT, "dist", "tools_discovery.js");
+  [rc, out] = run(["node", toolsDiscoveryJs, "--root", root, "check"]);
   block("discovery", rc === 0 ? "OK" : "NOTE", out);
   if (rc !== 0) {
     problems.push("discovery MISSING");

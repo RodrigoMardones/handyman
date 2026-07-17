@@ -41,7 +41,7 @@ Before selecting a feature, confirm the harness is well-formed and stable across
 - **Feature-list contract** — the live `feature_list.json` validates against `assets/schemas/feature_list.schema.json` (`additionalProperties:false` rejects out-of-contract keys).
 - **Version drift** — `node dist/upgrade_harness.js --check`: the installed `harness_version` against the current skill; a `BEHIND` report means run `node dist/upgrade_harness.js` (with `--dry-run`) to apply migrations and re-seal.
 - **Config ↔ role-file sync** — `node dist/update_harness.js --check`: the `models`/`tools` maps of `harness.config.json` against the role files; if they drifted, run `node dist/update_harness.js --sync` to reconcile the role files to the config (deterministic, config is the source of truth).
-- **Discovery** — `scripts/tools_discovery.py check`: the declared `discovery` skills and MCP servers against what is installed; install or declare what is missing.
+- **Discovery** — `node dist/tools_discovery.js check`: the declared `discovery` skills and MCP servers against what is installed; install or declare what is missing.
 - **Worklist** — `node dist/feature.js ready`: the `pending` features whose `depends_on` are all satisfied; a drained report (exit 3) is the unattended-loop stop condition, and blocked-only work needs a human decision, not another session.
 
 `preflight.js` always exits 0 (it reports stability, it does not gate): the blocking checks already live in the verifier's `validate` phase. Treat the report as the stability review that precedes feature work, and act on `BEHIND`/drift before starting.
@@ -62,12 +62,12 @@ Creating a harness is deterministic. Run the scaffold first and always; do not h
 
 ## Leader Protocol
 
-The leader coordinates. It does not implement product code and does not mark a feature `done` alone. It runs under a stronger reasoning model and the widest tool set (including `agent`, `web`, and `browser`) and delegates cheaper roles (see [models.md](./models.md) and [tools.md](./tools.md)). Delegate only to consultation agents the harness declares under `discovery.agents` and that `scripts/tools_discovery.py check` confirms are present (see [discovery.md](./discovery.md)).
+The leader coordinates. It does not implement product code and does not mark a feature `done` alone. It runs under a stronger reasoning model and the widest tool set (including `agent`, `web`, and `browser`) and delegates cheaper roles (see [models.md](./models.md) and [tools.md](./tools.md)). Delegate only to consultation agents the harness declares under `discovery.agents` and that `node dist/tools_discovery.js check` confirms are present (see [discovery.md](./discovery.md)).
 
 1. Decide whether the request is analysis, bootstrap, one feature, or review.
 2. For analysis, inspect and report. Do not modify product code.
 3. Resolve `HARNESS_WORKSPACE` before selecting or editing feature state.
-4. For one feature, select exactly one `pending` feature from `$HARNESS_WORKSPACE/feature_list.json`. If the user has not framed the request, offer the `feature-request.md` form (see [templates.md](./templates.md)) and turn the filled form into a feature entry with `node dist/feature.js add`, which writes only the contract keys (`id`, `name`, `title`, `description`, `acceptance`, `status`). Before converting, validate the form's `## Tools` section against the declared `discovery` block: run `scripts/tools_discovery.py check`, and close any gap deterministically with `scripts/tools_discovery.py declare <skill|mcp|agent> <name>` (or correct the form) so the selection is declared and installed before work starts. Do not hand-edit `feature_list.json`, which is how out-of-contract keys such as date fields creep in.
+4. For one feature, select exactly one `pending` feature from `$HARNESS_WORKSPACE/feature_list.json`. If the user has not framed the request, offer the `feature-request.md` form (see [templates.md](./templates.md)) and turn the filled form into a feature entry with `node dist/feature.js add`, which writes only the contract keys (`id`, `name`, `title`, `description`, `acceptance`, `status`). Before converting, validate the form's `## Tools` section against the declared `discovery` block: run `node dist/tools_discovery.js check`, and close any gap deterministically with `node dist/tools_discovery.js declare <skill|mcp|agent> <name>` (or correct the form) so the selection is declared and installed before work starts. Do not hand-edit `feature_list.json`, which is how out-of-contract keys such as date fields creep in.
 5. Delegate to an implementer when available.
 6. Require the implementer to write a report in `$HARNESS_WORKSPACE/backlog/impl_<feature>.md`.
 7. Delegate to a reviewer after implementation.

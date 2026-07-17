@@ -30,7 +30,7 @@ request before you start.
 # - Only name, title, description, and acceptance become the feature_list.json entry (via node dist/feature.js add);
 #   Verification, Considerations, Tools, and Post-feature are guidance for the leader and the human.
 # - Tools: skills come from discovery.skills and agents from discovery.agents (harness.config.json);
-#   verify both are installed with scripts/tools_discovery.py check. See references/discovery.md.
+#   verify both are installed with node dist/tools_discovery.js check. See references/discovery.md.
 
 ## ───── CORE (fill always) ─────
 
@@ -54,7 +54,7 @@ request before you start.
 
 ## Tools
 - skills: <handyman, ...>
-- agents (optional): <implementer, reviewer, explorer>   # from discovery.agents; verify with scripts/tools_discovery.py check
+- agents (optional): <implementer, reviewer, explorer>   # from discovery.agents; verify with node dist/tools_discovery.js check
 
 ## ───── OPTIONAL (fill only if it applies; otherwise delete the section) ─────
 
