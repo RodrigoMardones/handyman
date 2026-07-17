@@ -8,7 +8,7 @@ set -u
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
-SPRINT="$SUITE_DIR/../handyman/scripts/sprint.py"
+SPRINT="$SUITE_DIR/../handyman/dist/sprint.js"
 
 echo "Sprint-lifecycle suite (test_sprint.sh)"
 
@@ -56,7 +56,7 @@ json_get() { # $1=file  $2=python expression over d
 start_case "open: stamps pending features and records current_sprint"
 S1="$(mktemp -d)"
 write_harness "$S1"
-OUT="$(python3 "$SPRINT" --root "$S1" open 2026-SP1 2>&1)"; CODE=$?
+OUT="$(node "$SPRINT" --root "$S1" open 2026-SP1 2>&1)"; CODE=$?
 CUR="$(json_get "$S1/harness.config.json" "d.get('current_sprint')")"
 LBL_A="$(json_get "$S1/.handyman/feature_list.json" "next(f.get('sprint','') for f in d['features'] if f['name']=='a')")"
 LBL_C="$(json_get "$S1/.handyman/feature_list.json" "next(f.get('sprint','') for f in d['features'] if f['name']=='c')")"
@@ -72,7 +72,7 @@ rm -rf "$S1"
 start_case "open: rejects a malformed sprint id without writing"
 S2="$(mktemp -d)"
 write_harness "$S2"
-OUT="$(python3 "$SPRINT" --root "$S2" open sprint-one 2>&1)"; CODE=$?
+OUT="$(node "$SPRINT" --root "$S2" open sprint-one 2>&1)"; CODE=$?
 CUR="$(json_get "$S2/harness.config.json" "d.get('current_sprint')")"
 if [ "$CODE" -ne 0 ] && [ "$CUR" = "None" ]; then
   pass
@@ -85,8 +85,8 @@ rm -rf "$S2"
 start_case "open: fails when a sprint is already open"
 S3="$(mktemp -d)"
 write_harness "$S3"
-python3 "$SPRINT" --root "$S3" open 2026-SP1 >/dev/null 2>&1
-OUT="$(python3 "$SPRINT" --root "$S3" open 2026-SP2 2>&1)"; CODE=$?
+node "$SPRINT" --root "$S3" open 2026-SP1 >/dev/null 2>&1
+OUT="$(node "$SPRINT" --root "$S3" open 2026-SP2 2>&1)"; CODE=$?
 CUR="$(json_get "$S3/harness.config.json" "d.get('current_sprint')")"
 if [ "$CODE" -ne 0 ] && [ "$CUR" = "2026-SP1" ] \
   && printf '%s' "$OUT" | grep -q "already open"; then
@@ -100,8 +100,8 @@ rm -rf "$S3"
 start_case "status: reports the open sprint and its features"
 S4="$(mktemp -d)"
 write_harness "$S4"
-python3 "$SPRINT" --root "$S4" open 2026-SP1 >/dev/null 2>&1
-OUT="$(python3 "$SPRINT" --root "$S4" status 2>&1)"; CODE=$?
+node "$SPRINT" --root "$S4" open 2026-SP1 >/dev/null 2>&1
+OUT="$(node "$SPRINT" --root "$S4" status 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "2026-SP1" \
   && printf '%s' "$OUT" | grep -q "a \[pending\]"; then
   pass
@@ -114,7 +114,7 @@ rm -rf "$S4"
 start_case "close: writes sprint doc, archives done, strips carry-over label"
 S5="$(mktemp -d)"
 write_harness "$S5"
-python3 "$SPRINT" --root "$S5" open 2026-SP1 >/dev/null 2>&1
+node "$SPRINT" --root "$S5" open 2026-SP1 >/dev/null 2>&1
 python3 - "$S5/.handyman/feature_list.json" <<'PY'
 import json, sys
 path = sys.argv[1]
@@ -124,7 +124,7 @@ for f in d["features"]:
         f["status"] = "done"
 json.dump(d, open(path, "w"), indent=2)
 PY
-OUT="$(python3 "$SPRINT" --root "$S5" close 2>&1)"; CODE=$?
+OUT="$(node "$SPRINT" --root "$S5" close 2>&1)"; CODE=$?
 DOC="$S5/.handyman/docs/sprints/sprint.2026-SP1.md"
 CUR="$(json_get "$S5/harness.config.json" "d.get('current_sprint')")"
 HAS_A="$(json_get "$S5/.handyman/feature_list.json" "any(f['name']=='a' for f in d['features'])")"
@@ -144,8 +144,8 @@ rm -rf "$S5"
 start_case "close: --dry-run previews without writing"
 S6="$(mktemp -d)"
 write_harness "$S6"
-python3 "$SPRINT" --root "$S6" open 2026-SP1 >/dev/null 2>&1
-OUT="$(python3 "$SPRINT" --root "$S6" close --dry-run 2>&1)"; CODE=$?
+node "$SPRINT" --root "$S6" open 2026-SP1 >/dev/null 2>&1
+OUT="$(node "$SPRINT" --root "$S6" close --dry-run 2>&1)"; CODE=$?
 CUR="$(json_get "$S6/harness.config.json" "d.get('current_sprint')")"
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "DRY RUN" \
   && [ ! -e "$S6/.handyman/docs/sprints/sprint.2026-SP1.md" ] \
@@ -160,7 +160,7 @@ rm -rf "$S6"
 start_case "close: fails when no sprint is open"
 S7="$(mktemp -d)"
 write_harness "$S7"
-OUT="$(python3 "$SPRINT" --root "$S7" close 2>&1)"; CODE=$?
+OUT="$(node "$SPRINT" --root "$S7" close 2>&1)"; CODE=$?
 if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "no sprint open"; then
   pass
 else
@@ -172,7 +172,7 @@ rm -rf "$S7"
 start_case "close: rejects when a labeled feature is in_progress"
 S8="$(mktemp -d)"
 write_harness "$S8"
-python3 "$SPRINT" --root "$S8" open 2026-SP1 >/dev/null 2>&1
+node "$SPRINT" --root "$S8" open 2026-SP1 >/dev/null 2>&1
 python3 - "$S8/.handyman/feature_list.json" <<'PY'
 import json, sys
 path = sys.argv[1]
@@ -182,7 +182,7 @@ for f in d["features"]:
         f["status"] = "in_progress"
 json.dump(d, open(path, "w"), indent=2)
 PY
-OUT="$(python3 "$SPRINT" --root "$S8" close 2>&1)"; CODE=$?
+OUT="$(node "$SPRINT" --root "$S8" close 2>&1)"; CODE=$?
 CUR="$(json_get "$S8/harness.config.json" "d.get('current_sprint')")"
 if [ "$CODE" -ne 0 ] && [ "$CUR" = "2026-SP1" ] \
   && printf '%s' "$OUT" | grep -q "in_progress"; then
@@ -203,7 +203,7 @@ cat >> "$S9/.handyman/progress/history.md" <<'MD'
 - **Tools:** skills: untouched-marker
 - **Closure:** done
 MD
-python3 "$SPRINT" --root "$S9" open 2026-SP1 >/dev/null 2>&1
+node "$SPRINT" --root "$S9" open 2026-SP1 >/dev/null 2>&1
 python3 - "$S9/.handyman/feature_list.json" <<'PY'
 import json, sys
 path = sys.argv[1]
@@ -213,7 +213,7 @@ for f in d["features"]:
         f["status"] = "done"
 json.dump(d, open(path, "w"), indent=2)
 PY
-OUT="$(python3 "$SPRINT" --root "$S9" close 2>&1)"; CODE=$?
+OUT="$(node "$SPRINT" --root "$S9" close 2>&1)"; CODE=$?
 HIST="$S9/.handyman/progress/history.md"
 # a: archived -> heading intact, body reduced to the stub, old bullets gone
 # b: not archived (carry-over) -> full body untouched
@@ -233,7 +233,7 @@ rm -rf "$S9"
 start_case "close: --dry-run reports the compaction and leaves history intact"
 S10="$(mktemp -d)"
 write_harness "$S10"
-python3 "$SPRINT" --root "$S10" open 2026-SP1 >/dev/null 2>&1
+node "$SPRINT" --root "$S10" open 2026-SP1 >/dev/null 2>&1
 python3 - "$S10/.handyman/feature_list.json" <<'PY'
 import json, sys
 path = sys.argv[1]
@@ -243,7 +243,7 @@ for f in d["features"]:
         f["status"] = "done"
 json.dump(d, open(path, "w"), indent=2)
 PY
-OUT="$(python3 "$SPRINT" --root "$S10" close --dry-run 2>&1)"; CODE=$?
+OUT="$(node "$SPRINT" --root "$S10" close --dry-run 2>&1)"; CODE=$?
 HIST="$S10/.handyman/progress/history.md"
 if [ "$CODE" -eq 0 ] \
   && printf '%s' "$OUT" | grep -q "would compact 1 history" \
@@ -259,7 +259,7 @@ rm -rf "$S10"
 start_case "close: a second sprint close does not re-compact earlier stubs"
 S11="$(mktemp -d)"
 write_harness "$S11"
-python3 "$SPRINT" --root "$S11" open 2026-SP1 >/dev/null 2>&1
+node "$SPRINT" --root "$S11" open 2026-SP1 >/dev/null 2>&1
 python3 - "$S11/.handyman/feature_list.json" <<'PY'
 import json, sys
 path = sys.argv[1]
@@ -269,11 +269,11 @@ for f in d["features"]:
         f["status"] = "done"
 json.dump(d, open(path, "w"), indent=2)
 PY
-python3 "$SPRINT" --root "$S11" close >/dev/null 2>&1
+node "$SPRINT" --root "$S11" close >/dev/null 2>&1
 # second period: feature a is archived, but its (already compacted) entry
 # would match again if 'a' were re-archived; instead close b in SP2 and
 # assert a's stub still points at SP1 and appears exactly once.
-python3 "$SPRINT" --root "$S11" open 2026-SP2 >/dev/null 2>&1
+node "$SPRINT" --root "$S11" open 2026-SP2 >/dev/null 2>&1
 python3 - "$S11/.handyman/feature_list.json" <<'PY'
 import json, sys
 path = sys.argv[1]
@@ -289,7 +289,7 @@ cat >> "$S11/.handyman/progress/history.md" <<'MD'
 - **Agent:** leader
 - **Closure:** done
 MD
-OUT="$(python3 "$SPRINT" --root "$S11" close 2>&1)"; CODE=$?
+OUT="$(node "$SPRINT" --root "$S11" close 2>&1)"; CODE=$?
 HIST="$S11/.handyman/progress/history.md"
 N_SP1="$(grep -c "archived to sprint 2026-SP1" "$HIST")"
 N_SP2="$(grep -c "archived to sprint 2026-SP2" "$HIST")"

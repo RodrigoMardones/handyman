@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # Preflight orchestrator tests for the Handyman skill.
-# Exercises scripts/preflight.py: it reuses validate_harness, upgrade_harness,
-# update_harness and tools_discovery and emits a unified read-only stability
-# report (format / drift / sync / discovery) that ALWAYS exits 0.
+# Exercises the TS port (node dist/preflight.js): it reuses validate_harness,
+# upgrade_harness, update_harness and tools_discovery and emits a unified
+# read-only stability report (format / drift / sync / discovery) that ALWAYS
+# exits 0.
 set -u
 
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
-PF="$SUITE_DIR/../handyman/scripts/preflight.py"
+PF="$SUITE_DIR/../handyman/dist/preflight.js"
 SCRIPTS="$SUITE_DIR/../handyman/scripts"
 
 echo "Preflight suite (test_preflight.sh)"
@@ -41,7 +42,7 @@ PY
 # --- T1: emits all four blocks and exits 0 ---------------------------------
 start_case "preflight emits format/drift/sync/discovery blocks and exits 0"
 T="$(mktemp -d)"; write_fixture "$T"
-OUT="$(python3 "$PF" --root "$T" 2>&1)"; CODE=$?
+OUT="$(node "$PF" --root "$T" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] \
   && printf '%s' "$OUT" | grep -q "format:" \
   && printf '%s' "$OUT" | grep -q "drift:" \
@@ -64,7 +65,7 @@ d = json.loads(open(p).read())
 d["harness_version"] = "0.0.1"
 open(p, "w").write(json.dumps(d, indent=2))
 PY
-OUT="$(python3 "$PF" --root "$T" 2>&1)"; CODE=$?
+OUT="$(node "$PF" --root "$T" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] \
   && printf '%s' "$OUT" | grep -q "drift: BEHIND" \
   && printf '%s' "$OUT" | grep -q "read-only"; then
@@ -77,7 +78,7 @@ rm -rf "$T"
 # --- T3: reuses the existing scripts (no reimplementation) ----------------
 start_case "preflight reuses validate_harness and reports its output"
 T="$(mktemp -d)"; write_fixture "$T"
-OUT="$(python3 "$PF" --root "$T" 2>&1)"; CODE=$?
+OUT="$(node "$PF" --root "$T" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] \
   && printf '%s' "$OUT" | grep -q "validate_harness" \
   && printf '%s' "$OUT" | grep -q "format: OK"; then
@@ -90,7 +91,7 @@ rm -rf "$T"
 # --- T4: resolves HARNESS_WORKSPACE ----------------------------------------
 start_case "preflight resolves HARNESS_WORKSPACE from harness.config.json"
 T="$(mktemp -d)"; write_fixture "$T"
-OUT="$(python3 "$PF" --root "$T" 2>&1)"; CODE=$?
+OUT="$(node "$PF" --root "$T" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "workspace:.*\.handyman"; then
   pass
 else
@@ -103,7 +104,7 @@ start_case "preflight surfaces format gaps as GAPS but still exits 0"
 T="$(mktemp -d)"
 # no harness files at all -> resolve_workspace falls back to root
 printf '{"install_mode":"local","project_name":"x","project_root":".","harness_workspace":"missing"}\n' > "$T/harness.config.json"
-OUT="$(python3 "$PF" --root "$T" 2>&1)"; CODE=$?
+OUT="$(node "$PF" --root "$T" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "format: GAPS"; then
   pass
 else
@@ -114,7 +115,7 @@ rm -rf "$T"
 # --- T6: --strict on a stable harness exits 0 -------------------------------
 start_case "--strict exits 0 on a stable harness"
 T="$(mktemp -d)"; write_fixture "$T"
-OUT="$(python3 "$PF" --root "$T" --strict 2>&1)"; CODE=$?
+OUT="$(node "$PF" --root "$T" --strict 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "strict; stable"; then
   pass
 else
@@ -132,7 +133,7 @@ d = json.loads(open(p).read())
 d["harness_version"] = "0.0.1"
 open(p, "w").write(json.dumps(d, indent=2))
 PY
-OUT="$(python3 "$PF" --root "$T" --strict 2>&1)"; CODE=$?
+OUT="$(node "$PF" --root "$T" --strict 2>&1)"; CODE=$?
 if [ "$CODE" -ne 0 ] \
   && printf '%s' "$OUT" | grep -q "STRICT failure" \
   && printf '%s' "$OUT" | grep -q "drift BEHIND"; then
@@ -152,7 +153,7 @@ d = json.loads(open(p).read())
 d["discovery"] = {"skills": ["ghost_skill"], "mcp": [], "agents": []}
 open(p, "w").write(json.dumps(d, indent=2))
 PY
-OUT="$(python3 "$PF" --root "$T" --strict 2>&1)"; CODE=$?
+OUT="$(node "$PF" --root "$T" --strict 2>&1)"; CODE=$?
 if [ "$CODE" -ne 0 ] \
   && printf '%s' "$OUT" | grep -q "STRICT failure" \
   && printf '%s' "$OUT" | grep -q "discovery MISSING"; then
@@ -172,7 +173,7 @@ d = json.loads(open(p).read())
 d["features"] = [{"id": 1, "name": "work_me", "status": "pending"}]
 open(p, "w").write(json.dumps(d, indent=2))
 PY
-OUT="$(python3 "$PF" --root "$T" --strict 2>&1)"; CODE=$?
+OUT="$(node "$PF" --root "$T" --strict 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] \
   && printf '%s' "$OUT" | grep -q "worklist: OK" \
   && printf '%s' "$OUT" | grep -q "work_me"; then
@@ -186,7 +187,7 @@ rm -rf "$T"
 start_case "worklist NOTEs the loop stop condition on a drained backlog"
 T="$(mktemp -d)"; write_fixture "$T"
 # fixture ships an empty features array -> ready exits 3 (drained)
-OUT="$(python3 "$PF" --root "$T" --strict 2>&1)"; CODE=$?
+OUT="$(node "$PF" --root "$T" --strict 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] \
   && printf '%s' "$OUT" | grep -q "worklist: NOTE" \
   && printf '%s' "$OUT" | grep -q "loop stop condition"; then
@@ -199,7 +200,7 @@ rm -rf "$T"
 # --- T11: observation shape - status tail ok/warn/error ---------------------
 start_case "observation shape: report ends with status (ok, warn, strict error)"
 T="$(mktemp -d)"; write_fixture "$T"
-OK_TAIL="$(python3 "$PF" --root "$T" 2>/dev/null | tail -n1)"
+OK_TAIL="$(node "$PF" --root "$T" 2>/dev/null | tail -n1)"
 python3 - "$T/harness.config.json" <<'PY'
 import json, sys
 p = sys.argv[1]
@@ -207,9 +208,9 @@ d = json.loads(open(p).read())
 d["harness_version"] = "0.0.1"
 open(p, "w").write(json.dumps(d, indent=2))
 PY
-WARN_OUT="$(python3 "$PF" --root "$T" 2>/dev/null)"
+WARN_OUT="$(node "$PF" --root "$T" 2>/dev/null)"
 WARN_TAIL="$(printf '%s' "$WARN_OUT" | tail -n1)"
-ERR_TAIL="$(python3 "$PF" --root "$T" --strict 2>/dev/null | tail -n1)"
+ERR_TAIL="$(node "$PF" --root "$T" --strict 2>/dev/null | tail -n1)"
 if [ "$OK_TAIL" = "status: ok" ] && [ "$WARN_TAIL" = "status: warn" ] \
   && [ "$ERR_TAIL" = "status: error" ] \
   && printf '%s' "$WARN_OUT" | grep -q "^next:"; then

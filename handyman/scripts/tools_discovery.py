@@ -58,8 +58,10 @@ import re
 import sys
 from pathlib import Path
 
-# scripts/ is on sys.path[0] when run as a script, so this resolves.
-from validate_harness import resolve_workspace, PLATFORM_ROLE_DIRS
+# validate_harness.py was ported to TypeScript and dropped; the resolver and
+# PLATFORM_ROLE_DIRS now live in the shared _resolve_compat shim (mirrored from
+# the TS core; the resolver delegates to the built Node artifact).
+from _resolve_compat import resolve_workspace, PLATFORM_ROLE_DIRS
 
 DEFAULT_LOCAL_SKILL_DIRS = (".agents/skills", ".claude/skills", ".github/skills")
 DEFAULT_GLOBAL_SKILL_ROOTS = ("~/.agents/skills", "~/.claude/skills", "~/.github/skills")

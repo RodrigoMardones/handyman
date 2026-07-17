@@ -1,0 +1,5 @@
+# Node / TypeScript toolchain
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/

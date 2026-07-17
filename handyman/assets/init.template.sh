@@ -7,13 +7,88 @@ EXIT_CODE=0
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HARNESS_WORKSPACE="$PROJECT_ROOT"
 
-if [ -f "$PROJECT_ROOT/harness.config.json" ]; then
-  if command -v jq >/dev/null 2>&1; then
-    HARNESS_WORKSPACE="$(jq -r '.harness_workspace // empty' "$PROJECT_ROOT/harness.config.json")"
+# Portable JSON reader: prefers node, falls back to python3 (both belong to the
+# post-migration toolchain), so the verifier is self-contained and needs no jq.
+# Usage: _json FILE VERB [ARG]
+#   str PATH          print the string at a dotted PATH (numeric parts index
+#                     arrays); empty when the key is missing or null.
+#   len [PATH]        print the array length at PATH (root when omitted); 0 when
+#                     the target is not an array.
+#   count_status VAL  count .features[] whose .status equals VAL.
+#   valid             exit 0 when FILE is valid JSON, non-zero otherwise.
+_json() {
+  _jf=$1; _jv=$2; _ja=${3:-}
+  if command -v node >/dev/null 2>&1; then
+    node -e '
+const fs = require("fs");
+const a = process.argv.slice(-3);
+const file = a[0], verb = a[1], arg = a[2];
+let d;
+try { d = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { process.exit(2); }
+function get(obj, path) {
+  if (!path) return obj;
+  let cur = obj;
+  for (const k of path.split(".")) { if (cur == null) return undefined; cur = cur[k]; }
+  return cur;
+}
+if (verb === "valid") { process.exit(0); }
+if (verb === "str") {
+  const v = get(d, arg);
+  process.stdout.write(v == null ? "" : String(v));
+} else if (verb === "len") {
+  const v = get(d, arg);
+  process.stdout.write(String(Array.isArray(v) ? v.length : 0));
+} else if (verb === "count_status") {
+  const f = Array.isArray(d.features) ? d.features : [];
+  process.stdout.write(String(f.filter(x => x && x.status === arg).length));
+} else { process.exit(3); }
+' "$_jf" "$_jv" "$_ja"
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 -c '
+import json, sys
+file, verb = sys.argv[1], sys.argv[2]
+arg = sys.argv[3] if len(sys.argv) > 3 else ""
+try:
+    d = json.load(open(file))
+except Exception:
+    sys.exit(2)
+def get(obj, path):
+    if not path:
+        return obj
+    cur = obj
+    for k in path.split("."):
+        if isinstance(cur, list):
+            try:
+                cur = cur[int(k)]
+            except (ValueError, IndexError):
+                return None
+        elif isinstance(cur, dict):
+            cur = cur.get(k)
+        else:
+            return None
+    return cur
+if verb == "valid":
+    sys.exit(0)
+if verb == "str":
+    v = get(d, arg)
+    sys.stdout.write("" if v is None else str(v))
+elif verb == "len":
+    v = get(d, arg)
+    sys.stdout.write(str(len(v) if isinstance(v, list) else 0))
+elif verb == "count_status":
+    feats = d.get("features") if isinstance(d, dict) else None
+    feats = feats if isinstance(feats, list) else []
+    sys.stdout.write(str(sum(1 for x in feats if isinstance(x, dict) and x.get("status") == arg)))
+else:
+    sys.exit(3)
+' "$_jf" "$_jv" "$_ja"
   else
-    echo "jq is required to parse harness.config.json" >&2
-    EXIT_CODE=1
+    return 127
   fi
+}
+
+if [ -f "$PROJECT_ROOT/harness.config.json" ]; then
+  HARNESS_WORKSPACE="$(_json "$PROJECT_ROOT/harness.config.json" str harness_workspace)"
 elif [ -f "$PROJECT_ROOT/.handyman/feature_list.json" ]; then
   # Local install: mutable state lives under .handyman/
   HARNESS_WORKSPACE="$PROJECT_ROOT/.handyman"
@@ -47,16 +122,14 @@ run_phase() {
 
 # --- Checks -----------------------------------------------------------------
 
-# 1. Required runtime tools. Add the binaries this project needs.
+# 1. Required runtime tools. The verifier parses JSON with node or python3 (see
+#    _json), so at least one must be present. Add any binaries this project needs.
 check_tools() {
-  missing=0
-  for tool in jq; do
-    if ! command -v "$tool" >/dev/null 2>&1; then
-      echo "    missing required tool: $tool" >&2
-      missing=1
-    fi
-  done
-  return $missing
+  if command -v node >/dev/null 2>&1 || command -v python3 >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "    missing required tool: node or python3 (needed to parse JSON)" >&2
+  return 1
 }
 
 # 2. Required harness files live in $HARNESS_WORKSPACE.
@@ -75,7 +148,7 @@ check_harness_files() {
 check_feature_state() {
   list="$HARNESS_WORKSPACE/feature_list.json"
   [ -f "$list" ] || { echo "    feature_list.json not found" >&2; return 1; }
-  in_progress="$(jq '[.features[] | select(.status == "in_progress")] | length' "$list")"
+  in_progress="$(_json "$list" count_status in_progress)"
   if [ "$in_progress" -gt 1 ]; then
     echo "    more than one feature is in_progress ($in_progress)" >&2
     return 1
@@ -84,9 +157,15 @@ check_feature_state() {
 }
 
 # 4. Lint. Replace with the project linter (e.g. ruff, eslint, golangci-lint).
+#    Defaults to shellcheck over the verifier; when shellcheck is absent it
+#    degrades to a non-blocking NOTE instead of failing the gate.
 run_lint() {
-  echo "    no lint command configured" >&2
-  return 1
+  if command -v shellcheck >/dev/null 2>&1; then
+    shellcheck "$PROJECT_ROOT/init.sh"
+  else
+    echo "NOTE: shellcheck not installed - lint skipped (non-blocking)." >&2
+    return 0
+  fi
 }
 
 # 5. Build. Replace with the project build (e.g. make build, npm run build).
@@ -104,18 +183,18 @@ run_test() {
 # --- Advisory checks (non-blocking) -----------------------------------------
 # A harness with no version stamp predates harness versioning; flag it so the
 # user can seal and update it. A sealed harness stays silent here - explicit
-# drift detection is scripts/upgrade_harness.py --check. Never changes EXIT_CODE.
+# drift detection is node dist/upgrade_harness.js --check. Never changes EXIT_CODE.
 check_harness_version() {
   ver=""
-  if [ -f "$PROJECT_ROOT/harness.config.json" ] && command -v jq >/dev/null 2>&1; then
-    ver="$(jq -r '.harness_version // empty' "$PROJECT_ROOT/harness.config.json")"
+  if [ -f "$PROJECT_ROOT/harness.config.json" ]; then
+    ver="$(_json "$PROJECT_ROOT/harness.config.json" str harness_version)"
   fi
-  if [ -z "$ver" ] && [ -f "$HARNESS_WORKSPACE/feature_list.json" ] && command -v jq >/dev/null 2>&1; then
-    ver="$(jq -r '.config.harness_version // empty' "$HARNESS_WORKSPACE/feature_list.json")"
+  if [ -z "$ver" ] && [ -f "$HARNESS_WORKSPACE/feature_list.json" ]; then
+    ver="$(_json "$HARNESS_WORKSPACE/feature_list.json" str config.harness_version)"
   fi
   if [ -z "$ver" ]; then
     echo "NOTE: harness has no version stamp - created before harness versioning." >&2
-    echo "      run scripts/upgrade_harness.py --check (or re-scaffold) to seal and update it." >&2
+    echo "      run node dist/upgrade_harness.js --check (or re-scaffold) to seal and update it." >&2
   fi
 }
 
@@ -159,10 +238,9 @@ check_business_context() {
 check_tools_discovery() {
   config="$PROJECT_ROOT/harness.config.json"
   [ -f "$config" ] || return 0
-  command -v jq >/dev/null 2>&1 || return 0
-  skills="$(jq -r '(.discovery.skills // []) | length' "$config" 2>/dev/null)"
-  mcp="$(jq -r '(.discovery.mcp // []) | length' "$config" 2>/dev/null)"
-  agents="$(jq -r '(.discovery.agents // []) | length' "$config" 2>/dev/null)"
+  skills="$(_json "$config" len discovery.skills 2>/dev/null)"
+  mcp="$(_json "$config" len discovery.mcp 2>/dev/null)"
+  agents="$(_json "$config" len discovery.agents 2>/dev/null)"
   if [ "${skills:-0}" -eq 0 ] && [ "${mcp:-0}" -eq 0 ] && [ "${agents:-0}" -eq 0 ]; then
     echo "NOTE: harness.config.json declares no skills, MCP servers, or agents under discovery." >&2
     echo "      record what the harness relies on (see references/discovery.md)." >&2
@@ -178,18 +256,17 @@ check_tools_discovery() {
 check_evals() {
   eval_set="$PROJECT_ROOT/evals/trigger-eval.json"
   [ -f "$eval_set" ] || return 0
-  command -v jq >/dev/null 2>&1 || return 0
-  count="$(jq 'if type == "array" then length else 0 end' "$eval_set" 2>/dev/null)"
+  count="$(_json "$eval_set" len 2>/dev/null)"
   if [ "${count:-0}" -eq 0 ]; then
     echo "NOTE: evals/trigger-eval.json has no labeled queries - the description trigger is unmeasured." >&2
-    echo "      add positive and negative queries, then run scripts/evals.py measure (see references/evals.md)." >&2
+    echo "      add positive and negative queries, then run node dist/evals.js measure (see references/evals.md)." >&2
     return 0
   fi
   marker="$PROJECT_ROOT/evals/.last-measured"
   desc="$PROJECT_ROOT/SKILL.md"
   if [ -f "$desc" ] && { [ ! -f "$marker" ] || [ "$desc" -nt "$marker" ]; }; then
     echo "NOTE: SKILL.md changed since the last trigger measurement (or it was never measured)." >&2
-    echo "      re-run scripts/evals.py measure and refresh evals/.last-measured (see references/evals.md)." >&2
+    echo "      re-run node dist/evals.js measure and refresh evals/.last-measured (see references/evals.md)." >&2
   fi
 }
 
@@ -198,10 +275,10 @@ check_evals() {
 # tools_discovery. It always exits 0 and never changes EXIT_CODE; it surfaces
 # drift/sync as NOTEs for the operator to act on. See references/workflow.md.
 check_preflight() {
-  preflight="$PROJECT_ROOT/scripts/preflight.py"
+  preflight="$PROJECT_ROOT/dist/preflight.js"
   [ -f "$preflight" ] || return 0
-  command -v python3 >/dev/null 2>&1 || return 0
-  python3 "$preflight" --root "$PROJECT_ROOT" >&2 || true
+  command -v node >/dev/null 2>&1 || return 0
+  node "$preflight" --root "$PROJECT_ROOT" >&2 || true
 }
 
 # --- Execution --------------------------------------------------------------

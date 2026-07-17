@@ -27,7 +27,7 @@ request before you start.
 # - The green gate (./init.sh | bash tests/run_tests.sh) is ALWAYS the last Acceptance bullet.
 # - Choose an archetype: [Research] leaves a plan in docs/ ; [Implementation] changes code + tests.
 # - Fill the CORE always; delete the OPTIONAL sections that do not apply (no placeholders).
-# - Only name, title, description, and acceptance become the feature_list.json entry (via feature.py add);
+# - Only name, title, description, and acceptance become the feature_list.json entry (via node dist/feature.js add);
 #   Verification, Considerations, Tools, and Post-feature are guidance for the leader and the human.
 # - Tools: skills come from discovery.skills and agents from discovery.agents (harness.config.json);
 #   verify both are installed with scripts/tools_discovery.py check. See references/discovery.md.
@@ -65,7 +65,7 @@ request before you start.
 ## Verification (extension)
 - Functional check: <which request/action and the expected result>
 - Description trigger (skill-authoring only): if this change edits the skill's `description`,
-  re-measure the trigger with `scripts/evals.py measure` and refresh `evals/.last-measured`
+  re-measure the trigger with `node dist/evals.js measure` and refresh `evals/.last-measured`
   (the size cap alone does not prove it still triggers — see references/evals.md).
 
 ## Considerations
@@ -97,7 +97,7 @@ Two requests grounded in this repo's own history — one per archetype.
 
 ## Context
 Several harness mutations (backlog entries, current.md, history.md) are done by hand
-with no deterministic script, unlike feature_list.json (covered by feature.py). Map
+with no deterministic script, unlike feature_list.json (covered by node dist/feature.js). Map
 the gap before building anything.
 
 ## Scope
@@ -122,26 +122,26 @@ the gap before building anything.
 
 ## Feature
 - name: backlog_generator
-- title: scripts/backlog.py — deterministic generator for backlog/ entries
+- title: src/backlog.ts — deterministic generator for backlog/ entries
 
 ## Context
 backlog/ entries (impl_/review_/explore_) are written by hand with per-type
-frontmatter; there is no generator, unlike feature.py for state. Implements Plan A of
+frontmatter; there is no generator, unlike node dist/feature.js for state. Implements Plan A of
 docs/analisis-acciones-deterministas-por-capa.md.
 
 ## Scope
-- Includes: scripts/backlog.py, assets/backlog-*.template.md, references (anatomy/templates/workflow), tests/test_backlog.sh
+- Includes: src/backlog.ts, assets/backlog-*.template.md, references (anatomy/templates/workflow), tests/test_backlog.sh
 
 ## Acceptance criteria (observable and testable)
-- backlog.py impl <feature> creates impl_<feature>.md with implementer frontmatter
-- backlog.py review <feature> [--status approved|changes_requested] creates a coherent review_<feature>.md
+- node dist/backlog.js impl <feature> creates impl_<feature>.md with implementer frontmatter
+- node dist/backlog.js review <feature> [--status approved|changes_requested] creates a coherent review_<feature>.md
 - it never overwrites an existing entry (idempotent)
 - tests/test_backlog.sh covers each subcommand and is wired into run_tests.sh
 - bash tests/run_tests.sh passes
 
 ## Verification
 - Gate that must stay green: ./init.sh
-- Functional check: run backlog.py impl demo_feature and see the file with correct frontmatter
+- Functional check: run node dist/backlog.js impl demo_feature and see the file with correct frontmatter
 
 ## Considerations
 - ponytail: the smallest change that satisfies the Acceptance

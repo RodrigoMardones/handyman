@@ -103,8 +103,8 @@ Besides skills and MCP servers, a harness relies on **consultation agents** — 
 `reviewer`, and a read-only `explorer`; see [tools.md](./tools.md) for the `agent`
 capability that enables delegation). These role files live in the platform role
 directories `.github/agents` (VS Code / Copilot) and `.claude/agents` (Claude Code)
-— never inside `HARNESS_WORKSPACE`. `scripts/tools_discovery.py` imports those
-directories from `validate_harness.py`, so the location is defined once.
+— never inside `HARNESS_WORKSPACE`. Both `scripts/tools_discovery.py` and the
+validator import `PLATFORM_ROLE_DIRS` from the shared core, so the location is defined once.
 
 Declaring them under `discovery.agents` turns a prose expectation ("delegate this to
 the explorer") into a verifiable contract. Because a role file is a document on disk,

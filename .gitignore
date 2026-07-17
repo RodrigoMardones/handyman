@@ -1,4 +1,4 @@
-graphify-out/*
+Igraphify-out/*
 
 ####### PYTHON #######
 __pycache__/
@@ -6,17 +6,18 @@ __pycache__/
 
 ####### HANDYMAN #######
 .handyman/
-.handyman/docs
+!.handyman/docs
+!.handyman/feature_list.json
+!.handyman/index.md
+
 CLAUDE.md
-AGENTS.md
-CHECKPOINTS.md
 harness.config.json
-init.sh
 ####### SKILLS #######
 .github/skills
 .agents/skills
 ####### AGENTS #######
 .github/agents
+.claude/agents
 .agents/skills
 ###### MCPS #######
 .vscode/*

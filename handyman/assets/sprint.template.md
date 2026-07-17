@@ -9,7 +9,7 @@ tags: [handyman/sprint]
 
 > Closed work period. Every section except the two marked manual is derived at
 > close time from `feature_list.json`, `progress/history.md`, and `backlog/`
-> frontmatter by `scripts/sprint.py close`; regenerate rather than hand-edit.
+> frontmatter by `node dist/sprint.js close`; regenerate rather than hand-edit.
 
 ## Identity
 

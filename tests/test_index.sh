@@ -8,7 +8,12 @@ set -u
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
-INDEX="$SUITE_DIR/../handyman/scripts/index_md.py"
+DIST="$SUITE_DIR/../handyman/dist"
+RUN=(node "$DIST/index_md.js")
+
+# Self-contained: build the TS entrypoint so the suite runs from a fresh
+# checkout (deps installed) with no stale-dist hazard. Cheap incremental tsc.
+(cd "$SUITE_DIR/../handyman" && npm run build >/dev/null 2>&1)
 
 echo "Index-MOC suite (test_index.sh)"
 
@@ -36,7 +41,7 @@ JSON
 # --- I1: regenerates frontmatter, title, and features by status -------------
 start_case "regenerates index.md with MOC frontmatter, title, and features by status"
 T="$(mktemp -d)"; write_harness "$T"
-python3 "$INDEX" --root "$T" >/dev/null 2>&1; CODE=$?
+"${RUN[@]}" --root "$T" >/dev/null 2>&1; CODE=$?
 IDX="$T/.handyman/index.md"
 if [ "$CODE" -eq 0 ] && [ -f "$IDX" ] \
   && grep -q "tags: \[handyman/moc\]" "$IDX" \
@@ -54,7 +59,7 @@ rm -rf "$T"
 start_case "lists existing backlog reports as wikilinks"
 T="$(mktemp -d)"; write_harness "$T"
 : > "$T/.handyman/backlog/impl_beta.md"
-python3 "$INDEX" --root "$T" >/dev/null 2>&1
+"${RUN[@]}" --root "$T" >/dev/null 2>&1
 IDX="$T/.handyman/index.md"
 if grep -q "\[\[backlog/impl_beta\]\]" "$IDX"; then
   pass
@@ -66,7 +71,7 @@ rm -rf "$T"
 # --- I3: preserves a ## Notes section ---------------------------------------
 start_case "preserves a ## Notes section across regeneration"
 T="$(mktemp -d)"; write_harness "$T"
-python3 "$INDEX" --root "$T" >/dev/null 2>&1
+"${RUN[@]}" --root "$T" >/dev/null 2>&1
 IDX="$T/.handyman/index.md"
 # Replace the generated Notes block with a custom note, then regenerate.
 python3 - "$IDX" <<'PY'
@@ -76,7 +81,7 @@ lines = open(p, encoding="utf-8").read().split("\n")
 i = next(k for k, l in enumerate(lines) if l.strip() == "## Notes")
 open(p, "w", encoding="utf-8").write("\n".join(lines[:i]) + "\n## Notes\n\nKEEP THIS NOTE\n")
 PY
-python3 "$INDEX" --root "$T" >/dev/null 2>&1
+"${RUN[@]}" --root "$T" >/dev/null 2>&1
 if grep -q "KEEP THIS NOTE" "$IDX"; then
   pass
 else
@@ -87,7 +92,7 @@ rm -rf "$T"
 # --- I4: markdown links are gated on file existence -------------------------
 start_case "emits markdown links only to files that exist"
 T="$(mktemp -d)"; write_harness "$T"
-python3 "$INDEX" --root "$T" >/dev/null 2>&1
+"${RUN[@]}" --root "$T" >/dev/null 2>&1
 IDX="$T/.handyman/index.md"
 # feature-request.md is absent in the fixture -> it must not be linked.
 if grep -q "(feature_list.json)" "$IDX" \
@@ -102,7 +107,7 @@ rm -rf "$T"
 start_case "missing feature_list.json is an error (exit != 0)"
 T="$(mktemp -d)"
 mkdir -p "$T/.handyman"
-python3 "$INDEX" --root "$T" >/dev/null 2>&1; CODE=$?
+"${RUN[@]}" --root "$T" >/dev/null 2>&1; CODE=$?
 if [ "$CODE" -ne 0 ]; then pass; else fail "expected non-zero exit"; fi
 rm -rf "$T"
 
@@ -112,7 +117,7 @@ T="$(mktemp -d)"; write_harness "$T"
 mkdir -p "$T/.handyman/docs/sprints" "$T/.handyman/docs/current"
 : > "$T/.handyman/docs/sprints/sprint.2026-SP1.md"
 : > "$T/.handyman/docs/current/draft-topic.md"
-python3 "$INDEX" --root "$T" >/dev/null 2>&1
+"${RUN[@]}" --root "$T" >/dev/null 2>&1
 IDX="$T/.handyman/index.md"
 if grep -q "\[\[docs/sprints/sprint.2026-SP1\]\]" "$IDX" \
   && grep -q "\[\[docs/current/draft-topic\]\]" "$IDX"; then

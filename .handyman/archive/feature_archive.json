@@ -1,0 +1,163 @@
+{
+  "sprints": {
+    "2026-SP1": [
+      {
+        "id": 1,
+        "name": "ts_toolchain_foundation",
+        "title": "Andamiaje TypeScript/Node (build, tests, lint)",
+        "description": "Base del toolchain Node-first: package.json (Node LTS, type:module), tsconfig estricto, build con tsc a dist/, runner de tests (vitest), linter/formatter y ajv. No migra logica todavia; la suite Python sigue verde.",
+        "acceptance": [
+          "package.json define engines Node LTS, type module, y scripts build/test/typecheck/lint.",
+          "tsconfig.json con strict:true, outDir dist/, moduleResolution NodeNext; npx tsc --noEmit pasa.",
+          "vitest instalado con al menos un test trivial verde (npm test).",
+          "linter/formatter elegido (Biome o ESLint+Prettier) configurado y su decision registrada en docs/conventions.md.",
+          "ajv agregado como dependencia para validar los JSON Schema existentes.",
+          "La suite Python actual (bash tests/run_tests.sh) sigue verde: no se rompe nada."
+        ],
+        "status": "done",
+        "sprint": "2026-SP1"
+      },
+      {
+        "id": 2,
+        "name": "verifier_self_contained",
+        "title": "Verificador y tests sin dependencia de jq/shellcheck",
+        "description": "Eliminar jq y shellcheck como dependencias duras del verificador y los tests. init.template.sh y fixtures/init.reference.sh resuelven harness_workspace sin jq; test_init.sh y test_upgrade.sh dejan de invocar jq. shellcheck degrada a advisory. Da baseline verde sin jq y habilita repuntar el oraculo a Node.",
+        "acceptance": [
+          "init.template.sh y tests/fixtures/init.reference.sh resuelven harness_workspace sin jq (usar node o python3).",
+          "tests/test_init.sh y tests/test_upgrade.sh no dependen de jq para parsear JSON.",
+          "run_lint (shellcheck) degrada a NOTE no-bloqueante cuando shellcheck no esta instalado.",
+          "bash tests/run_tests.sh pasa en un entorno sin jq ni shellcheck.",
+          "docs/verification.md refleja que el verificador es self-contained."
+        ],
+        "status": "done",
+        "sprint": "2026-SP1"
+      },
+      {
+        "id": 3,
+        "name": "ts_core_module",
+        "title": "Modulo core TS: workspace, feature_list IO, ajv, utils de paridad",
+        "description": "Nucleo compartido en TypeScript equivalente a los helpers de validate_harness (resolucion de HARNESS_WORKSPACE, carga/guardado de feature_list.json). Incluye validacion con ajv contra assets/schemas, escritura atomica byte-identica a la de Python, y utils que reproducen redondeo half-even y difflib.unified_diff. 8 modulos dependen de resolve_workspace, por eso el core va primero.",
+        "acceptance": [
+          "src/core resuelve el workspace en el mismo orden (config -> feature_list config -> .handyman -> fallback) que validate_harness.resolve_workspace.",
+          "load/save de feature_list produce salida byte-identica a la de Python (indent 2, ensure_ascii false, newline final).",
+          "Validacion de schema con ajv contra assets/schemas/feature_list.schema.json y harness.config.schema.json.",
+          "util formatHalfEven reproduce el redondeo de Python (casos 2.5->2, 0.125->0.12) con tests vitest.",
+          "util unifiedDiff reproduce el formato de difflib.unified_diff (headers y contexto) con tests vitest.",
+          "Compila con tsc a dist/ y los tests unitarios vitest pasan."
+        ],
+        "status": "done",
+        "depends_on": [
+          1
+        ],
+        "sprint": "2026-SP1"
+      },
+      {
+        "id": 4,
+        "name": "spike_port_index_md",
+        "title": "Spike: portar index_md a TS con paridad verificada end-to-end",
+        "description": "Prueba de concepto del patron de migracion completo sobre un script hoja de bajo riesgo (index_md.py, generador del MOC index.md). Portar a src/index_md.ts usando el core, compilar a dist/, repuntar tests/test_index.sh a node dist/index_md.js, verificar paridad byte-identica, eliminar el original Python y actualizar referencias. Valida la viabilidad antes de tocar los scripts pesados.",
+        "acceptance": [
+          "src/index_md.ts replica el contrato CLI de index_md.py (args, exit codes, salida byte-identica).",
+          "tests/test_index.sh parametriza la invocacion del script y apunta a node dist/index_md.js; la suite queda verde.",
+          "index_md.py se elimina (sin dual-maintenance silencioso) y sus referencias en SKILL.md/references se actualizan.",
+          "Se documenta la evidencia de paridad (salida identica Python vs Node) en el reporte de la feature.",
+          "El verificador ./init.sh queda verde tras el port."
+        ],
+        "status": "done",
+        "depends_on": [
+          1,
+          3
+        ],
+        "sprint": "2026-SP1"
+      }
+    ],
+    "2026-SP3": [
+      {
+        "id": 8,
+        "name": "sprint_lifecycle",
+        "title": "Portar sprint (ciclo de vida de periodos) a TS sobre el core",
+        "description": "Port de sprint.py -> src/sprint.ts: el ciclo de vida de sprints (open/close/status). Riesgo alto: deriva el documento de sprint de los artefactos del workflow (history.md, backlog frontmatter, feature_list), importa resolve_workspace (ya en core/workspace) y _parse_frontmatter (ya en core/frontmatter), y reusa los helpers de closures/backlog-reports. Repunta test_sprint.sh a node dist/sprint.js sin editar aserciones y elimina el .py.",
+        "acceptance": [
+          "src/sprint.ts replica el contrato CLI de sprint.py (open/close/status; --root; --dry-run; exit codes 0 ok, 1 error, 2 usage).",
+          "Usa el core: resolveWorkspace e IO byte-identico; reusa _parse_frontmatter de core/frontmatter.",
+          "open estampa features unlabeled pending/in_progress con el label, registra current_sprint, y rechaza segundo open y ids malformados; close deriva docs/sprints/sprint.<ID>.md, archiva done, compacta history stubs, y limpia current_sprint; --dry-run previsualiza sin escribir.",
+          "test_sprint.sh parametriza la invocacion a node dist/sprint.js; la suite queda verde sin editar aserciones.",
+          "sprint.py se elimina y sus referencias en SKILL.md/references se actualizan a node dist/sprint.js.",
+          "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+        ],
+        "status": "done",
+        "sprint": "2026-SP3"
+      }
+    ],
+    "2026-SP2": [
+      {
+        "id": 5,
+        "name": "metrics",
+        "title": "Portar metrics a TS sobre el core (half-even + ensure_ascii)",
+        "description": "Port de metrics.py -> src/metrics.ts reusando el core. Primer contacto real con el redondeo half-even (porcentaje de aprobacion) y con ensure_ascii=True en la salida --json. Repunta el oraculo test_metrics.sh a node dist/metrics.js sin editar aserciones y elimina el .py.",
+        "acceptance": [
+          "src/metrics.ts replica el contrato CLI de metrics.py (subcomandos, flags, exit codes, salida byte-identica).",
+          "Usa el core: resolveWorkspace, IO byte-identico, y formatHalfEven para el porcentaje de aprobacion (riesgo plan 5.1).",
+          "La salida --json replica ensure_ascii=True (escapa no-ASCII), byte-identica a metrics.py --json (riesgo plan 5.2).",
+          "test_metrics.sh parametriza la invocacion a node dist/metrics.js; la suite queda verde sin editar aserciones.",
+          "metrics.py se elimina (sin dual-maintenance) y sus referencias en SKILL.md/references se actualizan.",
+          "Se documenta la evidencia de paridad byte-identica (Python vs Node) y el verificador ./init.sh queda verde."
+        ],
+        "status": "done",
+        "sprint": "2026-SP2"
+      },
+      {
+        "id": 6,
+        "name": "backlog",
+        "title": "Portar backlog a TS sobre el core",
+        "description": "Port de backlog.py -> src/backlog.ts reusando el core. Riesgo bajo (leaf CLI de reportes de backlog). Repunta test_backlog.sh a node dist/backlog.js sin editar aserciones y elimina el .py.",
+        "acceptance": [
+          "src/backlog.ts replica el contrato CLI de backlog.py (subcomandos, flags, exit codes, salida byte-identica).",
+          "Usa el core: resolveWorkspace e IO byte-identico.",
+          "test_backlog.sh parametriza la invocacion a node dist/backlog.js; la suite queda verde sin editar aserciones.",
+          "backlog.py se elimina y sus referencias en SKILL.md/references se actualizan.",
+          "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+        ],
+        "status": "done",
+        "sprint": "2026-SP2"
+      },
+      {
+        "id": 7,
+        "name": "feature_state_machine",
+        "title": "Portar feature (maquina de estados) a TS sobre el core",
+        "description": "Port de feature.py -> src/feature.ts: la maquina de estados atomica del harness. Alto riesgo: single-in_progress, transiciones add/start/block/done/ready/log/next, exit codes 0/1/2/3, y feature done corre el verificador bash init.sh via child_process (mantener el mismo texto de bloque que los tests grepean). Tras el port, el harness se maneja con node dist/feature.js.",
+        "acceptance": [
+          "src/feature.ts replica el contrato CLI completo (add/start/block/done/ready/log/next; flags y posicionales; exit codes 0 ok, 1 error, 2 usage argparse, 3 sin trabajo ready; ultima linea status: ok|warn|error con next: hint; modos --json).",
+          "Preserva la maquina de estados: single-in_progress, valid_status, additionalProperties:false, IO byte-identico via el core.",
+          "feature done ejecuta el verificador (bash init.sh) via child_process y solo marca done en exit 0; el texto del bloque de historia/observacion se mantiene byte-identico para los grep de los tests (riesgo plan 5.4).",
+          "Ejecuta los post_run hooks tras un close verificado (siempre exit 0; un paso que falla solo WARN, nunca revierte el close).",
+          "Reproduce el exit-2 de usage de argparse para errores de invocacion (riesgo plan 5.3).",
+          "test_feature.sh parametriza la invocacion a node dist/feature.js; la suite queda verde sin editar aserciones.",
+          "feature.py se elimina y sus referencias en SKILL.md/references/init.sh se actualizan a node dist/feature.js.",
+          "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+        ],
+        "status": "done",
+        "sprint": "2026-SP2"
+      }
+    ],
+    "2026-SP4": [
+      {
+        "id": 14,
+        "name": "evals_trigger_eval",
+        "title": "Portar evals (trigger-eval validate/measure) a TS sobre el core",
+        "description": "Port de evals.py -> src/evals.ts. Riesgo alto: shlex.split (runner argv), :.2f half-even (core/formatHalfEven ya existe), y subprocess del runner via child_process. Standalone: no importa de ningun otro script del proyecto (solo stdlib + jsonschema -> ajv). Repunta test_evals.sh a node dist/evals.js sin editar aserciones y elimina el .py.",
+        "acceptance": [
+          "src/evals.ts replica el contrato CLI de evals.py (validate/measure; --eval-set; --min-per-class; --runs; --threshold; --runner; --report-passk; exit codes 0 ok, 1 invalid eval set, 2 usage).",
+          "Usa el core: formatHalfEven para los :.2f (rate, accuracy, mean_rate, stddev, pass@k) y ajv para la validacion del schema trigger_eval.schema.json.",
+          "validate reproduce structural_problems (empty, item no-object, unexpected keys, query vacio/duplicado, should_trigger no-bool, min-per-class) y schema conformance con NOTE graceful.",
+          "measure reproduce shlex.split del runner, graceful NOTE sin runner o runner no disponible (which), confusion matrix TP/FP/TN/FN, accuracy, mean_rate/stddev, y pass@k opcional (1-(1-r)^k).",
+          "test_evals.sh parametriza la invocacion a node dist/evals.js; la suite queda verde sin editar aserciones.",
+          "evals.py se elimina y sus referencias en SKILL.md/references se actualizan a node dist/evals.js.",
+          "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+        ],
+        "status": "done",
+        "sprint": "2026-SP4"
+      }
+    ]
+  }
+}

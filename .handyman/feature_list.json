@@ -1,0 +1,102 @@
+{
+  "project": "handyman",
+  "description": "Skill de harness de agentes (Python+Bash) en migracion ordenada a TypeScript sobre Node.",
+  "config": {
+    "install_mode": "local",
+    "project_name": "handyman",
+    "project_root": ".",
+    "handyman_root": null,
+    "harness_workspace": ".handyman",
+    "harness_version": "1.20.20",
+    "current_sprint": null,
+    "discovery": {
+      "skills": [],
+      "mcp": [],
+      "agents": []
+    },
+    "post_run": []
+  },
+  "rules": {
+    "one_feature_at_a_time": true,
+    "require_tests_to_close": true,
+    "valid_status": [
+      "pending",
+      "in_progress",
+      "done",
+      "blocked"
+    ]
+  },
+  "features": [
+    {
+      "id": 9,
+      "name": "validate_harness_cli",
+      "title": "Portar validate_harness (CLI) a TS sobre el core",
+      "description": "Port de validate_harness.py (superficie CLI) -> src/validate_harness.ts. Riesgo medio: los helpers (resolve_workspace, IO, schema) ya estan en core; queda la CLI de validacion/auditoria del harness. Repunta los tests pertinentes y elimina el .py.",
+      "acceptance": [
+        "src/validate_harness.ts replica el contrato CLI de validate_harness.py (subcomandos, flags, exit codes, salida byte-identica).",
+        "Usa el core: resolveWorkspace, IO byte-identico, y validacion ajv sobre los mismos assets/schemas.",
+        "Las suites que cubren validate (via otros tests + test_docs) quedan verdes sin editar aserciones.",
+        "validate_harness.py se elimina y sus referencias en SKILL.md/references se actualizan.",
+        "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+      ],
+      "status": "done"
+    },
+    {
+      "id": 10,
+      "name": "preflight_fanout",
+      "title": "Portar preflight (fan-out de hermanos) a TS sobre el core",
+      "description": "Port de preflight.py -> src/preflight.ts. Riesgo alto: lanza 5 hermanos via subprocess (hoy invoca node dist/feature.js; el resto sigue en Python) con stdio inherit. Reusa child_process del port de feature. Repunta test_preflight.sh a node dist/preflight.js sin editar aserciones y elimina el .py.",
+      "acceptance": [
+        "src/preflight.ts replica el contrato CLI de preflight.py (worklist, flags, exit codes, salida byte-identica).",
+        "Reproduce el fan-out de hermanos via child_process (stdio inherit) y el mismo texto de bloque que los tests grepean.",
+        "test_preflight.sh parametriza la invocacion a node dist/preflight.js; la suite queda verde sin editar aserciones.",
+        "preflight.py se elimina y sus referencias en SKILL.md/references/init.sh se actualizan a node dist/preflight.js.",
+        "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+      ],
+      "status": "done"
+    },
+    {
+      "id": 11,
+      "name": "update_harness_diff",
+      "title": "Portar update_harness (unified diff) a TS sobre el core",
+      "description": "Port de update_harness.py -> src/update_harness.ts. Riesgo alto: usa difflib.unified_diff para los --dry-run; el shim core/unifiedDiff ya existe. Repunta test_update.sh a node dist/update_harness.js sin editar aserciones y elimina el .py.",
+      "acceptance": [
+        "src/update_harness.ts replica el contrato CLI de update_harness.py (subcomandos, flags, --dry-run diff, exit codes, salida byte-identica).",
+        "Usa el core: resolveWorkspace, IO byte-identico, y core/unifiedDiff para replicar difflib.unified_diff.",
+        "test_update.sh parametriza la invocacion a node dist/update_harness.js; la suite queda verde sin editar aserciones.",
+        "update_harness.py se elimina y sus referencias en SKILL.md/references se actualizan.",
+        "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+      ],
+      "status": "done"
+    },
+    {
+      "id": 12,
+      "name": "upgrade_harness_diff",
+      "title": "Portar upgrade_harness (unified diff) a TS sobre el core",
+      "description": "Port de upgrade_harness.py -> src/upgrade_harness.ts. Riesgo alto: usa difflib.unified_diff y jq-en-test; el shim core/unifiedDiff ya existe. Repunta test_upgrade.sh a node dist/upgrade_harness.js sin editar aserciones y elimina el .py.",
+      "acceptance": [
+        "src/upgrade_harness.ts replica el contrato CLI de upgrade_harness.py (subcomandos, flags, --dry-run diff, exit codes, salida byte-identica).",
+        "Usa el core: resolveWorkspace, IO byte-identico, y core/unifiedDiff para replicar difflib.unified_diff.",
+        "test_upgrade.sh parametriza la invocacion a node dist/upgrade_harness.js; la suite queda verde sin editar aserciones.",
+        "upgrade_harness.py se elimina y sus referencias en SKILL.md/references se actualizan.",
+        "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+      ],
+      "status": "done"
+    },
+    {
+      "id": 13,
+      "name": "tools_discovery_discovery",
+      "title": "Portar tools_discovery (skills/MCP/agents) a TS sobre el core",
+      "description": "Port de tools_discovery.py -> src/tools_discovery.ts. Riesgo alto: declare usa ensure_ascii=True (escapa no-ASCII), difflib (core/unifiedDiff ya existe), e importa resolve_workspace + PLATFORM_ROLE_DIRS de validate_harness. PLATFORM_ROLE_DIRS no esta en core todavia -> se anade al port (constante (\".github/agents\",\".claude/agents\")) o se mueve al core al portear #9. Repunta test_tools_discovery.sh a node dist/tools_discovery.js sin editar aserciones y elimina el .py.",
+      "acceptance": [
+        "src/tools_discovery.ts replica el contrato CLI de tools_discovery.py (list/find/check/declare; --root; --skills-dir; --json; --dry-run; exit codes 0/1/2; salida byte-identica).",
+        "Usa el core: resolveWorkspace, IO byte-identico, unifiedDiff para declare --dry-run, y replica ensure_ascii=True en declare (escapa no-ASCII).",
+        "list/find/check/declare preservan local-then-global skill-root precedence, MCP validation contra .vscode/mcp.json, y agent verification contra role dirs (PLATFORM_ROLE_DIRS).",
+        "test_tools_discovery.sh parametriza la invocacion a node dist/tools_discovery.js; la suite queda verde sin editar aserciones.",
+        "tools_discovery.py se elimina y sus referencias en SKILL.md/references se actualizan a node dist/tools_discovery.js.",
+        "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+      ],
+      "status": "in_progress"
+    }
+  ]
+}

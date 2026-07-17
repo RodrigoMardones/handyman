@@ -138,14 +138,14 @@ else
 fi
 rm -rf "$T7"
 
-# --- validate_harness.py: deterministic structure validator ----------------
-VALIDATOR="$SUITE_DIR/../handyman/scripts/validate_harness.py"
+# --- validate_harness: deterministic structure validator (TS port) ----------
+VALIDATOR="$SUITE_DIR/../handyman/dist/validate_harness.js"
 
 # --- T8: validator exits 0 on a well-formed local harness ------------------
 start_case "validate_harness: exits 0 on a well-formed local harness"
 T8="$(mktemp -d)"
 write_workspace_files "$T8/.handyman" 1
-OUT="$(python3 "$VALIDATOR" --root "$T8" 2>&1)"; CODE=$?
+OUT="$(node "$VALIDATOR" --root "$T8" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "OK"; then
   pass
 else
@@ -158,7 +158,7 @@ start_case "validate_harness: missing core file fails with a gap report"
 T9="$(mktemp -d)"
 write_workspace_files "$T9/.handyman" 1
 rm "$T9/.handyman/progress/history.md"
-OUT="$(python3 "$VALIDATOR" --root "$T9" 2>&1)"; CODE=$?
+OUT="$(node "$VALIDATOR" --root "$T9" 2>&1)"; CODE=$?
 if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "missing harness file"; then
   pass
 else
@@ -170,7 +170,7 @@ rm -rf "$T9"
 start_case "validate_harness: >1 in_progress feature fails (exit != 0)"
 T10="$(mktemp -d)"
 write_workspace_files "$T10/.handyman" 2
-OUT="$(python3 "$VALIDATOR" --root "$T10" 2>&1)"; CODE=$?
+OUT="$(node "$VALIDATOR" --root "$T10" 2>&1)"; CODE=$?
 if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "in_progress"; then
   pass
 else
@@ -183,7 +183,7 @@ start_case "validate_harness: role file inside workspace is flagged"
 T11="$(mktemp -d)"
 write_workspace_files "$T11/.handyman" 1
 : > "$T11/.handyman/leader.agent.md"
-OUT="$(python3 "$VALIDATOR" --root "$T11" 2>&1)"; CODE=$?
+OUT="$(node "$VALIDATOR" --root "$T11" 2>&1)"; CODE=$?
 if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "role file inside HARNESS_WORKSPACE"; then
   pass
 else
@@ -201,8 +201,8 @@ WANT="$(awk '
     sub(/^[[:space:]]+version:[[:space:]]*/, ""); sub(/[[:space:]]*$/, ""); print; exit
   }' "$SKILL_MD")"
 "$SUITE_DIR/../handyman/scripts/scaffold.sh" local "$T12" demo >/dev/null 2>&1
-GOT_CFG="$(jq -r '.harness_version // empty' "$T12/harness.config.json" 2>/dev/null)"
-GOT_FL="$(jq -r '.config.harness_version // empty' "$T12/.handyman/feature_list.json" 2>/dev/null)"
+GOT_CFG="$(_json "$T12/harness.config.json" str harness_version 2>/dev/null)"
+GOT_FL="$(_json "$T12/.handyman/feature_list.json" str config.harness_version 2>/dev/null)"
 if [ -n "$WANT" ] && [ "$GOT_CFG" = "$WANT" ] && [ "$GOT_FL" = "$WANT" ]; then
   pass
 else
@@ -226,7 +226,7 @@ if python3 -c "import jsonschema" >/dev/null 2>&1; then
   ]
 }
 JSON
-  OUT="$(python3 "$VALIDATOR" --root "$T13" 2>&1)"; CODE=$?
+  OUT="$(node "$VALIDATOR" --root "$T13" 2>&1)"; CODE=$?
   if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "schema violation"; then
     pass
   else
@@ -264,7 +264,7 @@ if python3 -c "import jsonschema" >/dev/null 2>&1; then
   ]
 }
 JSON
-  OUT="$(python3 "$VALIDATOR" --root "$T14" 2>&1)"; CODE=$?
+  OUT="$(node "$VALIDATOR" --root "$T14" 2>&1)"; CODE=$?
   if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "OK"; then
     pass
   else
@@ -287,7 +287,7 @@ feature: x
 
 # Implementation Report: x
 MD
-OUT="$(python3 "$VALIDATOR" --root "$T15" 2>&1)"; CODE=$?
+OUT="$(node "$VALIDATOR" --root "$T15" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "NOTE:" \
   && printf '%s' "$OUT" | grep -q "impl_x.md"; then
   pass
@@ -300,8 +300,8 @@ rm -rf "$T15"
 start_case "validate_harness: frontmatter advisory is silent on a well-formed report"
 T16="$(mktemp -d)"
 write_workspace_files "$T16/.handyman" 1
-python3 "$SUITE_DIR/../handyman/scripts/backlog.py" --root "$T16" impl wellformed --date 2026-01-01 >/dev/null 2>&1
-OUT="$(python3 "$VALIDATOR" --root "$T16" 2>&1)"; CODE=$?
+node "$SUITE_DIR/../handyman/dist/backlog.js" --root "$T16" impl wellformed --date 2026-01-01 >/dev/null 2>&1
+OUT="$(node "$VALIDATOR" --root "$T16" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && ! printf '%s' "$OUT" | grep -q "impl_wellformed.md"; then
   pass
 else
@@ -332,11 +332,11 @@ tags: [handyman/session/current]
 
 ## Log
 MD
-OUT="$(python3 "$VALIDATOR" --root "$T17" 2>&1)"; CODE=$?
+OUT="$(node "$VALIDATOR" --root "$T17" 2>&1)"; CODE=$?
 # same fixture, branch line matching the checkout -> silent
 ACTUAL="$(git -C "$T17" symbolic-ref --short -q HEAD)"
 sed -i.bak "s/some-other-branch/$ACTUAL/" "$T17/.handyman/progress/current.md" && rm -f "$T17/.handyman/progress/current.md.bak"
-OUT2="$(python3 "$VALIDATOR" --root "$T17" 2>&1)"; CODE2=$?
+OUT2="$(node "$VALIDATOR" --root "$T17" 2>&1)"; CODE2=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "belongs to branch" \
   && [ "$CODE2" -eq 0 ] && ! printf '%s' "$OUT2" | grep -q "belongs to branch"; then
   pass
@@ -373,7 +373,7 @@ cat > "$T19/.handyman/feature_list.json" <<'JSON'
   ]
 }
 JSON
-OUT="$(python3 "$VALIDATOR" --root "$T19" 2>&1)"; CODE=$?
+OUT="$(node "$VALIDATOR" --root "$T19" 2>&1)"; CODE=$?
 python3 - "$T19/.handyman/feature_list.json" <<'PY'
 import json, sys
 path = sys.argv[1]
@@ -381,7 +381,7 @@ d = json.load(open(path))
 d["features"][0]["depends_on"] = [2]
 json.dump(d, open(path, "w"), indent=2)
 PY
-OUT2="$(python3 "$VALIDATOR" --root "$T19" 2>&1)"; CODE2=$?
+OUT2="$(node "$VALIDATOR" --root "$T19" 2>&1)"; CODE2=$?
 if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "depends_on unknown feature id 99" \
   && ! printf '%s' "$OUT" | grep -q "'b' depends_on" \
   && [ "$CODE2" -eq 0 ]; then

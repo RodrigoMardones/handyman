@@ -97,12 +97,12 @@ notes-cli/
 
 **Form-first intake (optional).** When the user has not framed the request, offer the
 `feature-request.md` form. The user fills the **CORE** (and any **OPTIONAL** sections that
-apply); the leader then turns the filled form into a feature entry with `scripts/feature.py add`,
+apply); the leader then turns the filled form into a feature entry with `node dist/feature.js add`,
 which writes only the contract keys (`name`, `title`, `description`, `acceptance`) — never the
 process-guidance sections (`Verification`, `Considerations`, `Tools`, `Post-feature`):
 
 ```text
-$ python scripts/feature.py add --name cli_recent \
+$ node dist/feature.js add --name cli_recent \
     --title "Recent notes command" \
     --description "Add a recent subcommand listing the latest notes." \
     --acceptance "recent lists the latest N notes (default 10)" \
@@ -122,9 +122,9 @@ harness declares under `discovery.skills`; the leader confirms they are installe
 the eval set deterministically, then measure with a runner and refresh the marker:
 
 ```text
-$ python scripts/evals.py validate                 # offline contract; safe in CI
+$ node dist/evals.js validate                       # offline contract; safe in CI
 validate: OK
-$ python scripts/evals.py measure --runner "<cmd>" --runs 3   # online; needs a model
+$ node dist/evals.js measure --runner "<cmd>" --runs 3     # online; needs a model
 confusion: TP=9 FP=1 TN=10 FN=0
 $ touch evals/.last-measured                        # clears the check_evals advisory
 ```

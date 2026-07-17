@@ -100,8 +100,12 @@ def test_markdown_links() -> None:
     for dirpath, dirnames, filenames in os.walk(REPO_ROOT):
         parts = dirpath.split(os.sep)
         # Skip VCS internals and the assets/ template bodies, whose relative
-        # links are illustrative and only resolve inside a target repo.
-        if ".git" in parts or "assets" in parts:
+        # links are illustrative and only resolve inside a target repo. Also skip
+        # generated/vendored trees (node_modules, dist, coverage) introduced by the
+        # TS toolchain: their third-party READMEs are not our docs to validate.
+        if (".git" in parts or "assets" in parts
+                or "node_modules" in parts or "dist" in parts
+                or "coverage" in parts):
             continue
         for name in filenames:
             if name.endswith(".md"):
@@ -512,8 +516,8 @@ def test_depends_on_contract() -> None:
               encoding="utf-8") as fh:
         anatomy = fh.read()
     check("anatomy.md documents depends_on", "depends_on" in anatomy)
-    check("anatomy.md points readiness at feature.py ready",
-          "feature.py ready" in anatomy)
+    check("anatomy.md points readiness at the Node feature CLI",
+          "node dist/feature.js ready" in anatomy)
 
     if not _HAVE_JSONSCHEMA:
         print("       NOTE: jsonschema not installed - depends_on shape "
@@ -545,12 +549,12 @@ def test_unattended_loop_reference() -> None:
         workflow = fh.read()
     check("workflow.md has the Unattended Loop section",
           "## Unattended Loop" in workflow)
-    for token in ("feature.py ready", "exit 3", "stop", "One feature per iteration"):
+    for token in ("node dist/feature.js ready", "exit 3", "stop", "One feature per iteration"):
         check(f"Unattended Loop documents '{token}'", token in workflow)
     check("stability check lists the worklist control",
           "**Worklist**" in workflow)
 
-    with open(os.path.join(ROOT, "scripts", "preflight.py"),
+    with open(os.path.join(ROOT, "src", "preflight.ts"),
               encoding="utf-8") as fh:
         preflight = fh.read()
     check("preflight runs the worklist block", '"worklist"' in preflight)
@@ -756,8 +760,8 @@ def test_preflight_advisory() -> None:
     advisory_body = match.group(1) if match else ""
     check("check_preflight is advisory (does not set EXIT_CODE)",
           bool(match) and "EXIT_CODE=" not in advisory_body)
-    check("check_preflight invokes scripts/preflight.py",
-          "preflight.py" in advisory_body)
+    check("check_preflight invokes dist/preflight.js",
+          "preflight.js" in advisory_body)
 
 
 def test_discovery_reference() -> None:
@@ -831,20 +835,20 @@ def test_description_gate() -> None:
               encoding="utf-8") as fh:
         workflow = fh.read()
     check("workflow.md documents the description trigger gate",
-          "scripts/evals.py measure" in workflow)
+          "node dist/evals.js measure" in workflow)
     check("workflow.md links the evals reference",
           "evals.md" in workflow)
     with open(os.path.join(ROOT, "references", "examples.md"),
               encoding="utf-8") as fh:
         examples = fh.read()
     check("examples.md models evals.py validate/measure",
-          "scripts/evals.py validate" in examples
-          and "scripts/evals.py measure" in examples)
+          "node dist/evals.js validate" in examples
+          and "node dist/evals.js measure" in examples)
     with open(os.path.join(ROOT, "assets", "feature-request.template.md"),
               encoding="utf-8") as fh:
         form = fh.read()
     check("feature-request Verification ties to re-measuring the trigger",
-          "scripts/evals.py measure" in form)
+          "node dist/evals.js measure" in form)
 
 
 def main() -> int:
