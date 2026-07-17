@@ -96,7 +96,7 @@
         "tools_discovery.py se elimina y sus referencias en SKILL.md/references se actualizan a node dist/tools_discovery.js.",
         "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
       ],
-      "status": "in_progress"
+      "status": "done"
     }
   ]
 }
