@@ -39,7 +39,7 @@ them apart is what lets the contract live in the gate without making it flaky.
   eval set: it parses, every item is `{query: string, should_trigger: boolean}` with
   no stray keys, both classes are present, and no query repeats. Same file, same
   answer, every time. Guarded by `test_docs.py` (`test_eval_set`) and by
-  `scripts/evals.py validate`.
+  `node dist/evals.js validate` (originally `scripts/evals.py`, now a Node CLI).
 - **Stochastic (opt-in, outside the gate).** The *measurement* of the real trigger:
   given the platform model and this `description`, does the skill fire for query Q?
   It depends on the model, drifts between runs, and needs a model + CLI + auth. It is
@@ -49,15 +49,15 @@ Confusing the two is the trap: put the stochastic part in CI and the gate turns
 flaky; lean only on the size cap (`test_token_budgets`) and you mistake "the
 description fits" for "the description triggers".
 
-## `scripts/evals.py`
+## `node dist/evals.js`
 
 ```bash
 # Deterministic contract of the eval set (offline; safe in CI and the verifier).
-scripts/evals.py validate
-scripts/evals.py validate --eval-set path/to/set.json --min-per-class 5
+node dist/evals.js validate
+node dist/evals.js validate --eval-set path/to/set.json --min-per-class 5
 
 # Stochastic measurement of the real trigger (online; needs a runner).
-scripts/evals.py measure --runner "<cmd>" --runs 3 --threshold 0.5
+node dist/evals.js measure --runner "<cmd>" --runs 3 --threshold 0.5
 ```
 
 - **`validate`** exits non-zero and lists every contract violation. When `jsonschema`

@@ -1,0 +1,74 @@
+{
+  "install_mode": "local",
+  "project_name": "handyman",
+  "project_root": ".",
+  "handyman_root": null,
+  "harness_workspace": ".handyman",
+  "harness_version": "1.20.20",
+  "models": {
+    "leader": "GLM-5.2",
+    "implementer": "GLM-5.2",
+    "reviewer": "GLM-5.2",
+    "explorer": "GLM-5.2"
+  },
+  "tools": {
+    "leader": [
+      "vscode",
+      "execute",
+      "read",
+      "agent",
+      "edit",
+      "search",
+      "web",
+      "browser",
+      "todo"
+    ],
+    "implementer": [
+      "vscode",
+      "execute",
+      "read",
+      "edit",
+      "search",
+      "todo"
+    ],
+    "reviewer": [
+      "vscode",
+      "execute",
+      "read",
+      "edit",
+      "search",
+      "todo"
+    ],
+    "explorer": [
+      "vscode",
+      "execute",
+      "read",
+      "search",
+      "todo"
+    ]
+  },
+  "discovery": {
+    "skills": [
+      "handyman",
+      "skill-creator",
+      "mcp-builder",
+      "graphify",
+      "pull-request-publish",
+      "ponytail"
+    ],
+    "mcp": [
+      "nx",
+      "gitkraken",
+      "github-pull-request"
+    ],
+    "agents": [
+      "leader",
+      "implementer",
+      "reviewer"
+    ]
+  },
+  "post_run": [
+    "node handyman/dist/index_md.js --root ."
+  ],
+  "current_sprint": null
+}

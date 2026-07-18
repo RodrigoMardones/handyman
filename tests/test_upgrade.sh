@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Tests for scripts/upgrade_harness.py --check (harness version drift detector).
+# Tests for upgrade_harness --check (harness version drift detector).
+# Invokes the built TS port (dist/upgrade_harness.js); scripts/upgrade_harness.py
+# was ported and dropped.
 set -u
 
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
-UPGRADE="$SUITE_DIR/../handyman/scripts/upgrade_harness.py"
+UPGRADE="$SUITE_DIR/../handyman/dist/upgrade_harness.js"
 SKILL_MD="$SUITE_DIR/../handyman/SKILL.md"
 
 echo "Upgrade-check suite (test_upgrade.sh)"
@@ -38,7 +40,7 @@ JSON
 start_case "up-to-date harness (== current) exits 0"
 U1="$(mktemp -d)"
 make_harness "$U1" "$CUR"
-OUT="$(python3 "$UPGRADE" --check --root "$U1" 2>&1)"; CODE=$?
+OUT="$(node "$UPGRADE" --check --root "$U1" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "up to date"; then
   pass
 else
@@ -50,7 +52,7 @@ rm -rf "$U1"
 start_case "outdated harness (< current) exits non-zero and reports drift"
 U2="$(mktemp -d)"
 make_harness "$U2" "1.0.0"
-OUT="$(python3 "$UPGRADE" --check --root "$U2" 2>&1)"; CODE=$?
+OUT="$(node "$UPGRADE" --check --root "$U2" 2>&1)"; CODE=$?
 if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "behind"; then
   pass
 else
@@ -62,7 +64,7 @@ rm -rf "$U2"
 start_case "unsealed harness (no stamp) exits non-zero and reports it"
 U3="$(mktemp -d)"
 make_harness "$U3"
-OUT="$(python3 "$UPGRADE" --check --root "$U3" 2>&1)"; CODE=$?
+OUT="$(node "$UPGRADE" --check --root "$U3" 2>&1)"; CODE=$?
 if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "no valid version stamp"; then
   pass
 else
@@ -79,7 +81,7 @@ mkdir -p "$U4/.handyman/progress"
 cat > "$U4/.handyman/feature_list.json" <<JSON
 { "project": "t", "config": { "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman", "harness_version": "$CUR" }, "features": [] }
 JSON
-OUT="$(python3 "$UPGRADE" --check --root "$U4" 2>&1)"; CODE=$?
+OUT="$(node "$UPGRADE" --check --root "$U4" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "up to date"; then
   pass
 else
@@ -91,7 +93,7 @@ rm -rf "$U4"
 start_case "apply on an up-to-date harness is a no-op (exit 0)"
 U5="$(mktemp -d)"
 make_harness "$U5" "$CUR"
-OUT="$(python3 "$UPGRADE" --root "$U5" 2>&1)"; CODE=$?
+OUT="$(node "$UPGRADE" --root "$U5" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "nothing to apply"; then
   pass
 else
@@ -103,8 +105,8 @@ rm -rf "$U5"
 start_case "apply migrates an outdated harness: creates managed file + re-seals"
 U6="$(mktemp -d)"
 make_harness "$U6" "1.5.0"
-OUT="$(python3 "$UPGRADE" --root "$U6" 2>&1)"; CODE=$?
-NEWVER="$(jq -r '.harness_version' "$U6/harness.config.json")"
+OUT="$(node "$UPGRADE" --root "$U6" 2>&1)"; CODE=$?
+NEWVER="$(_json "$U6/harness.config.json" str harness_version)"
 if [ "$CODE" -eq 0 ] && [ -f "$U6/.handyman/docs/business.md" ] \
    && [ "$NEWVER" = "$CUR" ] \
    && printf '%s' "$OUT" | grep -q "created: docs/business.md" \
@@ -119,8 +121,8 @@ rm -rf "$U6"
 start_case "dry-run previews without writing (no file, version unchanged)"
 U7="$(mktemp -d)"
 make_harness "$U7" "1.5.0"
-OUT="$(python3 "$UPGRADE" --dry-run --root "$U7" 2>&1)"; CODE=$?
-VER="$(jq -r '.harness_version' "$U7/harness.config.json")"
+OUT="$(node "$UPGRADE" --dry-run --root "$U7" 2>&1)"; CODE=$?
+VER="$(_json "$U7/harness.config.json" str harness_version)"
 if [ "$CODE" -eq 0 ] && [ ! -f "$U7/.handyman/docs/business.md" ] \
    && [ "$VER" = "1.5.0" ] \
    && printf '%s' "$OUT" | grep -q "would create: docs/business.md" \
@@ -135,7 +137,7 @@ rm -rf "$U7"
 start_case "apply backs up harness.config.json before migrating"
 U8="$(mktemp -d)"
 make_harness "$U8" "1.5.0"
-python3 "$UPGRADE" --root "$U8" >/dev/null 2>&1
+node "$UPGRADE" --root "$U8" >/dev/null 2>&1
 backups=("$U8"/.handyman/.upgrade-backups/*/harness.config.json)
 if [ -e "${backups[0]}" ]; then
   pass
@@ -148,8 +150,8 @@ rm -rf "$U8"
 start_case "apply is idempotent: a second run is a no-op"
 U9="$(mktemp -d)"
 make_harness "$U9" "1.5.0"
-python3 "$UPGRADE" --root "$U9" >/dev/null 2>&1
-OUT="$(python3 "$UPGRADE" --root "$U9" 2>&1)"; CODE=$?
+node "$UPGRADE" --root "$U9" >/dev/null 2>&1
+OUT="$(node "$UPGRADE" --root "$U9" 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "nothing to apply"; then
   pass
 else
@@ -166,9 +168,9 @@ printf 'CUSTOM BUSINESS CONTENT\n' > "$U10/.handyman/docs/business.md"
 cat > "$U10/.handyman/feature_list.json" <<'JSON'
 { "project": "t", "config": { "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman" }, "features": [ { "id": 1, "name": "keep_me", "status": "in_progress" } ] }
 JSON
-python3 "$UPGRADE" --root "$U10" >/dev/null 2>&1
+node "$UPGRADE" --root "$U10" >/dev/null 2>&1
 BIZ="$(cat "$U10/.handyman/docs/business.md")"
-FEAT="$(jq -r '.features[0].name' "$U10/.handyman/feature_list.json")"
+FEAT="$(_json "$U10/.handyman/feature_list.json" str features.0.name)"
 if [ "$BIZ" = "CUSTOM BUSINESS CONTENT" ] && [ "$FEAT" = "keep_me" ]; then
   pass
 else

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Feature-state CLI tests for the Handyman skill.
-# Exercises scripts/feature.py against fixture harnesses: add, start (with the
+# Exercises dist/feature.js against fixture harnesses: add, start (with the
 # single-in_progress invariant), block, and done (verifier-gated close with
 # history append + current.md reset). Stub verifiers avoid recursing into the
 # real test suite.
@@ -9,7 +9,7 @@ set -u
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
-FEATURE="$SUITE_DIR/../handyman/scripts/feature.py"
+FEATURE="$SUITE_DIR/../handyman/dist/feature.js"
 
 echo "Feature-CLI suite (test_feature.sh)"
 
@@ -39,14 +39,14 @@ write_verifier() {
 }
 
 status_of() { # $1=feature_list.json  $2=feature name
-  python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(next((f['status'] for f in d['features'] if f['name']==sys.argv[2]),''))" "$1" "$2"
+  node "$SUITE_DIR/lib/jsonget.js" read "$1" "(d.features.find(f=>f.name===a[0])||{}).status||''" "$2"
 }
 
 # --- F1: start marks in_progress --------------------------------------------
 start_case "start: marks a pending feature in_progress and updates current.md"
 F1="$(mktemp -d)"
 write_harness "$F1"
-OUT="$(python3 "$FEATURE" --root "$F1" start a 2>&1)"; CODE=$?
+OUT="$(node "$FEATURE" --root "$F1" start a 2>&1)"; CODE=$?
 ST="$(status_of "$F1/.handyman/feature_list.json" a)"
 if [ "$CODE" -eq 0 ] && [ "$ST" = "in_progress" ] \
   && grep -q "feature: a" "$F1/.handyman/progress/current.md"; then
@@ -60,8 +60,8 @@ rm -rf "$F1"
 start_case "start: fails when another feature is already in_progress"
 F2="$(mktemp -d)"
 write_harness "$F2"
-python3 "$FEATURE" --root "$F2" start a >/dev/null 2>&1
-OUT="$(python3 "$FEATURE" --root "$F2" start b 2>&1)"; CODE=$?
+node "$FEATURE" --root "$F2" start a >/dev/null 2>&1
+OUT="$(node "$FEATURE" --root "$F2" start b 2>&1)"; CODE=$?
 ST="$(status_of "$F2/.handyman/feature_list.json" b)"
 if [ "$CODE" -ne 0 ] && [ "$ST" = "pending" ] \
   && printf '%s' "$OUT" | grep -q "in_progress"; then
@@ -75,9 +75,9 @@ rm -rf "$F2"
 start_case "block: marks blocked and records blocked_reason"
 F3="$(mktemp -d)"
 write_harness "$F3"
-OUT="$(python3 "$FEATURE" --root "$F3" block b --reason "waiting on api" 2>&1)"; CODE=$?
+OUT="$(node "$FEATURE" --root "$F3" block b --reason "waiting on api" 2>&1)"; CODE=$?
 ST="$(status_of "$F3/.handyman/feature_list.json" b)"
-REASON="$(python3 -c "import json;d=json.load(open('$F3/.handyman/feature_list.json'));print(next(f.get('blocked_reason','') for f in d['features'] if f['name']=='b'))")"
+REASON="$(node "$SUITE_DIR/lib/jsonget.js" read "$F3/.handyman/feature_list.json" "(d.features.find(f=>f.name==='b')||{}).blocked_reason||''")"
 if [ "$CODE" -eq 0 ] && [ "$ST" = "blocked" ] && [ "$REASON" = "waiting on api" ]; then
   pass
 else
@@ -89,7 +89,7 @@ rm -rf "$F3"
 start_case "block: fails without --reason"
 F4="$(mktemp -d)"
 write_harness "$F4"
-python3 "$FEATURE" --root "$F4" block b >/dev/null 2>&1; CODE=$?
+node "$FEATURE" --root "$F4" block b >/dev/null 2>&1; CODE=$?
 if [ "$CODE" -ne 0 ]; then pass; else fail "expected non-zero exit"; fi
 rm -rf "$F4"
 
@@ -97,8 +97,8 @@ rm -rf "$F4"
 start_case "add: appends a pending feature with an auto-incremented id"
 F5="$(mktemp -d)"
 write_harness "$F5"
-OUT="$(python3 "$FEATURE" --root "$F5" add --name c --title C --acceptance crit1 2>&1)"; CODE=$?
-NEWID="$(python3 -c "import json;d=json.load(open('$F5/.handyman/feature_list.json'));print(next(f['id'] for f in d['features'] if f['name']=='c'))")"
+OUT="$(node "$FEATURE" --root "$F5" add --name c --title C --acceptance crit1 2>&1)"; CODE=$?
+NEWID="$(node "$SUITE_DIR/lib/jsonget.js" read "$F5/.handyman/feature_list.json" "(d.features.find(f=>f.name==='c')||{}).id")"
 ST="$(status_of "$F5/.handyman/feature_list.json" c)"
 if [ "$CODE" -eq 0 ] && [ "$NEWID" = "3" ] && [ "$ST" = "pending" ]; then
   pass
@@ -111,7 +111,7 @@ rm -rf "$F5"
 start_case "add: fails on a duplicate feature name"
 F6="$(mktemp -d)"
 write_harness "$F6"
-python3 "$FEATURE" --root "$F6" add --name a >/dev/null 2>&1; CODE=$?
+node "$FEATURE" --root "$F6" add --name a >/dev/null 2>&1; CODE=$?
 if [ "$CODE" -ne 0 ]; then pass; else fail "expected non-zero exit on duplicate"; fi
 rm -rf "$F6"
 
@@ -120,8 +120,8 @@ start_case "done: fails and keeps state when the verifier exits non-zero"
 F7="$(mktemp -d)"
 write_harness "$F7"
 write_verifier "$F7/fail.sh" 1
-python3 "$FEATURE" --root "$F7" start a >/dev/null 2>&1
-OUT="$(python3 "$FEATURE" --root "$F7" "done" a --verifier "$F7/fail.sh" 2>&1)"; CODE=$?
+node "$FEATURE" --root "$F7" start a >/dev/null 2>&1
+OUT="$(node "$FEATURE" --root "$F7" "done" a --verifier "$F7/fail.sh" 2>&1)"; CODE=$?
 ST="$(status_of "$F7/.handyman/feature_list.json" a)"
 if [ "$CODE" -ne 0 ] && [ "$ST" = "in_progress" ]; then
   pass
@@ -135,8 +135,8 @@ start_case "done: marks done, appends history, and resets current.md on green ve
 F8="$(mktemp -d)"
 write_harness "$F8"
 write_verifier "$F8/pass.sh" 0
-python3 "$FEATURE" --root "$F8" start a >/dev/null 2>&1
-OUT="$(python3 "$FEATURE" --root "$F8" "done" a --verifier "$F8/pass.sh" --date 2026-06-17 2>&1)"; CODE=$?
+node "$FEATURE" --root "$F8" start a >/dev/null 2>&1
+OUT="$(node "$FEATURE" --root "$F8" "done" a --verifier "$F8/pass.sh" --date 2026-06-17 2>&1)"; CODE=$?
 ST="$(status_of "$F8/.handyman/feature_list.json" a)"
 if [ "$CODE" -eq 0 ] && [ "$ST" = "done" ] \
   && grep -q "Feature 1: a" "$F8/.handyman/progress/history.md" \
@@ -151,7 +151,7 @@ rm -rf "$F8"
 start_case "start: fails for an unknown feature name"
 F9="$(mktemp -d)"
 write_harness "$F9"
-python3 "$FEATURE" --root "$F9" start nope >/dev/null 2>&1; CODE=$?
+node "$FEATURE" --root "$F9" start nope >/dev/null 2>&1; CODE=$?
 if [ "$CODE" -ne 0 ]; then pass; else fail "expected non-zero exit"; fi
 rm -rf "$F9"
 
@@ -159,8 +159,8 @@ rm -rf "$F9"
 start_case "log: appends a bullet to current.md Log and bumps updated"
 F10="$(mktemp -d)"
 write_harness "$F10"
-python3 "$FEATURE" --root "$F10" start a >/dev/null 2>&1
-python3 "$FEATURE" --root "$F10" log "did the thing" --date 2026-02-02 >/dev/null 2>&1; CODE=$?
+node "$FEATURE" --root "$F10" start a >/dev/null 2>&1
+node "$FEATURE" --root "$F10" log "did the thing" --date 2026-02-02 >/dev/null 2>&1; CODE=$?
 CUR="$F10/.handyman/progress/current.md"
 if [ "$CODE" -eq 0 ] && grep -q "^- did the thing$" "$CUR" \
   && grep -q "^updated: 2026-02-02$" "$CUR"; then
@@ -174,8 +174,8 @@ rm -rf "$F10"
 start_case "next: sets the Next Step section of current.md"
 F11="$(mktemp -d)"
 write_harness "$F11"
-python3 "$FEATURE" --root "$F11" start a >/dev/null 2>&1
-python3 "$FEATURE" --root "$F11" next "run the verifier" --date 2026-02-02 >/dev/null 2>&1; CODE=$?
+node "$FEATURE" --root "$F11" start a >/dev/null 2>&1
+node "$FEATURE" --root "$F11" next "run the verifier" --date 2026-02-02 >/dev/null 2>&1; CODE=$?
 CUR="$F11/.handyman/progress/current.md"
 if [ "$CODE" -eq 0 ] && grep -q "run the verifier" "$CUR" \
   && ! grep -q "the next session starts here" "$CUR"; then
@@ -190,8 +190,8 @@ start_case "done: history entry carries the rich headed fields"
 F12="$(mktemp -d)"
 write_harness "$F12"
 write_verifier "$F12/pass.sh" 0
-python3 "$FEATURE" --root "$F12" start a >/dev/null 2>&1
-python3 "$FEATURE" --root "$F12" "done" a --verifier "$F12/pass.sh" --date 2026-02-02 >/dev/null 2>&1
+node "$FEATURE" --root "$F12" start a >/dev/null 2>&1
+node "$FEATURE" --root "$F12" "done" a --verifier "$F12/pass.sh" --date 2026-02-02 >/dev/null 2>&1
 HIST="$F12/.handyman/progress/history.md"
 if grep -q "Feature 1: a" "$HIST" \
   && grep -q "[*][*]Agent:[*][*]" "$HIST" \
@@ -212,8 +212,8 @@ write_verifier "$F13/pass.sh" 0
 cat > "$F13/harness.config.json" <<'JSON'
 { "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman", "post_run": ["touch .post_run_marker"] }
 JSON
-python3 "$FEATURE" --root "$F13" start a >/dev/null 2>&1
-OUT="$(python3 "$FEATURE" --root "$F13" "done" a --verifier "$F13/pass.sh" --date 2026-02-02 2>&1)"; CODE=$?
+node "$FEATURE" --root "$F13" start a >/dev/null 2>&1
+OUT="$(node "$FEATURE" --root "$F13" "done" a --verifier "$F13/pass.sh" --date 2026-02-02 2>&1)"; CODE=$?
 ST="$(status_of "$F13/.handyman/feature_list.json" a)"
 if [ "$CODE" -eq 0 ] && [ "$ST" = "done" ] && [ -f "$F13/.post_run_marker" ]; then
   pass
@@ -230,8 +230,8 @@ write_verifier "$F14/pass.sh" 0
 cat > "$F14/harness.config.json" <<'JSON'
 { "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman", "post_run": ["false"] }
 JSON
-python3 "$FEATURE" --root "$F14" start a >/dev/null 2>&1
-OUT="$(python3 "$FEATURE" --root "$F14" "done" a --verifier "$F14/pass.sh" --date 2026-02-02 2>&1)"; CODE=$?
+node "$FEATURE" --root "$F14" start a >/dev/null 2>&1
+OUT="$(node "$FEATURE" --root "$F14" "done" a --verifier "$F14/pass.sh" --date 2026-02-02 2>&1)"; CODE=$?
 ST="$(status_of "$F14/.handyman/feature_list.json" a)"
 if [ "$CODE" -eq 0 ] && [ "$ST" = "done" ] && printf '%s' "$OUT" | grep -q "post_run WARN"; then
   pass
@@ -245,8 +245,8 @@ start_case "post_run: absent block means a normal close with no WARN"
 F15="$(mktemp -d)"
 write_harness "$F15"
 write_verifier "$F15/pass.sh" 0
-python3 "$FEATURE" --root "$F15" start a >/dev/null 2>&1
-OUT="$(python3 "$FEATURE" --root "$F15" "done" a --verifier "$F15/pass.sh" --date 2026-02-02 2>&1)"; CODE=$?
+node "$FEATURE" --root "$F15" start a >/dev/null 2>&1
+OUT="$(node "$FEATURE" --root "$F15" "done" a --verifier "$F15/pass.sh" --date 2026-02-02 2>&1)"; CODE=$?
 ST="$(status_of "$F15/.handyman/feature_list.json" a)"
 if [ "$CODE" -eq 0 ] && [ "$ST" = "done" ] && ! printf '%s' "$OUT" | grep -q "post_run"; then
   pass
@@ -262,7 +262,7 @@ write_harness "$F16"
 cat > "$F16/harness.config.json" <<'JSON'
 { "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman" }
 JSON
-OUT="$(python3 "$FEATURE" --root "$F16" start a 2>&1)"; CODE=$?
+OUT="$(node "$FEATURE" --root "$F16" start a 2>&1)"; CODE=$?
 ST="$(status_of "$F16/.handyman/feature_list.json" a)"
 if [ "$CODE" -eq 0 ] && [ "$ST" = "in_progress" ] \
   && printf '%s' "$OUT" | grep -q "preflight"; then
@@ -279,7 +279,7 @@ write_harness "$F17"
 cat > "$F17/harness.config.json" <<'JSON'
 { "install_mode": "local", "project_name": "t", "project_root": ".", "harness_workspace": ".handyman" }
 JSON
-OUT="$(python3 "$FEATURE" --root "$F17" start a --no-preflight 2>&1)"; CODE=$?
+OUT="$(node "$FEATURE" --root "$F17" start a --no-preflight 2>&1)"; CODE=$?
 ST="$(status_of "$F17/.handyman/feature_list.json" a)"
 if [ "$CODE" -eq 0 ] && [ "$ST" = "in_progress" ] \
   && ! printf '%s' "$OUT" | grep -q "preflight"; then
@@ -294,13 +294,13 @@ start_case "done: --tools records provenance; omitted keeps the placeholder"
 F18="$(mktemp -d)"
 write_harness "$F18"
 write_verifier "$F18/pass.sh" 0
-python3 "$FEATURE" --root "$F18" start a >/dev/null 2>&1
-python3 "$FEATURE" --root "$F18" "done" a --verifier "$F18/pass.sh" \
+node "$FEATURE" --root "$F18" start a >/dev/null 2>&1
+node "$FEATURE" --root "$F18" "done" a --verifier "$F18/pass.sh" \
   --tools "skills: handyman, ponytail; agents: reviewer" --date 2026-02-02 >/dev/null 2>&1
 HIST="$F18/.handyman/progress/history.md"
 # second feature closed without --tools -> placeholder
-python3 "$FEATURE" --root "$F18" start b >/dev/null 2>&1
-python3 "$FEATURE" --root "$F18" "done" b --verifier "$F18/pass.sh" --date 2026-02-03 >/dev/null 2>&1
+node "$FEATURE" --root "$F18" start b >/dev/null 2>&1
+node "$FEATURE" --root "$F18" "done" b --verifier "$F18/pass.sh" --date 2026-02-03 >/dev/null 2>&1
 if grep -q -- "- \*\*Tools:\*\* skills: handyman, ponytail; agents: reviewer" "$HIST" \
   && grep -A5 "Feature 2: b" "$HIST" | grep -q -- "- \*\*Tools:\*\* \.\.\."; then
   pass
@@ -316,12 +316,12 @@ write_harness "$F19"
 git -C "$F19" init -q -b prov-branch 2>/dev/null || {
   git -C "$F19" init -q && git -C "$F19" checkout -q -b prov-branch
 }
-python3 "$FEATURE" --root "$F19" start a >/dev/null 2>&1
+node "$FEATURE" --root "$F19" start a >/dev/null 2>&1
 CUR="$F19/.handyman/progress/current.md"
 # and a non-git fixture keeps the placeholder
 F19B="$(mktemp -d)"
 write_harness "$F19B"
-python3 "$FEATURE" --root "$F19B" start a >/dev/null 2>&1
+node "$FEATURE" --root "$F19B" start a >/dev/null 2>&1
 if grep -q -- "- \*\*Branch:\*\* prov-branch" "$CUR" \
   && grep -q -- "- \*\*Branch:\*\* _-_" "$F19B/.handyman/progress/current.md"; then
   pass
@@ -338,8 +338,8 @@ write_verifier "$F20/pass.sh" 0
 git -C "$F20" init -q -b prov-close 2>/dev/null || {
   git -C "$F20" init -q && git -C "$F20" checkout -q -b prov-close
 }
-python3 "$FEATURE" --root "$F20" start a >/dev/null 2>&1
-python3 "$FEATURE" --root "$F20" "done" a --verifier "$F20/pass.sh" --date 2026-02-04 >/dev/null 2>&1
+node "$FEATURE" --root "$F20" start a >/dev/null 2>&1
+node "$FEATURE" --root "$F20" "done" a --verifier "$F20/pass.sh" --date 2026-02-04 >/dev/null 2>&1
 HIST="$F20/.handyman/progress/history.md"
 if grep -A2 "Feature 1: a" "$HIST" | grep -q -- "- \*\*Branch:\*\* prov-close"; then
   pass
@@ -356,8 +356,8 @@ mkdir -p "$F21/.handyman/archive"
 cat > "$F21/.handyman/archive/feature_archive.json" <<'JSON'
 { "sprints": { "2026-SP1": [ { "id": 9, "name": "old", "status": "done" } ] } }
 JSON
-python3 "$FEATURE" --root "$F21" add --name fresh >/dev/null 2>&1
-NEW_ID="$(python3 -c "import json;d=json.load(open('$F21/.handyman/feature_list.json'));print(next(f['id'] for f in d['features'] if f['name']=='fresh'))")"
+node "$FEATURE" --root "$F21" add --name fresh >/dev/null 2>&1
+NEW_ID="$(node "$SUITE_DIR/lib/jsonget.js" read "$F21/.handyman/feature_list.json" "(d.features.find(f=>f.name==='fresh')||{}).id")"
 if [ "$NEW_ID" = "10" ]; then
   pass
 else
@@ -373,10 +373,10 @@ mkdir -p "$F22/.handyman/archive"
 cat > "$F22/.handyman/archive/feature_archive.json" <<'JSON'
 { "sprints": { "2026-SP1": [ { "id": 9, "name": "old", "status": "done" } ] } }
 JSON
-python3 "$FEATURE" --root "$F22" add --name gated --depends-on 2 >/dev/null 2>&1
-python3 "$FEATURE" --root "$F22" add --name unlocked --depends-on 9 >/dev/null 2>&1
-DEPS="$(python3 -c "import json;d=json.load(open('$F22/.handyman/feature_list.json'));print(next(f.get('depends_on') for f in d['features'] if f['name']=='gated'))")"
-OUT="$(python3 "$FEATURE" --root "$F22" ready 2>&1)"; CODE=$?
+node "$FEATURE" --root "$F22" add --name gated --depends-on 2 >/dev/null 2>&1
+node "$FEATURE" --root "$F22" add --name unlocked --depends-on 9 >/dev/null 2>&1
+DEPS="$(node "$SUITE_DIR/lib/jsonget.js" read "$F22/.handyman/feature_list.json" "JSON.stringify((d.features.find(f=>f.name==='gated')||{}).depends_on)")"
+OUT="$(node "$FEATURE" --root "$F22" ready 2>&1)"; CODE=$?
 # a and b have no deps (ready); unlocked's dep 9 is archived (ready);
 # gated's dep 2 (b) is still pending (not ready).
 if [ "$CODE" -eq 0 ] && [ "$DEPS" = "[2]" ] \
@@ -392,16 +392,9 @@ rm -rf "$F22"
 start_case "ready: exits 3 with a drained backlog and prints [] under --json"
 F23="$(mktemp -d)"
 write_harness "$F23"
-python3 - "$F23/.handyman/feature_list.json" <<'PY'
-import json, sys
-path = sys.argv[1]
-d = json.load(open(path))
-for f in d["features"]:
-    f["status"] = "blocked" if f["name"] == "a" else "done"
-json.dump(d, open(path, "w"), indent=2)
-PY
-OUT="$(python3 "$FEATURE" --root "$F23" ready --json 2>/dev/null)"; CODE=$?
-PARSED="$(printf '%s' "$OUT" | python3 -c "import json,sys;print(len(json.load(sys.stdin)))")"
+node -e 'const fs=require("fs");const p=process.argv[1];const d=JSON.parse(fs.readFileSync(p,"utf8"));for(const f of d.features){f.status=f.name==="a"?"blocked":"done";}fs.writeFileSync(p,JSON.stringify(d,null,2)+"\n");' "$F23/.handyman/feature_list.json"
+OUT="$(node "$FEATURE" --root "$F23" ready --json 2>/dev/null)"; CODE=$?
+PARSED="$(printf '%s' "$OUT" | node -e 'const d=JSON.parse(require("fs").readFileSync(0,"utf8"));process.stdout.write(String(Array.isArray(d)?d.length:Object.keys(d).length))')"
 if [ "$CODE" -eq 3 ] && [ "$PARSED" = "0" ]; then
   pass
 else
@@ -413,8 +406,8 @@ rm -rf "$F23"
 start_case "start: warns about unmet dependencies without blocking"
 F24="$(mktemp -d)"
 write_harness "$F24"
-python3 "$FEATURE" --root "$F24" add --name gated --depends-on 1 >/dev/null 2>&1
-OUT="$(python3 "$FEATURE" --root "$F24" start gated 2>&1)"; CODE=$?
+node "$FEATURE" --root "$F24" add --name gated --depends-on 1 >/dev/null 2>&1
+OUT="$(node "$FEATURE" --root "$F24" start gated 2>&1)"; CODE=$?
 ST="$(status_of "$F24/.handyman/feature_list.json" gated)"
 if [ "$CODE" -eq 0 ] && [ "$ST" = "in_progress" ] \
   && printf '%s' "$OUT" | grep -q "WARN.*unmet dependencies.*1"; then
@@ -428,20 +421,13 @@ rm -rf "$F24"
 start_case "observation shape: status tail on ok/warn/error, none under --json"
 F25="$(mktemp -d)"
 write_harness "$F25"
-OK_TAIL="$(python3 "$FEATURE" --root "$F25" add --name shaped 2>/dev/null | tail -n1)"
-python3 "$FEATURE" --root "$F25" start a >/dev/null 2>&1
-ERR_TAIL="$(python3 "$FEATURE" --root "$F25" start b 2>/dev/null | tail -n1)"
-python3 - "$F25/.handyman/feature_list.json" <<'PY'
-import json, sys
-path = sys.argv[1]
-d = json.load(open(path))
-for f in d["features"]:
-    f["status"] = "blocked"
-json.dump(d, open(path, "w"), indent=2)
-PY
-WARN_OUT="$(python3 "$FEATURE" --root "$F25" ready 2>/dev/null)"
+OK_TAIL="$(node "$FEATURE" --root "$F25" add --name shaped 2>/dev/null | tail -n1)"
+node "$FEATURE" --root "$F25" start a >/dev/null 2>&1
+ERR_TAIL="$(node "$FEATURE" --root "$F25" start b 2>/dev/null | tail -n1)"
+node -e 'const fs=require("fs");const p=process.argv[1];const d=JSON.parse(fs.readFileSync(p,"utf8"));for(const f of d.features){f.status="blocked";}fs.writeFileSync(p,JSON.stringify(d,null,2)+"\n");' "$F25/.handyman/feature_list.json"
+WARN_OUT="$(node "$FEATURE" --root "$F25" ready 2>/dev/null)"
 WARN_TAIL="$(printf '%s' "$WARN_OUT" | tail -n1)"
-JSON_OUT="$(python3 "$FEATURE" --root "$F25" ready --json 2>/dev/null)"
+JSON_OUT="$(node "$FEATURE" --root "$F25" ready --json 2>/dev/null)"
 if [ "$OK_TAIL" = "status: ok" ] && [ "$ERR_TAIL" = "status: error" ] \
   && [ "$WARN_TAIL" = "status: warn" ] \
   && printf '%s' "$WARN_OUT" | grep -q "^next:" \
@@ -451,5 +437,41 @@ else
   fail "ok=$OK_TAIL err=$ERR_TAIL warn=$WARN_TAIL json=$JSON_OUT"
 fi
 rm -rf "$F25"
+
+# --- F26: start stamps an exact ISO 8601 started_at timestamp ---------------
+start_case "start: stamps meta.started_at as an ISO 8601 timestamp"
+F26="$(mktemp -d)"
+write_harness "$F26"
+node "$FEATURE" --root "$F26" start a >/dev/null 2>&1
+STARTED="$(node "$SUITE_DIR/lib/jsonget.js" read "$F26/.handyman/feature_list.json" "(d.features.find(f=>f.name==='a')||{}).meta?.started_at ?? ''")"
+DONE="$(node "$SUITE_DIR/lib/jsonget.js" read "$F26/.handyman/feature_list.json" "(d.features.find(f=>f.name==='a')||{}).meta?.done_at ?? ''")"
+# ISO 8601 UTC: YYYY-MM-DDTHH:MM:SS(...).fffZ
+# [0-9] (not \d): POSIX ERE, portable across BSD/macOS and GNU/Linux grep
+ISO_MATCH="$(printf '%s' "$STARTED" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z$' && echo yes || echo no)"
+# a feature that was only started has started_at but no done_at
+if [ -n "$STARTED" ] && [ "$ISO_MATCH" = "yes" ] && [ -z "$DONE" ]; then
+  pass
+else
+  fail "started_at='$STARTED' iso=$ISO_MATCH done_at='$DONE'"
+fi
+rm -rf "$F26"
+
+# --- F27: done stamps an exact ISO 8601 done_at timestamp -------------------
+start_case "done: stamps meta.done_at as an ISO 8601 timestamp on close"
+F27="$(mktemp -d)"
+write_harness "$F27"
+write_verifier "$F27/pass.sh" 0
+node "$FEATURE" --root "$F27" start a >/dev/null 2>&1
+STARTED="$(node "$SUITE_DIR/lib/jsonget.js" read "$F27/.handyman/feature_list.json" "(d.features.find(f=>f.name==='a')||{}).meta?.started_at ?? ''")"
+node "$FEATURE" --root "$F27" "done" a --verifier "$F27/pass.sh" --date 2026-07-17 >/dev/null 2>&1
+DONE="$(node "$SUITE_DIR/lib/jsonget.js" read "$F27/.handyman/feature_list.json" "(d.features.find(f=>f.name==='a')||{}).meta?.done_at ?? ''")"
+ISO_MATCH="$(printf '%s' "$DONE" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?Z$' && echo yes || echo no)"
+# done_at is a fresh real timestamp (distinct from the earlier started_at)
+if [ -n "$DONE" ] && [ "$ISO_MATCH" = "yes" ] && [ "$DONE" != "$STARTED" ]; then
+  pass
+else
+  fail "done_at='$DONE' iso=$ISO_MATCH started_at='$STARTED'"
+fi
+rm -rf "$F27"
 
 summary

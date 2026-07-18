@@ -4,7 +4,7 @@ description: 'Install, analyze, bootstrap, run, review, or migrate a Handyman ag
 argument-hint: 'analyze | bootstrap local|global | run-feature | review | migrate-global | upgrade'
 user-invocable: true
 metadata:
-  version: 1.20.20
+  version: 2.1.1
 ---
 
 # Handyman
@@ -70,13 +70,13 @@ Role protocols: [references/workflow.md](./references/workflow.md).
 
 **Bootstrap.** Confirm target repo, scope, and whether existing files may change. Scaffold with `scripts/scaffold.sh <local|global> <project_root>` (never overwrites), then fill only missing or approved files. Assign per-role models and tools, place role files in the platform path, keep `backlog/` for reports, add an executable verifier (required files, state from `HARNESS_WORKSPACE`, tests from the project root). Use [templates](./references/templates.md).
 
-**Run one feature.** First run a read-only stability check (`scripts/preflight.py`) to confirm the harness is well-formed (see [workflow.md](./references/workflow.md)); then verifier green, offer the `feature-request.md` form, pick the lowest-id `pending` feature, mark one `in_progress`, update `progress/current.md`, delegate implementation (or follow the implementer protocol), require tests proving acceptance, verifier green, delegate review (or use `CHECKPOINTS.md`); after approval mark `done`, append to `progress/history.md`, reset `progress/current.md`, run any declared `post_run` hooks.
+**Run one feature.** First run a read-only stability check (`node dist/preflight.js`) to confirm the harness is well-formed (see [workflow.md](./references/workflow.md)); then verifier green, offer the `feature-request.md` form, pick the lowest-id `pending` feature, mark one `in_progress`, update `progress/current.md`, delegate implementation (or follow the implementer protocol), require tests proving acceptance, verifier green, delegate review (or use `CHECKPOINTS.md`); after approval mark `done`, append to `progress/history.md`, reset `progress/current.md`, run any declared `post_run` hooks.
 
 **Review.** Read the implementation report in `backlog/`; compare changed files against `docs/business.md`, `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md`, `CHECKPOINTS.md`; run the verifier; write `backlog/review_<feature>.md`; return only `APPROVED -> <file>` or `CHANGES_REQUESTED -> <file>`.
 
 **Migrate local to global.** Never migrate an active session without explicit approval. Create `$HOME/HANDYMAN/<project_name>`; move `feature_list.json`, `progress/`, `backlog/`, operational `docs/`; write `harness.config.json`; repoint `AGENTS.md`, `CHECKPOINTS.md`, role files, `init.sh`; run the verifier and document drift.
 
-**Upgrade.** Run `scripts/upgrade_harness.py --check` to report version drift against the current skill; run it (`--dry-run` previews) to apply idempotent migrations and re-seal after a backup. Never upgrade an active session without approval.
+**Upgrade.** Run `node dist/upgrade_harness.js --check` to report version drift against the current skill; run it (`--dry-run` previews) to apply idempotent migrations and re-seal after a backup. Never upgrade an active session without approval.
 
 ## Output Style
 

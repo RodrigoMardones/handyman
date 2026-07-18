@@ -46,3 +46,41 @@ summary() {
     "$(_color 31 "${TESTS_FAILED} failed")"
   [ "$TESTS_FAILED" -eq 0 ]
 }
+
+# Portable JSON reader for the test harness: node is the sole runtime, so the
+# suite needs no jq or python. Usage: _json FILE VERB [ARG]
+#   str PATH          print the string at a dotted PATH (numeric parts index
+#                     arrays); empty when the key is missing or null.
+#   len [PATH]        print the array length at PATH (root when omitted); 0 when
+#                     the target is not an array.
+#   count_status VAL  count .features[] whose .status equals VAL.
+#   valid             exit 0 when FILE is valid JSON, non-zero otherwise.
+_json() {
+  _jf=$1; _jv=$2; _ja=${3:-}
+  if command -v node >/dev/null 2>&1; then
+    node -e '
+const fs = require("fs");
+const a = process.argv.slice(-3);
+const file = a[0], verb = a[1], arg = a[2];
+let d;
+try { d = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) { process.exit(2); }
+function get(obj, path) {
+  if (!path) return obj;
+  let cur = obj;
+  for (const k of path.split(".")) { if (cur == null) return undefined; cur = cur[k]; }
+  return cur;
+}
+if (verb === "valid") { process.exit(0); }
+if (verb === "str") {
+  const v = get(d, arg);
+  process.stdout.write(v == null ? "" : String(v));
+} else if (verb === "len") {
+  const v = get(d, arg);
+  process.stdout.write(String(Array.isArray(v) ? v.length : 0));
+} else if (verb === "count_status") {
+  const f = Array.isArray(d.features) ? d.features : [];
+  process.stdout.write(String(f.filter(x => x && x.status === arg).length));
+} else { process.exit(3); }
+' "$_jf" "$_jv" "$_ja"
+  fi
+}

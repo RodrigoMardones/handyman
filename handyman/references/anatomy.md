@@ -100,20 +100,21 @@ See [tools.md](./tools.md) for capability-group definitions, per-platform syntax
 
 ## Optional Support Files
 
-The support scripts converge on a shared observation shape (adopted incrementally, starting with `preflight.py` and `feature.py`): the last stdout line is `status: ok|warn|error`, preceded by a `next:` hint when one applies — except in `--json` modes, where the JSON payload is the observation. Callers and loop runners read that tail instead of parsing prose.
+The support scripts converge on a shared observation shape (adopted incrementally, starting with `preflight` and the feature-state CLI): the last stdout line is `status: ok|warn|error`, preceded by a `next:` hint when one applies — except in `--json` modes, where the JSON payload is the observation. Callers and loop runners read that tail instead of parsing prose.
 
 | Path | Purpose |
 |------|---------|
 | `.claude/settings.json` | Hooks and command allowlists for Claude Code workflows. |
 | `.github/instructions/*.instructions.md` | VS Code/Copilot instruction files for project-specific behavior. |
 | `.github/prompts/*.prompt.md` | Reusable prompts for recurring tasks. |
-| `scripts/validate_harness.*` | Optional automated structure validator. |
-| `scripts/feature.py` | Optional CLI for atomic feature_list.json transitions (add/start/block/done). |
-| `scripts/backlog.py` | Optional generator for backlog reports (`impl`/`review`/`explore`) that stamps the per-type frontmatter from the bundled templates and never overwrites an existing entry. |
-| `scripts/index_md.py` | Optional regenerator for the `index.md` Obsidian MOC: rebuilds State/Docs/Progress/Features/Backlog/Tags from live state and preserves a `## Notes` block. |
-| `scripts/upgrade_harness.py` | Optional version-upgrade tool: `--check` reports drift; running it applies idempotent migrations (managed files + re-seal), `--dry-run` previews. |
-| `scripts/preflight.py` | Optional read-only stability report run before feature work: orchestrates `validate_harness`, `upgrade_harness --check`, `update_harness --check`, `tools_discovery check` and `feature.py ready` into a unified format/drift/sync/discovery/worklist view; always exits 0. |
-| `scripts/sprint.py` | Optional sprint lifecycle: `open <id>` stamps the period label and records `current_sprint`; `close` derives `docs/sprints/sprint.<id>.md`, archives the period's `done` features to `archive/feature_archive.json`, compacts their `history.md` bodies to one-line stubs (dated headings stay for metrics), and cleans `feature_list.json`; `status` reports. |
+| `src/validate_harness.ts` (run `node dist/validate_harness.js`) | Optional automated structure validator: resolves `HARNESS_WORKSPACE`, checks core files, parses `feature_list.json`, enforces at most one `in_progress`, validates `depends_on` references, and flags role files inside the workspace. |
+| `src/feature.ts` (run `node dist/feature.js`) | Optional CLI for atomic feature_list.json transitions (add/start/block/done/ready/log/next). |
+| `src/backlog.ts` (run `node dist/backlog.js`) | Optional generator for backlog reports (`impl`/`review`/`explore`) that stamps the per-type frontmatter from the bundled templates and never overwrites an existing entry. |
+| `src/index_md.ts` (run `node dist/index_md.js`) | Optional regenerator for the `index.md` Obsidian MOC: rebuilds State/Docs/Progress/Features/Backlog/Tags from live state and preserves a `## Notes` block. |
+| `src/upgrade_harness.ts` (run `node dist/upgrade_harness.js`) | Optional version-upgrade tool: `--check` reports drift; running it applies idempotent migrations (managed files + re-seal), `--dry-run` previews. |
+| `src/preflight.ts` (run `node dist/preflight.js`) | Optional read-only stability report run before feature work: orchestrates `validate_harness`, `upgrade_harness --check`, `update_harness --check`, `tools_discovery check` and `node dist/feature.js ready` into a unified format/drift/sync/discovery/worklist view; always exits 0. |
+| `src/tools_discovery.ts` (run `node dist/tools_discovery.js`) | Optional skill/MCP/agent discovery CLI: `list`/`find` installed skills, `check` the declared `discovery` block against disk (skills + role files gate; MCP is a NOTE), and `declare <skill|mcp|agent> <name>` to add an entry (JSON round-trip, schema-validated, `--dry-run` diff). |
+| `node dist/sprint.js` | Optional sprint lifecycle: `open <id>` stamps the period label and records `current_sprint`; `close` derives `docs/sprints/sprint.<id>.md`, archives the period's `done` features to `archive/feature_archive.json`, compacts their `history.md` bodies to one-line stubs (dated headings stay for metrics), and cleans `feature_list.json`; `status` reports. |
 | `$HARNESS_WORKSPACE/docs/current/` | Unreviewed documentation drafts of the open work period; compressed into the sprint document at close. |
 | `$HARNESS_WORKSPACE/docs/sprints/sprint.<id>.md` | One derived document per closed work period (features, metrics, tools provenance, carry-over, plus manual achievements/lessons). |
 | `assets/schemas/*.schema.json` | JSON Schema (draft-07) contracts for `feature_list.json` and `harness.config.json`. |
@@ -125,17 +126,17 @@ The support scripts converge on a shared observation shape (adopted incrementall
 A minimal `feature_list.json` lives in `HARNESS_WORKSPACE` and contains:
 
 - Project metadata.
-- Optional config for `install_mode`, `project_name`, `project_root`, `handyman_root`, `harness_workspace`, a `models` map keyed by role, a `tools` map keyed by role, and an optional `post_run` list of shell commands. This block is an optional **mirror** of `harness.config.json` (the canonical bridge file); keep the two in sync. Resolution prefers `harness.config.json`, then this `config`, then a `PROJECT_ROOT/.handyman/` directory, then the legacy `PROJECT_ROOT` fallback (as `scripts/validate_harness.py` implements). The `post_run` commands (e.g. rebuild the `index.md` MOC, refresh a context graph) run after a feature closes: `scripts/feature.py done` executes them always with exit 0, so a failing custom step only WARNs and never reverts a verified close. The config may also carry `current_sprint`, the open work period that `scripts/sprint.py` manages.
+- Optional config for `install_mode`, `project_name`, `project_root`, `handyman_root`, `harness_workspace`, a `models` map keyed by role, a `tools` map keyed by role, and an optional `post_run` list of shell commands. This block is an optional **mirror** of `harness.config.json` (the canonical bridge file); keep the two in sync. Resolution prefers `harness.config.json`, then this `config`, then a `PROJECT_ROOT/.handyman/` directory, then the legacy `PROJECT_ROOT` fallback (as `src/validate_harness.ts` implements). The `post_run` commands (e.g. rebuild the `index.md` MOC, refresh a context graph) run after a feature closes: `node dist/feature.js done` executes them always with exit 0, so a failing custom step only WARNs and never reverts a verified close. The config may also carry `current_sprint`, the open work period that `node dist/sprint.js` manages.
 - Global rules such as `one_feature_at_a_time` and `require_tests_to_close`.
 - `valid_status`: usually `pending`, `in_progress`, `done`, `blocked`.
-- A `features` array. Each feature carries exactly `id`, `name`, `title`, `description`, `acceptance`, `status`, and — only when blocked — `blocked_reason`, plus — only inside an open work period — the `sprint` partition label (`"2026-SP1"`, stamped by `scripts/sprint.py open`), plus — only when ordering matters — an optional `depends_on` list of feature ids that must be `done` (or archived) before it starts. A feature carries **no dates**: the schema sets `additionalProperties: false`, so any other key (for example an invented `start_date` / `close_date`) is rejected by the verifier. The sprint label is a partition, not a chronology: which period a feature belongs to, never when anything happened.
+- A `features` array. Each feature carries exactly `id`, `name`, `title`, `description`, `acceptance`, `status`, and — only when blocked — `blocked_reason`, plus — only inside an open work period — the `sprint` partition label (`"2026-SP1"`, stamped by `node dist/sprint.js open`), plus — only when ordering matters — an optional `depends_on` list of feature ids that must be `done` (or archived) before it starts. A feature carries **no dates**: the schema sets `additionalProperties: false`, so any other key (for example an invented `start_date` / `close_date`) is rejected by the verifier. The sprint label is a partition, not a chronology: which period a feature belongs to, never when anything happened.
 
 Rules:
 
 - At most one feature may be `in_progress`.
 - Pick the lowest-id `pending` feature by default.
-- A feature record is a state machine, not a timeline. Chronology lives in `progress/`: the start in `progress/current.md` (`Start`) and the closing date in `progress/history.md` (`## YYYY-MM-DD ...` headings). Do not add date fields to a feature; add features through `scripts/feature.py add`, which only writes the contract keys.
-- Dependencies are declared, readiness is derived: `scripts/feature.py ready [--json]` lists the `pending` features whose `depends_on` are all satisfied (exit 3 when none are — the unattended-loop stop signal), `scripts/feature.py start` warns when dependencies are still open, and the validator rejects a `depends_on` id that exists neither live nor in the sprint archive.
+- A feature record is a state machine, not a timeline. Chronology lives in `progress/`: the start in `progress/current.md` (`Start`) and the closing date in `progress/history.md` (`## YYYY-MM-DD ...` headings). Do not add date fields to a feature; add features through `node dist/feature.js add`, which only writes the contract keys.
+- Dependencies are declared, readiness is derived: `node dist/feature.js ready [--json]` lists the `pending` features whose `depends_on` are all satisfied (exit 3 when none are — the unattended-loop stop signal), `node dist/feature.js start` warns when dependencies are still open, and the validator rejects a `depends_on` id that exists neither live nor in the sprint archive.
 - A feature can move to `done` only after implementation, tests, verifier, and review.
 - If blocked, record the blocker in `$HARNESS_WORKSPACE/progress/current.md` and set status to `blocked` only when the repo policy allows it.
 
@@ -170,10 +171,10 @@ The verifier should be executable and should fail loudly. Typical checks:
 2. Required project bridge files exist.
 3. Required harness files exist in `HARNESS_WORKSPACE`.
 4. `$HARNESS_WORKSPACE/feature_list.json` parses and has no more than one `in_progress` feature.
-5. `$HARNESS_WORKSPACE/feature_list.json` validates against the feature_list JSON Schema (`assets/schemas/feature_list.schema.json`), so keys outside the contract — for example invented `start_date` / `close_date` fields on a feature — are rejected. The schema sets `additionalProperties: false`; `scripts/validate_harness.py` runs this check and degrades to a non-blocking skip when `jsonschema` or the schema file is unavailable.
+5. `$HARNESS_WORKSPACE/feature_list.json` validates against the feature_list JSON Schema (`assets/schemas/feature_list.schema.json`), so keys outside the contract — for example invented `start_date` / `close_date` fields on a feature — are rejected. The schema sets `additionalProperties: false`; `node dist/validate_harness.js` runs this check via the bundled ajv validator (always available) and degrades to a non-blocking skip only when the schema file is unavailable.
 6. Tests run and pass from `PROJECT_ROOT`.
 7. Optional checks detect suspicious temporary files, broken docs, or missing reports.
-8. Optional advisory checks surface non-blocking gaps with a `NOTE:` and never change the exit code: a missing version stamp, a stale context graph, a `docs/business.md` that still matches the starter template (a signal that the mandatory bootstrap business interview was skipped and the doc was never filled with real context), or a `progress/`/`backlog/` report whose frontmatter is missing required keys or the `#handyman/` tag namespace (`scripts/validate_harness.py` runs this last check).
+8. Optional advisory checks surface non-blocking gaps with a `NOTE:` and never change the exit code: a missing version stamp, a stale context graph, a `docs/business.md` that still matches the starter template (a signal that the mandatory bootstrap business interview was skipped and the doc was never filled with real context), or a `progress/`/`backlog/` report whose frontmatter is missing required keys or the `#handyman/` tag namespace (`node dist/validate_harness.js` runs this last check).
 
 ## Anti Telephone Protocol
 

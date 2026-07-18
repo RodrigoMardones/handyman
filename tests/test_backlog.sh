@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 # Backlog-generator tests for the Handyman skill.
-# Exercises scripts/backlog.py against a fixture harness: impl / review (both
+# Exercises dist/backlog.js against a fixture harness: impl / review (both
 # verdicts) / explore entries, the no-overwrite invariant, and input guards.
 set -u
 
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
-BACKLOG="$SUITE_DIR/../handyman/scripts/backlog.py"
+DIST="$SUITE_DIR/../handyman/dist"
+RUN=(node "$DIST/backlog.js")
+
+# Self-contained: build the TS entrypoint so the suite runs from a fresh
+# checkout (deps installed) with no stale-dist hazard. Cheap incremental tsc.
+(cd "$SUITE_DIR/../handyman" && npm run build >/dev/null 2>&1)
 
 echo "Backlog-generator suite (test_backlog.sh)"
 
@@ -28,7 +33,7 @@ JSON
 start_case "impl: creates impl_<feature>.md with implementer frontmatter"
 T="$(mktemp -d)"
 write_harness "$T"
-OUT="$(python3 "$BACKLOG" --root "$T" impl cli_edit --date 2026-01-01 2>&1)"; CODE=$?
+OUT="$("${RUN[@]}" --root "$T" impl cli_edit --date 2026-01-01 2>&1)"; CODE=$?
 F="$T/.handyman/backlog/impl_cli_edit.md"
 if [ "$CODE" -eq 0 ] && [ -f "$F" ] \
   && grep -q "^feature: cli_edit$" "$F" \
@@ -45,7 +50,7 @@ rm -rf "$T"
 start_case "review: default verdict is approved with the approved tag"
 T="$(mktemp -d)"
 write_harness "$T"
-OUT="$(python3 "$BACKLOG" --root "$T" review cli_edit --date 2026-01-01 2>&1)"; CODE=$?
+OUT="$("${RUN[@]}" --root "$T" review cli_edit --date 2026-01-01 2>&1)"; CODE=$?
 F="$T/.handyman/backlog/review_cli_edit.md"
 if [ "$CODE" -eq 0 ] && [ -f "$F" ] \
   && grep -q "^status: approved$" "$F" \
@@ -61,7 +66,7 @@ rm -rf "$T"
 start_case "review: --status changes_requested flips status, tag, and verdict"
 T="$(mktemp -d)"
 write_harness "$T"
-python3 "$BACKLOG" --root "$T" review cli_edit --status changes_requested --date 2026-01-01 >/dev/null 2>&1
+"${RUN[@]}" --root "$T" review cli_edit --status changes_requested --date 2026-01-01 >/dev/null 2>&1
 F="$T/.handyman/backlog/review_cli_edit.md"
 if grep -q "^status: changes_requested$" "$F" \
   && grep -q "handyman/review/changes_requested" "$F" \
@@ -77,7 +82,7 @@ rm -rf "$T"
 start_case "explore: creates explore_<topic>.md with explorer frontmatter"
 T="$(mktemp -d)"
 write_harness "$T"
-OUT="$(python3 "$BACKLOG" --root "$T" explore di_wiring --date 2026-01-01 2>&1)"; CODE=$?
+OUT="$("${RUN[@]}" --root "$T" explore di_wiring --date 2026-01-01 2>&1)"; CODE=$?
 F="$T/.handyman/backlog/explore_di_wiring.md"
 if [ "$CODE" -eq 0 ] && [ -f "$F" ] \
   && grep -q "^topic: di_wiring$" "$F" \
@@ -93,10 +98,10 @@ rm -rf "$T"
 start_case "impl: never overwrites an existing entry"
 T="$(mktemp -d)"
 write_harness "$T"
-python3 "$BACKLOG" --root "$T" impl cli_edit --date 2026-01-01 >/dev/null 2>&1
+"${RUN[@]}" --root "$T" impl cli_edit --date 2026-01-01 >/dev/null 2>&1
 F="$T/.handyman/backlog/impl_cli_edit.md"
 printf '\nHAND EDITED\n' >> "$F"
-OUT="$(python3 "$BACKLOG" --root "$T" impl cli_edit --date 2026-01-01 2>&1)"; CODE=$?
+OUT="$("${RUN[@]}" --root "$T" impl cli_edit --date 2026-01-01 2>&1)"; CODE=$?
 if [ "$CODE" -eq 0 ] && grep -q "HAND EDITED" "$F" \
   && printf '%s' "$OUT" | grep -q "untouched"; then
   pass
@@ -109,7 +114,7 @@ rm -rf "$T"
 start_case "explore: rejects a path-traversal topic"
 T="$(mktemp -d)"
 write_harness "$T"
-OUT="$(python3 "$BACKLOG" --root "$T" explore "../escape" --date 2026-01-01 2>&1)"; CODE=$?
+OUT="$("${RUN[@]}" --root "$T" explore "../escape" --date 2026-01-01 2>&1)"; CODE=$?
 if [ "$CODE" -ne 0 ] && [ ! -e "$T/.handyman/escape.md" ]; then
   pass
 else
@@ -121,7 +126,7 @@ rm -rf "$T"
 start_case "no subcommand is a usage error (exit 2)"
 T="$(mktemp -d)"
 write_harness "$T"
-python3 "$BACKLOG" --root "$T" >/dev/null 2>&1; CODE=$?
+"${RUN[@]}" --root "$T" >/dev/null 2>&1; CODE=$?
 assert_exit 2 "$CODE" "missing subcommand"
 rm -rf "$T"
 
