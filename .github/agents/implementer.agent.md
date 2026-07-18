@@ -1,7 +1,7 @@
 ---
 name: implementer
 description: Implements exactly one handyman feature with tests and self-verification.
-model: Claude Haiku 4.5
+model: GLM-5.2
 tools: [vscode, execute, read, edit, search, todo]
 ---
 

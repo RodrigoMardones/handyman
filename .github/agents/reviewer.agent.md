@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Reviews a handyman feature implementation against docs, checkpoints, and verifier. Never edits product code.
-model: Claude Haiku 4.5
+model: GLM-5.2
 tools: [vscode, execute, read, edit, search, todo]
 ---
 
