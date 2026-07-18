@@ -20,13 +20,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Node.js
+        # The Handyman toolchain and test suite are now single-track Node:
+        # the CLIs ship as TypeScript compiled to handyman/dist/ (gitignored)
+        # and the doc/contract tests (tests/test_docs.js) run under node with
+        # ajv bundled in handyman/node_modules. Node, dependencies and a build
+        # are all required before the suite can run.
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.12"
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: handyman/package-lock.json
 
-      - name: Install test dependencies
-        run: python -m pip install --upgrade jsonschema
+      - name: Install Node dependencies
+        working-directory: handyman
+        run: npm ci
+
+      - name: Build TypeScript
+        working-directory: handyman
+        run: npm run build
 
       - name: Run test suite
         run: bash tests/run_tests.sh
@@ -39,8 +51,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Lint shell scripts
-        # assets/*.template.sh is intentionally excluded: it carries
-        # placeholder syntax that is filled in at scaffold time.
+        # Scope mirrors init.sh's run_lint exactly: init.sh + tests/ +
+        # handyman/scripts/. assets/*.template.sh is intentionally excluded
+        # (placeholder syntax filled in at scaffold time).
         run: |
           shellcheck --version
-          find scripts tests -name '*.sh' -print0 | xargs -0 shellcheck -S warning
+          find init.sh tests handyman/scripts -name '*.sh' -print0 | xargs -0 -r shellcheck -S warning

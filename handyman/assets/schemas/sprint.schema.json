@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/RodrigoMardones/handyman/assets/schemas/sprint.schema.json",
+  "title": "Handyman sprint document frontmatter",
+  "description": "The derived docs/sprints/sprint.<ID>.md is written by `sprint.js close`. This schema describes its YAML frontmatter (the parsed key/value object), the state surface the observer reads. The markdown body is prose and is not schema-validated.",
+  "type": "object",
+  "required": ["sprint", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "sprint": { "type": "string", "pattern": "^\\d{4}-SP\\d+$" },
+    "status": { "type": "string", "enum": ["closed"] },
+    "updated": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "closed_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$" },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true
+    }
+  }
+}

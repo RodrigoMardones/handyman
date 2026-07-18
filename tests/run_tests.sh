@@ -18,7 +18,7 @@ run_suite() {
   echo
 }
 
-run_suite python3 "$SUITE_DIR/test_docs.py"
+run_suite node "$SUITE_DIR/test_docs.js"
 run_suite bash "$SUITE_DIR/test_init.sh"
 run_suite bash "$SUITE_DIR/test_update.sh"
 run_suite bash "$SUITE_DIR/test_feature.sh"
@@ -30,6 +30,10 @@ run_suite bash "$SUITE_DIR/test_evals.sh"
 run_suite bash "$SUITE_DIR/test_preflight.sh"
 run_suite bash "$SUITE_DIR/test_metrics.sh"
 run_suite bash "$SUITE_DIR/test_sprint.sh"
+run_suite bash "$SUITE_DIR/test_toolbox.sh"
+run_suite node "$SUITE_DIR/test_toolbox_llm.js"
+run_suite node "$SUITE_DIR/test_toolbox_draft.js"
+run_suite bash "$SUITE_DIR/test_toolbox_serve.sh"
 
 echo "=============================================="
 if [ "$FAILED" -eq 0 ]; then
