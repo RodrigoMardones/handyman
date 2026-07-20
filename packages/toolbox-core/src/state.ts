@@ -47,21 +47,15 @@ export const INTAKE_MAX_BYTES = 256 * 1024;
 // data: SVG favicon, so script/style carry 'unsafe-inline' deliberately.
 export const CSP_HEADER =
   "default-src 'self'; script-src 'self' 'unsafe-inline'; " +
-  "style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'";
+  "style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' 'unsafe-eval'";
 
-/** CSP for the HTML documents (the pages), as opposed to CSP_HEADER which the
- *  JSON/SSE responses carry (lib/respond.ts). CSP constrains what a DOCUMENT
- *  may load, so the pages are the surface that actually needs it - serving it
- *  only on the APIs, where it is near-inert, is not protection. Identical to
- *  CSP_HEADER except that the marketing landing (app/page.tsx) embeds
- *  placeholder images from picsum.photos: editorial content, never script.
- *  Dropping those images would let this collapse back into CSP_HEADER.
- *  Applied in apps/web/next.config.ts headers(); pinned by
- *  tests/test_toolbox_serve.sh. */
-export const HTML_CSP_HEADER = CSP_HEADER.replace(
-  "img-src 'self' data:",
-  "img-src 'self' data: https://picsum.photos",
-);
+// The pages (HTML documents) carry this same CSP_HEADER via next.config.ts
+// headers(); CSP constrains what a DOCUMENT may load, so the pages are the
+// surface that actually needs it. There used to be a wider HTML_CSP_HEADER
+// (CSP_HEADER plus a picsum.photos img-src allowance) for the marketing
+// landing's placeholder photos; feature web_exp_revision retired the landing,
+// so the two constants collapsed back into this one. Pinned by
+// tests/test_toolbox_serve.sh (TS6b: no picsum allowance on any surface).
 
 export function isFile(path: string): boolean {
   try {

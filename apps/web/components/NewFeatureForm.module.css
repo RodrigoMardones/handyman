@@ -1,0 +1,233 @@
+/*
+ * Styles for the compose-a-request view (feature 71, new_feataure_view).
+ *
+ * Same discipline as AddFeatureForm.module.css / RunPanel.module.css:
+ * globals.css tokens only, both themes for free through [data-theme]. The
+ * tag-picker rules mirror IntakeClient.module.css's (the same picker, same
+ * visual language) so a request with references looks like the rest of the
+ * panel instead of introducing a third pattern.
+ */
+
+.panel {
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+.heading {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.hint {
+  margin: var(--space-2) 0 var(--space-4);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.hint code {
+  font-family: var(--font-mono);
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 0 0.25em;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.optional {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-sunken);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 6.5rem;
+}
+
+.input:focus-visible,
+.textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+/* --- Tag picker (references) ---------------------------------------------- */
+.tagPicker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tagChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  min-height: 1.5rem;
+  align-items: center;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.tagX {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  min-height: 24px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  line-height: 1;
+}
+
+.tagX:hover {
+  color: var(--text);
+}
+
+.tagList {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1);
+  max-height: 14rem;
+  overflow: auto;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+.tagList li {
+  padding: var(--space-1) 0;
+}
+
+.tagList label {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tagPath {
+  font-family: var(--font-mono);
+  word-break: break-all;
+}
+
+.tagSize {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.tagDone {
+  align-self: flex-start;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  font-size: 0.8rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* --- Run-agent toggle ------------------------------------------------------ */
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submit {
+  padding: var(--space-2) var(--space-5);
+  background: var(--accent);
+  color: var(--on-accent);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submit:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.ok,
+.error {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-card);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  border: 1px solid var(--border);
+  background: var(--bg-sunken);
+}
+
+.ok {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.error {
+  color: var(--text);
+  border-color: var(--border-strong);
+}

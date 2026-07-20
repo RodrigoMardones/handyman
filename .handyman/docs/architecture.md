@@ -44,9 +44,15 @@ Define que es "buen trabajo" en este repo. Los reviewers evaluan el codigo contr
      (`toolbox_state.ts` / `buildState`); la UI y todas las rutas HTTP viven en
      `apps/web`. El panel UMD legacy (`assets/toolbox_panel.js`) se retiro en la
      feature `toolbox_panel_retirement` y el server Node (`toolbox_serve.ts`) en
-     la feature 50, asi que `GET /` ya no es un placeholder: sirve la landing
-     unificada. Los writes siguen en los CLIs de rol (la unica ruta que escribe
-     disco es `POST /api/intake`).
+     la feature 50. La landing de marketing que vivia en `GET /` se retiro en
+     la feature `web_exp_revision` (69): `/` redirige a `/fleet`, la home real
+     del panel. Los writes siguen en los CLIs de rol; la superficie HTTP escribe
+     disco solo en `POST /api/intake` (draft) y `POST /api/feature` (append
+     validado, feature 60). La feature 70 (`panel_agent_runner`) agrega la
+     primera ruta que SPAWNEA un proceso: `POST /api/run` lanza una sesion de
+     agente headless sobre una feature pending de un root del registry, apagada
+     por defecto (opt-in `TOOLBOX_RUNNER=1`), un run global a la vez, prompt
+     construido server-side (`apps/web/lib/runner.ts`).
 2. **Politica de dependencias.** Minimalismo agresivo: solo stdlib de Node +
    `ajv` (validacion de los mismos JSON Schema) + `vis-network` (renderer de
    graphify, servido como UMD desde `node_modules` en `/vendor/vis-network.js`).
@@ -119,8 +125,10 @@ exit code. Toda mutacion de estado pasa por un CLI (`feature.js`, `sprint.js`,
   `127.0.0.1`: snapshots + señales + cola de features + timeline (`/api/state`),
   corpus para el BM25 en el cliente (`/api/corpus`), disponibilidad de proveedores
   LLM (`/api/providers`), markdown quick-view (`/api/md`), grafo graphify
-  (`/graph/<name>/...`), feed SSE (`/events`) y la vista `#/intake`. La unica ruta
-  que escribe disco es `POST /api/intake`; el resto es lectura.
+  (`/graph/<name>/...`), feed SSE (`/events`) y la vista `#/intake`. Las rutas
+  que escriben disco son `POST /api/intake` y `POST /api/feature`; con el opt-in
+  `TOOLBOX_RUNNER=1`, `POST /api/run` ademas spawnea un agente (feature 70). El
+  resto es lectura.
 - **Timestamps.** `feature.js start` sella `meta.started_at` (ISO 8601) y
   `feature.js done` sella `meta.done_at`; el cierre de sprint registra `closed_at`.
   Estos timestamps enriquecen las metricas del observador (throughput, verdicts).

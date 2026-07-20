@@ -92,10 +92,8 @@ export interface HarnessState {
   fleet?: { harnesses: number; unreadable: number; status_counts: Record<string, number> };
 }
 
-/** Status order is part of the contract (STATUSES in toolbox.ts): pending,
- *  in_progress, done, blocked. Keeping it here lets the kanban columns and
- *  the per-harness counts render in a stable, expected order. */
-const STATUS_ORDER = ["pending", "in_progress", "done", "blocked"] as const;
+/** Actionable work comes first; the bounded Done archive stays last. */
+const STATUS_ORDER = ["pending", "in_progress", "blocked", "done"] as const;
 
 /** Human labels for the status tokens used as kanban columns + chips. */
 const STATUS_LABEL: Record<string, string> = {
@@ -304,13 +302,28 @@ function mdButton(root: string, token: string, label: string): string {
   )}">${esc(label)}</button>`;
 }
 
+function compareDoneFeatures(a: HarnessFeature, b: HarnessFeature): number {
+  if (a.id === b.id) {
+    return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+  }
+  if (a.id === null) {
+    return 1;
+  }
+  if (b.id === null) {
+    return -1;
+  }
+  return b.id - a.id;
+}
+
 /** Kanban column for one status: header (label + count) and the list of
  *  features in that status. The "in progress" column is the "features
  *  corriendo" surface the brief calls out; the others give it context. */
 function kanbanColumn(status: string, features: HarnessFeature[]): string {
   const inStatus = features.filter((feature) => feature.status === status);
   const count = inStatus.length;
-  const cards = inStatus
+  const emptyModifier = status !== "done" && count === 0 ? " kanban__column--empty" : "";
+  const visible = status === "done" ? [...inStatus].sort(compareDoneFeatures).slice(0, 5) : inStatus;
+  const cards = visible
     .map((feature) => {
       const idText = feature.id === null ? "-" : `#${feature.id}`;
       const blocked =
@@ -330,7 +343,11 @@ function kanbanColumn(status: string, features: HarnessFeature[]): string {
       </li>`;
     })
     .join("");
-  return `<section class="kanban__column kanban__column--${esc(status)}" aria-label="${esc(
+  const activity =
+    status === "done"
+      ? `<a class="kanban__activity" href="/timeline">View all ${esc(count)} in Activity</a>`
+      : "";
+  return `<section class="kanban__column kanban__column--${esc(status)}${emptyModifier}" aria-label="${esc(
     STATUS_LABEL[status] ?? status,
   )} column">
     <header class="kanban__column-head">
@@ -338,6 +355,7 @@ function kanbanColumn(status: string, features: HarnessFeature[]): string {
       <bdi class="kanban__column-count">${esc(count)}</bdi>
     </header>
     <ul class="kanban__column-body">${cards}</ul>
+    ${activity}
   </section>`;
 }
 
@@ -389,31 +407,17 @@ export function renderHarnessHtml(state: HarnessState, name: string): string {
   const harnesses = Array.isArray(state.harnesses) ? state.harnesses : [];
   const harness = harnesses.find((entry) => entry.project_name === name);
   if (!harness) {
-    return `<header class="harness-header">
-        <p class="harness-header__eyebrow">handyman toolBox</p>
-        <h1 class="harness-header__title">${esc(name)}</h1>
-      </header>
-      <p class="empty" role="note">unknown harness: ${esc(name)}</p>`;
+    return `<p class="empty" role="note">unknown harness: ${esc(name)}</p>`;
   }
   if (harness.error) {
-    return `<header class="harness-header">
-        <p class="harness-header__eyebrow">handyman toolBox</p>
-        <h1 class="harness-header__title">${esc(name)}</h1>
-      </header>
-      <p class="error" role="alert">ERROR: ${esc(harness.error)}</p>`;
+    return `<p class="error" role="alert">ERROR: ${esc(harness.error)}</p>`;
   }
   const root = harness.project_root || "";
   const mdLinks = MD_LINKS.map(([token, label]) => mdButton(root, token, label)).join("");
   const docs = DOC_FILES.map((doc) =>
     mdButton(root, `docs:${doc}.md`, doc),
   ).join("");
-  return `<header class="harness-header">
-      <p class="harness-header__eyebrow">handyman toolBox</p>
-      <h1 class="harness-header__title">${esc(name)}</h1>
-      <p class="harness-header__meta">Last refresh <bdi class="harness-header__ts">${fmtDate(
-        state.generated_at,
-      )}</bdi></p>
-    </header>
+  return `${queueSection(harness.features)}
     ${metaList(harness)}
     ${metricsStrip(harness.metrics)}
     ${signalsRow(harness.signals)}
@@ -425,6 +429,5 @@ export function renderHarnessHtml(state: HarnessState, name: string): string {
       <h2 class="section-title">Docs</h2>
       <div class="md-links__row">${docs}</div>
     </section>
-    ${queueSection(harness.features)}
     ${graphSection(name, harness.has_graph)}`;
 }

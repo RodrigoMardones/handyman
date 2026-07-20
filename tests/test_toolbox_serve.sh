@@ -220,27 +220,28 @@ fi
 # must not be able to read this process. Loopback Hosts pass, anything else is
 # 403. Previously verified by hand only; pinned here so removing the guard
 # fails the suite.
+# The positive control probes /fleet (a page that renders 200); `/` is a
+# redirect since feature web_exp_revision, which would couple this case to
+# the redirect status instead of the guard.
 start_case "a non-loopback Host header is rejected with 403 (DNS-rebinding guard)"
-EVIL_CODE="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: evil.example' "$URL")"
-LOOPBACK_CODE="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: localhost' "$URL")"
+EVIL_CODE="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: evil.example' "${URL}fleet")"
+LOOPBACK_CODE="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: localhost' "${URL}fleet")"
 if [ "$EVIL_CODE" = "403" ] && [ "$LOOPBACK_CODE" = "200" ]; then
   pass
 else
   fail "host guard drifted: evil.example -> $EVIL_CODE (want 403), localhost -> $LOOPBACK_CODE (want 200)"
 fi
 
-# --- TS1: GET / (unified Next.js landing, feature toolbox_serve_decommission) ---
-# The retired-panel placeholder served by the old Node observer was an
-# interim state during the strangler migration. Feature 50
-# (toolbox_serve_decommission) made the Next standalone process the single
-# entrypoint, so `/` now serves the unified landing (apps/web/app/page.tsx)
-# instead of the placeholder. This case is the final carve-out of that
-# migration: the structural security contract the placeholder case carried
-# (no UMD React/htm/marked/dompurify/minisearch vendors, no external
-# scripts, no legacy `id="root"` UMD mount) is preserved against the landing
-# body. The migrated panel-asset cases these used to point at still live in
-# the Next-app suites below; only the placeholder-specific assertions are
-# inverted here (the landing is SSR/RSC HTML, not a UMD React mount).
+# --- TS1: GET / (root redirect, feature web_exp_revision) --------------------
+# Feature 50 (toolbox_serve_decommission) made the Next standalone process
+# the single entrypoint; feature web_exp_revision then retired the marketing
+# landing that lived at `/` (a localhost observer has one visitor, its
+# operator), so `/` now redirects to /fleet, the panel's home view. The
+# structural security contract the landing case carried (no UMD
+# React/htm/marked/dompurify/minisearch vendors, no external scripts, no
+# legacy `id="root"` UMD mount) is preserved against the FOLLOWED body, the
+# page `/` actually lands on. The migrated panel-asset cases these used to
+# point at still live in the Next-app suites below.
 #   - panel asset JS / sparkline / fmt helpers   -> test_web_fleet.sh (renderFleetHtml)
 #   - anti-flash theme script + 3-state control  -> test_web_timeline_search.sh (theme keeps hw-theme:1 + layout injects anti-flash snippet)
 #   - two static live regions / reduced-motion   -> test_web_timeline_search.sh (ToolboxShell renders both static live regions)
@@ -248,15 +249,17 @@ fi
 #   - actionable empty-state hints               -> test_web_fleet.sh / test_web_harness.sh (render*Html fixtures)
 #   - command palette (cmdk, MiniSearch-ranked)  -> test_web_timeline_search.sh (palette builds view/harness/doc actions)
 #   - single document keydown listener + guard   -> test_web_timeline_search.sh (shortcut interpreter) + test_web_intake_ask.sh (exactly ONE document.addEventListener('keydown'))
-start_case "GET / serves the unified Next.js landing (no UMD vendors, same-origin only)"
-BODY="$(curl -s "$URL")"
-# The landing embeds placeholder marketing images from picsum.photos (an
-# `<img src="https://picsum.photos/...">`), which is benign editorial
-# content, NOT script execution. The security contract this case carries is
-# "no external SCRIPT execution and no retired UMD vendors" — so the
-# external-src check is scoped to `<script ... src="https://...">`, not to
-# every src attribute.
-if printf '%s' "$BODY" | grep -qi '<html' \
+start_case "GET / redirects to /fleet and the home body keeps the security contract"
+ROOT_CODE="$(curl -s -o /dev/null -w '%{http_code}' "$URL")"
+ROOT_LOC="$(curl -s -D - -o /dev/null "$URL" | tr -d '\r' | grep -i '^location:' | awk '{print $2}')"
+BODY="$(curl -sL "$URL")"
+case "$ROOT_CODE" in
+  307|308) REDIR_OK=yes ;;
+  *) REDIR_OK=no ;;
+esac
+printf '%s' "$ROOT_LOC" | grep -q '/fleet$' || REDIR_OK=no
+if [ "$REDIR_OK" = "yes" ] \
+  && printf '%s' "$BODY" | grep -qi '<html' \
   && ! printf '%s' "$BODY" | grep -q '/vendor/react.js' \
   && ! printf '%s' "$BODY" | grep -q '/vendor/react-dom.js' \
   && ! printf '%s' "$BODY" | grep -q '/vendor/htm.js' \
@@ -267,7 +270,7 @@ if printf '%s' "$BODY" | grep -qi '<html' \
   && ! printf '%s' "$BODY" | grep -qE '<script[^>]*src="https?://'; then
   pass
 else
-  fail "landing body missing/wrong: $(printf '%s' "$BODY" | head -5)"
+  fail "root redirect broken: code=$ROOT_CODE loc=$ROOT_LOC body: $(printf '%s' "$BODY" | head -5)"
 fi
 
 # --- TS2: state --------------------------------------------------------------
@@ -419,34 +422,29 @@ fi
 # exactly what happened between features 49 and 50, when the Node observer
 # (whose send() applied CSP to its HTML) was retired and Next served the pages
 # with no CSP at all. So both surfaces are asserted:
-#   - pages  -> HTML_CSP_HEADER (apps/web/next.config.ts headers()), which is
-#               CSP_HEADER plus the landing's picsum.photos placeholder images
-#   - JSON   -> the stricter CSP_HEADER (apps/web/lib/respond.ts), which must
-#               NOT pick up the image allowance
+#   - pages  -> CSP_HEADER via apps/web/next.config.ts headers()
+#   - JSON   -> the same CSP_HEADER from apps/web/lib/respond.ts
+# Feature web_exp_revision retired the marketing landing and with it the
+# picsum.photos img-src allowance (the old HTML_CSP_HEADER): the two
+# constants collapsed back into one, so NO surface may carry picsum now.
+# Two real pages are probed (/fleet and /timeline) instead of `/`, which is
+# a redirect since that same feature.
 start_case "HTML pages and API responses both carry Content-Security-Policy default-src 'self'"
 csp_of() { curl -s -D - -o /dev/null "$1" | grep -i '^content-security-policy:'; }
-CSP_ROOT="$(csp_of "${URL}")"
+CSP_TIMELINE="$(csp_of "${URL}timeline")"
 CSP_FLEET="$(csp_of "${URL}fleet")"
 CSP_API="$(csp_of "${URL}api/state")"
 CSP_OK=yes
-for header in "$CSP_ROOT" "$CSP_FLEET" "$CSP_API"; do
+for header in "$CSP_TIMELINE" "$CSP_FLEET" "$CSP_API"; do
   printf '%s' "$header" | grep -qi "default-src 'self'" || CSP_OK=no
   printf '%s' "$header" | grep -qi "script-src" || CSP_OK=no
   printf '%s' "$header" | grep -qi "style-src" || CSP_OK=no
+  printf '%s' "$header" | grep -qi "picsum" && CSP_OK=no
 done
-# The page CSP must actually CARRY the picsum allowance, and the API CSP must
-# NOT. Asserting only the shared directives above would go green if
-# HTML_CSP_HEADER's .replace ever silently no-ops (e.g. CSP_HEADER's img-src
-# clause gets reworded): pages would fall back to plain CSP_HEADER, every
-# sub-assertion would still pass, and the landing's images would be blocked -
-# the same "green while broken" shape this case exists to catch.
-printf '%s' "$CSP_ROOT" | grep -qi "picsum" || CSP_OK=no
-printf '%s' "$CSP_FLEET" | grep -qi "picsum" || CSP_OK=no
-printf '%s' "$CSP_API" | grep -qi "picsum" && CSP_OK=no
 if [ "$CSP_OK" = "yes" ]; then
   pass
 else
-  fail "CSP gap: / -> $(printf '%s' "$CSP_ROOT" | head -c 80) | /fleet -> $(printf '%s' "$CSP_FLEET" | head -c 80) | /api/state -> $(printf '%s' "$CSP_API" | head -c 80)"
+  fail "CSP gap: /timeline -> $(printf '%s' "$CSP_TIMELINE" | head -c 80) | /fleet -> $(printf '%s' "$CSP_FLEET" | head -c 80) | /api/state -> $(printf '%s' "$CSP_API" | head -c 80)"
 fi
 
 # --- TS6c: safe markdown render (Plan C) [RETIRED, feature ------------------

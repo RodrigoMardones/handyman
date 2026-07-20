@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { HTML_CSP_HEADER } from "@handyman/toolbox-core";
+import { CSP_HEADER } from "@handyman/toolbox-core";
 
 /**
  * proxy.ts holds the per-request Host guard (the only request-level logic left
@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/((?!api/|events).*)",
-        headers: [{ key: "Content-Security-Policy", value: HTML_CSP_HEADER }],
+        headers: [{ key: "Content-Security-Policy", value: CSP_HEADER }],
       },
     ];
   },

@@ -9,11 +9,10 @@ import "./globals.css";
  * zero paths had a page.tsx, so every request fell through to proxy.ts and
  * was served by the Node upstream untouched.
  *
- * Feature toolbox_next_landing added app/page.tsx, which "steals" exactly
- * the `/` route into Next. Every other path (every JSON endpoint, the
- * legacy panel's own routes, /events) still has no matching page.tsx and
- * keeps falling through proxy.ts to the Node server, so the strangler
- * pattern is unchanged outside of this one route.
+ * Feature toolbox_next_landing added app/page.tsx as a marketing landing;
+ * feature 50 then made this Next process the single entrypoint, and feature
+ * web_exp_revision retired the landing, so app/page.tsx is now just a
+ * redirect to /fleet, the panel's home view.
  */
 export const metadata: Metadata = {
   title: "handyman toolBox, a live observer for agent harness fleets",

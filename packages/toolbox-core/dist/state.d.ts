@@ -2,16 +2,6 @@ export declare const DEBOUNCE_MS = 250;
 export declare const TAG_MAX_IN_DRAFT = 12;
 export declare const INTAKE_MAX_BYTES: number;
 export declare const CSP_HEADER: string;
-/** CSP for the HTML documents (the pages), as opposed to CSP_HEADER which the
- *  JSON/SSE responses carry (lib/respond.ts). CSP constrains what a DOCUMENT
- *  may load, so the pages are the surface that actually needs it - serving it
- *  only on the APIs, where it is near-inert, is not protection. Identical to
- *  CSP_HEADER except that the marketing landing (app/page.tsx) embeds
- *  placeholder images from picsum.photos: editorial content, never script.
- *  Dropping those images would let this collapse back into CSP_HEADER.
- *  Applied in apps/web/next.config.ts headers(); pinned by
- *  tests/test_toolbox_serve.sh. */
-export declare const HTML_CSP_HEADER: string;
 export declare function isFile(path: string): boolean;
 export declare function readText(path: string): string | null;
 /** True when `root` is a registered harness project root. */

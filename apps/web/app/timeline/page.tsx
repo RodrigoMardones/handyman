@@ -1,5 +1,5 @@
+import { AppNav } from "../../components/AppNav";
 import { TimelineLive } from "../../components/TimelineLive";
-import { ToolboxShell } from "../../components/ToolboxShell";
 import { getRuntime } from "../../lib/runtime";
 import { getBuildState } from "../../lib/toolboxState";
 import type { TimelineState } from "./timelineHtml";
@@ -46,24 +46,7 @@ export default async function TimelinePage() {
 
   return (
     <main className={styles.page}>
-      <nav className={styles.nav} aria-label="Primary">
-        <a className={styles.brand} href="/">
-          <span className={styles.brandMark}>handyman</span>
-          <span className={styles.brandName}>toolBox</span>
-        </a>
-        <ul className={styles.navLinks}>
-          <li>
-            <a href="/fleet">Fleet</a>
-          </li>
-          <li>
-            <a href="/timeline" aria-current="page">Timeline</a>
-          </li>
-          <li>
-            <a href="/search">Search</a>
-          </li>
-        </ul>
-        <ToolboxShell harnesses={shellHarnesses} />
-      </nav>
+      <AppNav harnesses={shellHarnesses} activeItem="Activity" currentKind="page" />
 
       {!ok ? (
         <section className={styles.down} role="alert">

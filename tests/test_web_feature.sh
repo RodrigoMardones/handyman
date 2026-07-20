@@ -222,25 +222,26 @@ else
   fail "the panel-only guards leaked into the shared core write"
 fi
 
-# --- TWF11: the form is a sibling of HarnessLive, not markup inside it ------
-# HarnessLive owns its region via dangerouslySetInnerHTML derived from live
-# state; anything hand-written into that node is clobbered on the next tick.
-start_case "the form is a React sibling and never writes into the live region"
-if grep -q '<AddFeatureForm' "$PAGE" \
-  && grep -q 'export function AddFeatureForm' "$FORM" \
+# --- TWF11: the legacy form remains isolated but is no longer mounted here --
+# /harness/[name]/new is the single entry for new work. Keep the component
+# available for other consumers while preventing the duplicate form from
+# returning to the detail or writing into HarnessLive's derived region.
+start_case "AddFeatureForm remains isolated but is absent from the harness detail"
+if grep -q 'export function AddFeatureForm' "$FORM" \
+  && ! grep -q 'AddFeatureForm' "$PAGE" \
   && ! code_only "$FORM" | grep -qE 'innerHTML|insertAdjacentHTML'; then
   pass
 else
-  fail "the form must not inject markup into the live region"
+  fail "the legacy form must remain safe without mounting in /harness/[name]"
 fi
 
-# --- TWF12: the page resolves the root server-side from state --------------
-start_case "the page passes project_root from state, never a hand-typed root"
+# --- TWF12: the page still resolves runner root server-side from state ------
+start_case "the page passes project_root from state to RunPanel, never a hand-typed root"
 if grep -q 'project_name === name' "$PAGE" && grep -q 'project_root' "$PAGE" \
-  && grep -q 'root ? <AddFeatureForm' "$PAGE"; then
+  && grep -q '<RunPanel' "$PAGE" && grep -q 'root={root}' "$PAGE"; then
   pass
 else
-  fail "the page must resolve project_root from the state it already has"
+  fail "the page must resolve the runner root from the state it already has"
 fi
 
 # --- TWF13: the form relies on /events for the refresh ----------------------

@@ -293,6 +293,24 @@ Los 2 casos del carve-out se resolvieron asi:
   las APIs **no** la hereda. Si algun dia se quitan esas imagenes de la
   landing, las dos constantes colapsan en una.
 
+**Addendum (feature `web_exp_revision`, 69).** Ese dia llego: la landing de
+marketing se retiro (un observer localhost tiene un solo visitante, su
+operador) y `app/page.tsx` es ahora un redirect a `/fleet`. Los dos casos de
+arriba mutaron en `test_toolbox_serve.sh`:
+
+- TS1 pasa a `GET / redirects to /fleet...`: aserta 307/308 + `Location`
+  terminando en `/fleet`, y conserva el contrato estructural (sin vendors
+  UMD, sin `id="root"`, sin `<script src="https?://">`) contra el body
+  SEGUIDO (`curl -sL`), es decir la pagina en la que `/` aterriza.
+- `HTML_CSP_HEADER` desaparecio de `@handyman/toolbox-core`: sin las
+  imagenes de picsum no hay concesion que derivar y las paginas llevan el
+  mismo `CSP_HEADER` que las APIs. TS6b prueba dos paginas reales
+  (`/timeline`, `/fleet`, ya no `/` que es redirect) mas `/api/state`, y
+  aserta que **ninguna** superficie lleva `picsum`.
+- `test_web_landing.sh` se elimino entero con la landing (era estructural
+  sobre `app/page.tsx` y el scan de em-dashes del tasteskill); la suite web
+  restante cubre las views reales.
+
 Casos nuevos en la feature 50: el guard de Host (`Host: evil.example` -> 403,
 `Host: localhost` -> 200) contra el servidor real, que antes no tenia
 cobertura. Y en las suites `test_web_*.sh`, las 11 aserciones que grep-eaban
@@ -329,6 +347,25 @@ tiene contador de llamadas y ruteo por prompt para seis relays, y sus bytes
 estan pinneados por el oraculo black-box. Compartir uno solo haria que un
 cambio en la suite del CLI pudiera romper la paridad de serve.
 
+## Runner del panel (feature 70, `panel_agent_runner`)
+
+`tests/test_web_run.sh` cubre la primera superficie del panel que spawnea un
+proceso (`POST /api/run`) sin lanzar jamas un agente real: `TOOLBOX_RUNNER_CMD`
+apunta a un script fixture que imprime su argv al log del run (probando que el
+prompt server-side y el flag `--dangerously-skip-permissions` llegan al hijo) y
+duerme solo cuando el prompt menciona `delta` (para poder testear 409 y stop).
+
+Dos boots a proposito, porque el opt-in se lee por request del env del proceso
+y un server ya booteado no puede cambiarlo:
+
+- **Boot A (sin `TOOLBOX_RUNNER`):** el default observer. `GET /api/run`
+  reporta `enabled:false`, y `POST` es **403 antes que cualquier otra guarda**.
+- **Boot B (`TOOLBOX_RUNNER=1` + fixture):** guardas (root 400/400, feature
+  422x3), lanzamiento sobre `beta` (exit 0, log en
+  `<workspace>/progress/run-beta.log` del harness OBJETIVO), un run a la vez
+  (409 mientras `delta` corre), `DELETE` con SIGTERM al grupo de procesos, y
+  el heading del RunPanel presente en `/harness/proj1`.
+
 ## Anti-patterns
 
 - Marcar `done` con tests en rojo o con el verificador != 0.
@@ -339,3 +376,5 @@ cambio en la suite del CLI pudiera romper la paridad de serve.
 - Confiar en el draft del observador sin revision humana: `POST /api/draft` nunca
   escribe disco; solo `POST /api/intake` persiste el draft revisado, y la feature entra
   a `feature_list.json` via `node dist/feature.js add`, no por spawn desde el panel.
+  (El spawn de la feature 70 es otra cosa: lanza una SESION de agente sobre una feature
+  ya registrada y pending; el intake sigue sin spawnear nada.)

@@ -83,6 +83,17 @@ Handyman define seis modos de operacion: `analyze`, `bootstrap`, `run-feature`,
     el panel — algo que elija la proxima feature y encadene stages sin que un humano
     dispare cada paso. Ese dia esto deja de ser cierto y hay que decidirlo como cambio de
     producto, no colarlo por debajo (`analisis-mcp-toolbox.md` §6.5).
+  - **Reescritura por la feature 70 (`panel_agent_runner`, 2026-07-20).** Ese dia llego y
+    se decide aqui: el panel ES un runner, con limites declarados. Un humano dispara cada
+    run desde la UI (una feature pending, un harness del registry); la sesion spawneada
+    (el CLI `claude` headless con la skill handyman) SI encadena stages sola —
+    implementacion, verificador, review, cierre — que es exactamente el bucle que esta
+    clausula excluia. Los limites que siguen en pie: el runner esta **apagado por
+    defecto** (`toolbox.js serve` sin `TOOLBOX_RUNNER=1` sigue siendo el observer puro),
+    corre **un run a la vez**, **no elige** la proxima feature ni encadena una feature con
+    la siguiente, y solo actua sobre roots del registry. El norte que motiva el cambio:
+    el panel como hub multi-repo que centraliza ideas y ejecuta desde un solo lugar
+    (`backlog/explore_web_ux_mejoras.md` A2, `analisis-mcp-toolbox.md` §6).
 - **No es para tareas pequenas.** Implementaciones puntuales sin flujo formal de harness no
   necesitan Handyman.
 - **No versiona el estado operativo.** En modo local solo `.handyman/docs/` se versiona; el

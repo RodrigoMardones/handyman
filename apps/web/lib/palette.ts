@@ -37,11 +37,13 @@ export interface PaletteAction {
 /** Max rows the palette shows (same cap as the legacy panel). */
 export const PALETTE_MAX_RESULTS = 12;
 
-/** Views that exist as real pages today. /intake and /ask join in 48. */
+/** Global destinations shared with AppNav. */
 export const PALETTE_VIEWS: ReadonlyArray<{ id: string; label: string; href: string }> = [
-  { id: "view_fleet", label: "go to fleet", href: "/fleet" },
-  { id: "view_timeline", label: "go to timeline", href: "/timeline" },
-  { id: "view_search", label: "go to search", href: "/search" },
+  { id: "view_fleet", label: "go to Fleet", href: "/fleet" },
+  { id: "view_timeline", label: "go to Activity", href: "/timeline" },
+  { id: "view_search", label: "go to Find", href: "/search" },
+  { id: "view_intake", label: "go to Draft", href: "/intake" },
+  { id: "view_ask", label: "go to Ask", href: "/ask" },
 ];
 
 /** Workspace artifacts /api/md serves 1:1 (resolveMd whitelist tokens). */
@@ -60,7 +62,7 @@ export function buildPaletteActions(harnesses: PaletteHarness[]): PaletteAction[
   const actions: PaletteAction[] = PALETTE_VIEWS.map((view) => ({
     id: view.id,
     label: view.label,
-    keywords: "view navigate",
+    keywords: `view navigate ${view.href.slice(1)}`,
     command: { type: "navigate", href: view.href },
   }));
   for (const harness of harnesses) {

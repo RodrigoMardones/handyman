@@ -1,6 +1,6 @@
-import { AddFeatureForm } from "../../../components/AddFeatureForm";
+import { AppNav } from "../../../components/AppNav";
 import { HarnessLive } from "../../../components/HarnessLive";
-import { ToolboxShell } from "../../../components/ToolboxShell";
+import { RunPanel } from "../../../components/RunPanel";
 import { getRuntime } from "../../../lib/runtime";
 import { getBuildState } from "../../../lib/toolboxState";
 import type { HarnessState } from "../harnessHtml";
@@ -50,39 +50,25 @@ export default async function HarnessPage({ params }: { params: Promise<{ name: 
   // The register action needs the harness's project_root, which is the token
   // /api/feature checks against the registry. Resolved server-side from the
   // state we already have: no extra fetch, and no root typed by hand.
-  const root =
-    (state.harnesses ?? []).find((entry) => entry.project_name === name)?.project_root ?? "";
+  const snapshot = (state.harnesses ?? []).find((entry) => entry.project_name === name);
+  const root = snapshot?.project_root ?? "";
+  const pending = (snapshot?.features ?? [])
+    .filter((feature) => feature.status === "pending")
+    .map((feature) => feature.name);
+  // Read per request (the page is force-dynamic): the same server answers
+  // honestly whether it was booted as observer or as observer+runner.
+  const runnerOn = process.env.TOOLBOX_RUNNER === "1";
 
   return (
     <main className={styles.page}>
-      <nav className={styles.nav} aria-label="Primary">
-        <a className={styles.brand} href="/">
-          <span className={styles.brandMark}>handyman</span>
-          <span className={styles.brandName}>toolBox</span>
-        </a>
-        <ul className={styles.navLinks}>
-          <li>
-            <a href="/fleet">Fleet</a>
-          </li>
-          <li>
-            <a href={`/harness/${encodeURIComponent(name)}`} aria-current="page">
-              Harness
-            </a>
-          </li>
-          <li>
-            <a href="/timeline">Timeline</a>
-          </li>
-          <li>
-            <a href="/search">Search</a>
-          </li>
-        </ul>
-        <ToolboxShell
-          harnesses={(state.harnesses ?? []).map((harness) => ({
-            name: harness.project_name,
-            root: harness.project_root,
-          }))}
-        />
-      </nav>
+      <AppNav
+        harnesses={(state.harnesses ?? []).map((harness) => ({
+          name: harness.project_name,
+          root: harness.project_root,
+        }))}
+        activeItem="Fleet"
+        currentKind="location"
+      />
 
       {!ok ? (
         <section className={styles.down} role="alert">
@@ -94,6 +80,30 @@ export default async function HarnessPage({ params }: { params: Promise<{ name: 
       ) : null}
 
       <div className={styles.harness}>
+        <header className={styles.contextHeader}>
+          <div className={styles.contextCopy}>
+            <div className={styles.breadcrumb} role="navigation" aria-label="Breadcrumb">
+              <ol>
+                <li>
+                  <a href="/fleet">Fleet</a>
+                </li>
+                <li aria-current="page">{name}</li>
+              </ol>
+            </div>
+            <h1 className={styles.title}>{name}</h1>
+          </div>
+          <a className={styles.primaryAction} href={`/harness/${encodeURIComponent(name)}/new`}>Add feature</a>
+        </header>
+        {root ? (
+          <div className={styles.actionBar}>
+            <RunPanel
+              root={root}
+              pending={pending}
+              enabled={runnerOn}
+              eventsUrl="/events"
+            />
+          </div>
+        ) : null}
         <HarnessLive
           name={name}
           eventsUrl="/events"
@@ -101,10 +111,6 @@ export default async function HarnessPage({ params }: { params: Promise<{ name: 
           mdUrl="/api/md"
           fallbackState={state}
         />
-        {/* Rendered only for a harness present in the registry: without a
-            project_root the POST could not pass isRegisteredRoot anyway, so
-            offering the form would be offering a guaranteed rejection. */}
-        {root ? <AddFeatureForm root={root} /> : null}
       </div>
     </main>
   );
