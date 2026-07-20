@@ -1,0 +1,11 @@
+==> run new_feataure_view @ 2026-07-20T14:12:27.248Z (panel, claude)
+Background tasks still running after 600s; terminating. Set CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0 to wait indefinitely.
+Implementer delegado y corriendo en segundo plano. Estado del flujo hasta ahora:
+
+- **Preflight y gate**: preflight OK. `./init.sh` fallaba, pero no por el árbol: esta sesión fue spawneada por el panel (`next dev`) y heredó `NODE_ENV=development` + internals `__NEXT_*`, lo que rompe `next build`. Con entorno saneado (`env -i ...`) el verificador sale 0. El gap del runner (spawn con `env: process.env`) quedó documentado en `progress/current.md` como mejora futura, no se toca en esta feature.
+- **Intake**: los acceptance vagos de la feature 71 se reemplazaron por 5 criterios observables vía `feature.js acceptance` (intent preservado: una vista que ordena crear una request, adjuntar referencias a archivos del workspace, y auto-asignarla a un agente vía el runner de la feature 70).
+- **Start**: feature 71 `in_progress`, plan y log en `progress/current.md`.
+- **Implementación**: delegada a un implementer (sonnet) con el contrato, el mapa técnico y la instrucción de dejar `backlog/impl_new_feataure_view.md` con tests y verificador verde.
+
+Espero el reporte del implementer para delegar la review.
+==> run new_feataure_view exited code=0 signal=none

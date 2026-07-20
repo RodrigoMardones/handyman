@@ -831,6 +831,118 @@
         "started_at": "2026-07-20T00:42:50.938Z",
         "done_at": "2026-07-20T00:52:21.373Z"
       }
+    },
+    {
+      "id": 69,
+      "name": "web_exp_revision",
+      "title": "revisar como mejorar funcionalidades del toolbox web",
+      "description": "",
+      "acceptance": [
+        "apps/web: / redirige a /fleet; la landing de marketing (page.module.css, ScrollReveal) queda eliminada",
+        "tests/run_tests.sh ya no invoca test_web_landing.sh; test_toolbox_serve.sh valida el redirect de /; ./init.sh exit 0",
+        "backlog/ contiene informe UX con mejoras propuestas (navegacion, jerarquia visual, panel-como-agente) nombradas, no construidas"
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-20T04:02:07.967Z",
+        "done_at": "2026-07-20T04:19:17.970Z"
+      }
+    },
+    {
+      "id": 70,
+      "name": "panel_agent_runner",
+      "title": "A2: disparar una sesion de agente sobre una feature desde el panel",
+      "description": "Decision 2026-07-20 (informe explore_web_ux_mejoras.md, analisis-mcp-toolbox.md §6): el panel actua como agente. Motor: claude CLI headless spawneado por el server Next en el root del harness elegido. Permisos: bypassPermissions. Alcance: todo el registry. Runner apagado por defecto (opt-in TOOLBOX_RUNNER=1); TOOLBOX_RUNNER_CMD inyecta un comando fake para tests. Cruza la linea 'no es un runner' de business.md: entra como decision declarada.",
+      "acceptance": [
+        "POST /api/run spawnea el agente headless (claude -p --dangerously-skip-permissions) en el root registrado con la feature pending elegida; prompt construido server-side; 403 si TOOLBOX_RUNNER!=1; guards de root/feature/concurrencia (1 run global, 409)",
+        "GET /api/run reporta idle/running/exited con tail del log (escrito en el workspace del harness objetivo); DELETE /api/run termina el run",
+        "la vista /harness/[name] permite disparar y parar el run y muestra su estado",
+        "business.md y architecture.md declaran el nuevo limite: observer por defecto, runner con opt-in explicito",
+        "./init.sh exit 0 con casos nuevos cubriendo guards y flujo completo contra un comando fake"
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-20T06:08:38.966Z",
+        "done_at": "2026-07-20T06:35:40.282Z"
+      }
+    },
+    {
+      "id": 71,
+      "name": "new_feataure_view",
+      "title": "new_feataure_view",
+      "description": "",
+      "acceptance": [
+        "GET /harness/[name]/new existe enlazada desde /harness/[name] y ordena en una sola vista el espacio de crear una request: name/title/acceptance, seleccion de referencias a archivos del workspace y la opcion de asignarla a un agente",
+        "las referencias se eligen desde GET /api/files (root registrado, mismo picker que intake) y llegan a la feature registrada via POST /api/feature como rutas relativas dentro de description; verificable leyendo feature_list.json tras el POST; sin referencias seleccionadas la description queda sin seccion de refs",
+        "con TOOLBOX_RUNNER=1 y el toggle 'run agent' activo, un registro exitoso encadena POST /api/run sobre la feature recien creada (auto-asignacion); con el runner apagado la vista muestra el hint de opt-in y no dispara ningun run",
+        "tests/test_web_new_feature.sh cubre: composicion de la vista (link desde /harness/[name], sin assets externos), refs presentes en la feature registrada, cadena register->run contra TOOLBOX_RUNNER_CMD fake, y el camino runner-off; registrada en tests/run_tests.sh; ningun test toca la red",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0"
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-20T15:39:08.834Z",
+        "done_at": "2026-07-20T16:07:39.787Z"
+      }
+    },
+    {
+      "id": 72,
+      "name": "runner_observer",
+      "title": "runner obsever",
+      "description": "",
+      "acceptance": [
+        "apps/web/lib/runner.ts exporta una tabla declarativa RUNNER_ENGINES (patron PROVIDER_REGISTRY) con al menos claude (CLI local, siempre disponible) y glm (GLM-5.2 via la integracion Z.ai existente: el child recibe ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic, ANTHROPIC_AUTH_TOKEN=Z_AI_API_KEY y ANTHROPIC_MODEL=Z_AI_MODEL??glm-5.2); glm sin Z_AI_API_KEY se reporta available:false con hint de instalacion. GET /api/run devuelve engines [{id,label,available}] y POST acepta engine opcional (default claude) respondiendo 422 ante engine desconocido o no disponible.",
+        "El child spawneado recibe env saneado: sin NODE_ENV ni NEXT_*/__NEXT_* del dev server (gap documentado en run-new_feataure_view.log) mas las variables del engine elegido; verificado con el fixture TOOLBOX_RUNNER_CMD volcando su env al log.",
+        "GET /api/run expone runs: historial en memoria del proceso (feature, root, engine, started_at, phase, exit; run actual incluido, cap documentado) y RunPanel lo renderiza: que runner corre y que corrio, cada uno con su tarea.",
+        "POST /api/run acepta mode continue: relanza una feature in_progress con prompt de reanudacion construido server-side (retomar desde el estado en disco y cerrar el ciclo review+done); guards preservados (403 disabled, 409 run en curso, 422 si la feature no esta in_progress). RunPanel ofrece stop (existente), continue cuando el ultimo run salio y su feature sigue in_progress, y status visible (fase, exit, log tail).",
+        "NewFeatureForm auto-deriva name desde title con formatFeatureName puro exportado (minusculas, sin diacriticos, [^A-Za-z0-9_-] a _, colapsa y recorta _; el resultado matchea ^[A-Za-z0-9_-]+$) y deja de re-derivar si el usuario edita name a mano.",
+        "tests/test_web_run.sh cubre engines (lista, 422 engine desconocido, glm no disponible sin Z_AI_API_KEY, env saneado del child via fixture), mode continue (guards + prompt en argv) y runs history; tests/test_web_new_feature.sh cubre formatFeatureName; ambas registradas en tests/run_tests.sh; ningun test toca la red.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-20T14:41:57.828Z",
+        "done_at": "2026-07-20T15:38:53.613Z"
+      }
+    },
+    {
+      "id": 73,
+      "name": "web_harness_active_first",
+      "title": "Rediseñar el detalle del harness alrededor del trabajo activo",
+      "description": "Primera feature del informe UX post-71/72: una sola entrada para crear trabajo, acciones antes del archivo y Done compacto. Alcance limitado a /harness/[name]; navegación global y vocabulario completo quedan fuera.",
+      "acceptance": [
+        "apps/web/app/harness/[name]/page.tsx renderiza antes de HarnessLive un encabezado contextual server-rendered con breadcrumb Fleet / <harness>, H1 y la unica accion Add feature de la vista hacia /harness/[name]/new; AddFeatureForm deja de importarse y montarse en esta vista.",
+        "RunPanel aparece junto al encabezado y antes de la region live; cuando no hay features pending muestra un estado compacto No work ready sin repetir Add feature ni renderizar un select vacio, y cuando hay trabajo conserva engine, start/stop/resume, estado, log e historial existentes.",
+        "renderHarnessHtml ordena Queue antes de Workspace, Docs y Knowledge graph; pending, in_progress y blocked se renderizan completos, sus columnas vacias colapsan a encabezados compactos, mientras Done muestra como maximo las 5 features de id mas reciente, conserva el conteo total y enlaza View all <n> in Activity a /timeline.",
+        "El layout usa los tokens y CSS existentes, no agrega dependencias, mantiene foco visible y targets WCAG 2.2; en verificacion Playwright a 1440x900 y 390x844 el H1, Add feature y el estado del runner aparecen en el primer viewport sin solaparse y el contenedor del harness no produce overflow horizontal. El overflow de la navegacion global queda fuera para web_shared_navigation.",
+        "tests/test_web_harness.sh cubre encabezado/CTA unica/orden/columnas vacias compactas/Done cap/enlace Activity/ausencia de AddFeatureForm y tests/test_web_run.sh preserva el contrato del runner; ambas suites quedan registradas sin red externa.",
+        "bash tests/test_web_harness.sh, bash tests/test_web_run.sh, bash tests/run_tests.sh y ./init.sh pasan."
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-20T16:17:12.880Z",
+        "done_at": "2026-07-20T16:56:37.819Z"
+      }
+    },
+    {
+      "id": 74,
+      "name": "web_shared_navigation",
+      "title": "Unificar la navegación global y corregir el overflow móvil",
+      "description": "Segunda feature del informe UX post-71/72. Sustituye siete barras divergentes por una navegación compartida y accesible; conserva el contexto del harness en breadcrumb. El cambio de vocabulario dentro de páginas y acciones queda para web_action_vocabulary.",
+      "acceptance": [
+        "apps/web/components/AppNav.tsx y AppNav.module.css definen una barra global compartida con marca toolBox y exactamente cinco destinos unicos: Fleet (/fleet), Activity (/timeline), Find (/search), Draft (/intake) y Ask (/ask); las variantes desktop/mobile se derivan de la misma constante, renderizan una sola instancia de ToolboxShell y exponen un unico aria-current page o location visible en cada breakpoint.",
+        "Las paginas /fleet, /timeline, /search, /intake, /ask, /harness/[name] y /harness/[name]/new usan AppNav y dejan de duplicar markup/CSS de navegacion; las vistas harness marcan Fleet como ubicacion padre y conservan Harness/New feature en breadcrumb o acciones contextuales, no como destinos globales.",
+        "En desktop la lista global es visible y permanece en una sola linea. A 760px o menos esa lista se oculta y un control nativo details/summary llamado Menu expone una lista movil con los mismos cinco destinos; activacion por teclado, foco visible, comportamiento nativo de disclosure y targets WCAG 2.2 se conservan sin listener JavaScript nuevo.",
+        "La command palette incluye los cinco destinos con los mismos labels y hrefs globales; los atajos existentes continuan navegando a sus rutas y ToolboxShell mantiene exactamente un document keydown listener por pagina.",
+        "tests/test_web_navigation.sh cubre componente compartido, fuente unica de cinco destinos, aria-current visible por breakpoint, adopcion en siete paginas, menu movil y ausencia del nav duplicado; las suites de timeline/search, intake/ask, fleet y harness preservan sus contratos sin red externa.",
+        "Verificacion Playwright en /fleet, /timeline, /search, /intake, /ask, /harness/handyman y /harness/handyman/new demuestra a 1440x900 cinco links visibles en una linea y a 390x844 nav.scrollWidth <= nav.clientWidth, sin solapamientos y con Menu operable por teclado; bash tests/run_tests.sh y ./init.sh pasan."
+      ],
+      "status": "in_progress",
+      "depends_on": [
+        73
+      ],
+      "meta": {
+        "started_at": "2026-07-20T17:01:10.138Z"
+      }
     }
   ]
 }

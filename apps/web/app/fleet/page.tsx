@@ -1,6 +1,6 @@
+import { AppNav } from "../../components/AppNav";
 import { FleetLive } from "../../components/FleetLive";
 import { FleetSummaryClient } from "../../components/FleetSummaryClient";
-import { ToolboxShell } from "../../components/ToolboxShell";
 import { getRuntime } from "../../lib/runtime";
 import { getBuildState } from "../../lib/toolboxState";
 import type { FleetState } from "./fleetHtml";
@@ -43,29 +43,14 @@ export default async function FleetPage() {
 
   return (
     <main className={styles.page}>
-      <nav className={styles.nav} aria-label="Primary">
-        <a className={styles.brand} href="/">
-          <span className={styles.brandMark}>handyman</span>
-          <span className={styles.brandName}>toolBox</span>
-        </a>
-        <ul className={styles.navLinks}>
-          <li>
-            <a href="/fleet" aria-current="page">Fleet</a>
-          </li>
-          <li>
-            <a href="/timeline">Timeline</a>
-          </li>
-          <li>
-            <a href="/search">Search</a>
-          </li>
-        </ul>
-        <ToolboxShell
-          harnesses={(state.harnesses ?? []).map((harness) => ({
-            name: harness.project_name,
-            root: harness.project_root,
-          }))}
-        />
-      </nav>
+      <AppNav
+        harnesses={(state.harnesses ?? []).map((harness) => ({
+          name: harness.project_name,
+          root: harness.project_root,
+        }))}
+        activeItem="Fleet"
+        currentKind="page"
+      />
 
       {!ok ? (
         <section className={styles.down} role="alert">

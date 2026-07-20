@@ -1,0 +1,121 @@
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  width: 100%;
+  max-width: var(--max-width);
+  height: 68px;
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-4);
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  flex: 0 0 auto;
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.brandName {
+  color: var(--accent);
+}
+
+.desktopLinks,
+.mobileLinks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.desktopLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.navLink {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  text-decoration: none;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.navLink:hover {
+  color: var(--text);
+  background: var(--bg-sunken);
+}
+
+.navLink[aria-current] {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.navLink:focus-visible,
+.mobileMenu summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.mobileMenu {
+  display: none;
+}
+
+.mobileMenu summary {
+  min-height: 44px;
+  align-items: center;
+  padding-inline: var(--space-2);
+  color: var(--text);
+  cursor: pointer;
+  border-radius: var(--radius-pill);
+}
+
+@media (max-width: 760px) {
+  .nav {
+    height: 60px;
+    gap: var(--space-1);
+    padding-inline: var(--space-2);
+  }
+
+  .desktopLinks {
+    display: none;
+  }
+
+  .mobileMenu {
+    display: block;
+    position: relative;
+  }
+
+  .mobileMenu summary {
+    display: inline-flex;
+  }
+
+  .mobileMenu[open] .mobileLinks {
+    display: block;
+    position: absolute;
+    top: calc(100% + var(--space-1));
+    left: 0;
+    min-width: 180px;
+    padding: var(--space-1);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-panel);
+  }
+
+  .mobileMenu[open] .mobileLinks .navLink {
+    width: 100%;
+    min-height: 44px;
+  }
+}

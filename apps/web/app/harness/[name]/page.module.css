@@ -13,85 +13,6 @@
   color: var(--text);
 }
 
-/* --- Nav (reuses the landing's pill + radius language) --------------------- */
-.nav {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border);
-}
-
-.brand,
-.nav {
-  max-width: var(--max-width);
-  margin-inline: auto;
-}
-
-.nav {
-  padding-inline: var(--space-4);
-  height: 68px;
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.brand {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  font-weight: 700;
-  font-size: 1.05rem;
-  text-decoration: none;
-  color: var(--text);
-}
-
-.brandMark {
-  color: var(--accent);
-}
-
-.brandName {
-  letter-spacing: 0.01em;
-}
-
-.navLinks {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.navLinks a {
-  text-decoration: none;
-  font-size: 0.95rem;
-  color: var(--text-muted);
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-pill);
-  transition: color 120ms ease, background-color 120ms ease;
-}
-
-.navLinks a:hover {
-  color: var(--text);
-  background: var(--bg-sunken);
-}
-
-.navLinks a[aria-current="page"] {
-  color: var(--on-accent);
-  background: var(--accent);
-}
-
-@media (max-width: 640px) {
-  .nav {
-    height: 60px;
-  }
-  .navLinks {
-    gap: var(--space-2);
-  }
-}
-
 /* --- Upstream-unreachable banner ------------------------------------------ */
 .down {
   max-width: var(--max-width);
@@ -116,6 +37,105 @@
   max-width: var(--max-width);
   margin-inline: auto;
   padding: var(--space-5) var(--space-4) var(--space-7);
+  min-width: 0;
+}
+
+.contextHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.contextCopy {
+  min-width: 0;
+}
+
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.breadcrumb li + li::before {
+  content: "/";
+  margin-right: var(--space-2);
+  color: var(--border-strong);
+}
+
+.breadcrumb a {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--accent);
+}
+
+.breadcrumb a:focus-visible,
+.primaryAction:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.title {
+  margin: 0;
+  color: var(--text);
+  font-size: 2rem;
+  line-height: 1.1;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+
+.primaryAction {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.primaryAction:hover {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.actionBar {
+  min-width: 0;
+  margin-bottom: var(--space-5);
+}
+
+@media (max-width: 540px) {
+  .contextHeader {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .title {
+    font-size: 1.65rem;
+  }
+
+  .primaryAction {
+    width: 100%;
+  }
 }
 
 /* The rules below target the HTML emitted by renderHarnessHtml (plain class
@@ -355,6 +375,7 @@
 }
 
 .harness :global(.md-btn) {
+  min-height: 24px;
   font-family: inherit;
   font-size: 0.88rem;
   padding: 0.3em 0.9em;
@@ -406,6 +427,15 @@
   min-height: 80px;
 }
 
+.harness :global(.kanban__column--empty) {
+  align-self: start;
+  min-height: 0;
+}
+
+.harness :global(.kanban__column--empty .kanban__column-body) {
+  display: none;
+}
+
 .harness :global(.kanban__column-head) {
   display: flex;
   align-items: baseline;
@@ -433,6 +463,26 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.harness :global(.kanban__activity) {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.harness :global(.kanban__activity:hover) {
+  text-decoration: underline;
+}
+
+.harness :global(.kanban__activity:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .harness :global(.card) {
@@ -531,7 +581,7 @@
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: color-mix(in srgb, #000 55%, transparent);
+  background: color-mix(in srgb, var(--bg-sunken) 85%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -567,6 +617,7 @@
 }
 
 .harness :global(.harness-live__dialog-close) {
+  min-height: 24px;
   font-family: inherit;
   font-size: 0.85rem;
   padding: 0.25em 0.85em;

@@ -1336,3 +1336,53 @@ Append-only. Do not edit earlier entries during normal work.
 - **Verification:** verifier exit 0
 - **Review:** APPROVED -> backlog/review_version_handshake_npm.md
 - **Closure:** done
+
+## 2026-07-20 - Feature 69: web_exp_revision
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/usage
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_web_exp_revision.md
+- **Closure:** done
+
+## 2026-07-20 - Feature 70: panel_agent_runner
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/usage
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_panel_agent_runner.md
+- **Closure:** done
+
+## 2026-07-20 - Feature 72: runner_observer
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/usage
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** handyman,graphify,reviewer
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_runner_observer.md
+- **Closure:** done
+
+## 2026-07-20 - Feature 71: new_feataure_view
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/usage
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** handyman,graphify,accessibility,vercel-react-best-practices,ponytail,implementer,reviewer
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_new_feataure_view.md
+- **Closure:** done
+
+## 2026-07-20 - Feature 73: web_harness_active_first
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/usage
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** handyman,graphify,design-taste-frontend,redesign-existing-projects,accessibility,vercel-react-best-practices,ponytail,implementer,reviewer,browser
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_web_harness_active_first.md
+- **Closure:** done

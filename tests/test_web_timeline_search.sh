@@ -164,7 +164,12 @@ const none = mod.rankPaletteActions(actions, "zzzznope");
 const empty = mod.rankPaletteActions(actions, "");
 const goDoc = actions.find((a) => a.id === "doc_alpha_architecture");
 const checks = [
-  ["view actions present", ids.includes("view_fleet") && ids.includes("view_timeline") && ids.includes("view_search")],
+  ["five view actions present",
+    ["view_fleet", "view_timeline", "view_search", "view_intake", "view_ask"]
+      .every((id) => ids.includes(id))],
+  ["view labels match the global navigation",
+    JSON.stringify(mod.PALETTE_VIEWS.map((view) => view.label)) ===
+      JSON.stringify(["go to Fleet", "go to Activity", "go to Find", "go to Draft", "go to Ask"])],
   ["go-to-harness action", ids.includes("go_alpha")],
   ["md link actions", ids.includes("md_alpha_current") && ids.includes("md_alpha_checkpoints")],
   ["doc actions", ids.includes("doc_alpha_architecture")],
@@ -173,6 +178,8 @@ const checks = [
     goDoc.command.root === "/home/u/alpha"],
   ["navigate commands are hrefs",
     actions.find((a) => a.id === "view_timeline").command.href === "/timeline" &&
+    actions.find((a) => a.id === "view_intake").command.href === "/intake" &&
+    actions.find((a) => a.id === "view_ask").command.href === "/ask" &&
     actions.find((a) => a.id === "go_alpha").command.href === "/harness/alpha"],
   ["query ranks the right action first", ranked.length > 0 && ranked[0].id === "view_timeline"],
   ["doc query finds the doc action", docHit.some((a) => a.id === "doc_alpha_architecture")],

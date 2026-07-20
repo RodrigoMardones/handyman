@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # apps/web /fleet view tests (feature toolbox_next_fleet_view). Structural +
 # render-contract, not a build: pnpm --filter @handyman/web build is kept out
-# of the default suite (same call as test_web_landing.sh). The render check
+# of the default suite (too slow for the run_tests.sh loop). The render check
 # transpiles the pure renderer (app/fleet/fleetHtml.ts) with the project's own
 # typescript, runs renderFleetHtml against a state fixture in-process, and
 # asserts the markup carries the real fleet data. No network, no Next boot.

@@ -1,5 +1,5 @@
+import { AppNav } from "../../components/AppNav";
 import { IntakeClient } from "../../components/IntakeClient";
-import { ToolboxShell } from "../../components/ToolboxShell";
 import { getRuntime } from "../../lib/runtime";
 import { getBuildState } from "../../lib/toolboxState";
 import styles from "./page.module.css";
@@ -41,24 +41,7 @@ export default async function IntakePage() {
 
   return (
     <main className={styles.page}>
-      <nav className={styles.nav} aria-label="Primary">
-        <a className={styles.brand} href="/">
-          <span className={styles.brandMark}>handyman</span>
-          <span className={styles.brandName}>toolBox</span>
-        </a>
-        <ul className={styles.navLinks}>
-          <li>
-            <a href="/fleet">Fleet</a>
-          </li>
-          <li>
-            <a href="/timeline">Timeline</a>
-          </li>
-          <li>
-            <a href="/search">Search</a>
-          </li>
-        </ul>
-        <ToolboxShell harnesses={shellHarnesses} />
-      </nav>
+      <AppNav harnesses={shellHarnesses} activeItem="Draft" currentKind="page" />
 
       <div className={styles.intake}>
         <header className={styles.header}>

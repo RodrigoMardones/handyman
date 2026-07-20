@@ -17,6 +17,7 @@ WEB_DIR="$REPO_ROOT/apps/web"
 HARNESS_PAGE="$WEB_DIR/app/harness/[name]/page.tsx"
 HARNESS_HTML="$WEB_DIR/app/harness/harnessHtml.ts"
 HARNESS_LIVE="$WEB_DIR/components/HarnessLive.tsx"
+RUN_PANEL="$WEB_DIR/components/RunPanel.tsx"
 LIVE_HOOK="$WEB_DIR/lib/useLiveHtml.ts"
 HARNESS_CSS="$WEB_DIR/app/harness/[name]/page.module.css"
 
@@ -34,6 +35,32 @@ if [ -f "$HARNESS_LIVE" ]; then pass; else fail "missing $HARNESS_LIVE"; fi
 
 start_case "apps/web/app/harness/[name]/page.module.css exists"
 if [ -f "$HARNESS_CSS" ]; then pass; else fail "missing $HARNESS_CSS"; fi
+
+start_case "React page owns the harness header and Add feature action before HarnessLive"
+PAGE_STRUCTURE_OUT="$(node -e '
+const fs = require("fs");
+const source = fs.readFileSync(process.argv[1], "utf8");
+const runPanelSource = fs.readFileSync(process.argv[2], "utf8");
+const emptyStart = runPanelSource.indexOf("if (!hasPending)");
+const emptyEnd = runPanelSource.indexOf("const running", emptyStart);
+const emptyBranch = runPanelSource.slice(emptyStart, emptyEnd);
+const checks = [
+  ["breadcrumb", source.includes("aria-label=\"Breadcrumb\"") && source.includes(">Fleet</a>")],
+  ["h1", source.includes("<h1") && source.includes("{name}</h1>")],
+  ["Add feature CTA", source.includes("/new`}") && source.includes(">Add feature</a>")],
+  ["exactly one Add feature CTA", (source.match(/>Add feature<\/a>/g) ?? []).length === 1 && !runPanelSource.includes("addFeatureHref")],
+  ["empty RunPanel has no link or select", emptyBranch.includes("No work ready") && emptyBranch.includes("make work available to the runner") && !emptyBranch.includes("<a") && !emptyBranch.includes("<select")],
+  ["AddFeatureForm absent", !source.includes("AddFeatureForm")],
+];
+const header = source.indexOf("<header");
+const runner = source.indexOf("<RunPanel");
+const live = source.indexOf("<HarnessLive");
+checks.push(["header and runner precede HarnessLive", header !== -1 && runner > header && live > runner]);
+const failed = checks.filter(([, ok]) => !ok).map(([name]) => name);
+if (failed.length) { console.log("FAILED: " + failed.join(", ")); process.exit(1); }
+' "$HARNESS_PAGE" "$RUN_PANEL" 2>&1)"
+PAGE_STRUCTURE_CODE=$?
+if [ "$PAGE_STRUCTURE_CODE" -eq 0 ]; then pass; else fail "page structure assertions failed: $PAGE_STRUCTURE_OUT"; fi
 
 # --- TWH2: zero em-dashes / en-dashes in apps/web still holds ---------------
 start_case "apps/web has zero em-dashes (U+2014) and zero en-dashes (U+2013)"
@@ -103,7 +130,7 @@ try {
         project_name: "alpha",
         error: null,
         workspace: ".handyman",
-        status_counts: { pending: 2, in_progress: 1, done: 3, blocked: 0 },
+        status_counts: { pending: 2, in_progress: 1, done: 8, blocked: 1 },
         signals: [{ signal: "STALE_WIP", detail: "in_progress idle > 7 days" }],
         has_graph: true,
         last_closure: "2026-07-15T12:00:00.000Z",
@@ -112,12 +139,20 @@ try {
         metrics: {
           throughput: { [key]: 2 },
           review_verdicts: { approved: 4, changes_requested: 1, approval_rate: 0.8 },
-          coverage: { done: 3, with_reports: 2, missing: ["feat-z"] },
+          coverage: { done: 8, with_reports: 2, missing: ["feat-z"] },
         },
         features: [
           { id: 10, name: "feat_a", title: "Feature A", status: "pending", sprint: "2026-SP6", depends_on: [] },
+          { id: 14, name: "feat_a2", title: "Feature A2", status: "pending", sprint: "2026-SP6", depends_on: [] },
           { id: 11, name: "feat_b", title: "Feature B running", status: "in_progress", sprint: "2026-SP6", depends_on: [] },
-          { id: 12, name: "feat_c", title: "Feature C", status: "done", sprint: "2026-SP6", depends_on: [] },
+          { id: 101, name: "done_101", title: "Done 101", status: "done", sprint: "2026-SP6", depends_on: [] },
+          { id: 108, name: "done_108", title: "Done 108", status: "done", sprint: "2026-SP6", depends_on: [] },
+          { id: null, name: "done_null", title: "Done null", status: "done", sprint: null, depends_on: [] },
+          { id: 104, name: "done_104", title: "Done 104", status: "done", sprint: "2026-SP6", depends_on: [] },
+          { id: 107, name: "done_107", title: "Done 107", status: "done", sprint: "2026-SP6", depends_on: [] },
+          { id: 102, name: "done_102", title: "Done 102", status: "done", sprint: "2026-SP6", depends_on: [] },
+          { id: 106, name: "done_106", title: "Done 106", status: "done", sprint: "2026-SP6", depends_on: [] },
+          { id: 105, name: "done_105", title: "Done 105", status: "done", sprint: "2026-SP6", depends_on: [] },
           { id: 13, name: "feat_d", title: "Feature D blocked", status: "blocked", sprint: null, blocked_reason: "waiting on upstream", depends_on: [] },
         ],
       },
@@ -128,15 +163,42 @@ try {
     { harnesses: [{ project_root: "/p", project_name: "beta", error: null, status_counts: {}, features: [], has_graph: false }] },
     "beta",
   );
+  const compact = renderHarnessHtml(
+    {
+      harnesses: [{
+        project_root: "/p",
+        project_name: "compact",
+        error: null,
+        status_counts: { pending: 0, in_progress: 0, done: 5, blocked: 0 },
+        features: [1, 2, 3, 4, 5].map((id) => ({
+          id,
+          name: "done_" + id,
+          title: "Done " + id,
+          status: "done",
+          sprint: null,
+          depends_on: [],
+        })),
+        has_graph: false,
+      }],
+    },
+    "compact",
+  );
+  const css = fs.readFileSync(path.join(process.argv[1], "apps/web/app/harness/[name]/page.module.css"), "utf8");
+  const queueIndex = html.indexOf(">Queue<");
+  const workspaceIndex = html.indexOf(">Workspace<");
+  const docsIndex = html.indexOf(">Docs<");
+  const graphIndex = html.indexOf(">Knowledge graph<");
+  const doneColumn = html.match(/<section class="kanban__column kanban__column--done"[\s\S]*?<\/section>/)?.[0] ?? "";
+  const doneIds = [108, 107, 106, 105, 104].map((id) => doneColumn.indexOf("#" + id));
   const checks = [
-    ["harness header title alpha", html.indexOf("harness-header__title") !== -1 && html.indexOf(">alpha<") !== -1],
+    ["renderer does not duplicate React h1", html.indexOf("harness-header__title") === -1],
     ["meta-list present", html.indexOf("meta-list") !== -1],
     ["meta root value", html.indexOf("/home/u/proj/alpha") !== -1],
     ["meta version 2.1.1", html.indexOf("2.1.1") !== -1],
     ["meta session feat-x", html.indexOf("feat-x") !== -1],
     ["last closure 2026-07-15", html.indexOf("2026-07-15") !== -1],
     ["kpi approval rate 80%", html.indexOf("80%") !== -1],
-    ["kpi coverage 2/3", html.indexOf("2/3") !== -1],
+    ["kpi coverage 2/8", html.indexOf("2/8") !== -1],
     ["kpi closures 14d value 2", html.indexOf("closures (14d)") !== -1],
     ["throughput sparkline svg", html.indexOf("<svg") !== -1],
     ["signal STALE_WIP pill", html.indexOf("STALE_WIP") !== -1 && html.indexOf("pill--warn") !== -1],
@@ -147,8 +209,18 @@ try {
     ["kanban in_progress column", html.indexOf("kanban__column--in_progress") !== -1],
     ["kanban done column", html.indexOf("kanban__column--done") !== -1],
     ["kanban blocked column", html.indexOf("kanban__column--blocked") !== -1],
+    ["Queue precedes Workspace, Docs and Knowledge graph", queueIndex !== -1 && queueIndex < workspaceIndex && workspaceIndex < docsIndex && docsIndex < graphIndex],
+    ["pending features remain complete", html.indexOf("Feature A") !== -1 && html.indexOf("Feature A2") !== -1],
     ["running feature title present", html.indexOf("Feature B running") !== -1],
     ["blocked reason present", html.indexOf("waiting on upstream") !== -1],
+    ["Done header preserves total 8", doneColumn.indexOf("kanban__column-count\">8</bdi>") !== -1],
+    ["Done renders exactly five cards", (doneColumn.match(/class="card card--done"/g) ?? []).length === 5],
+    ["Done uses descending recent ids", doneIds.every((index) => index !== -1) && doneIds.every((index, i) => i === 0 || doneIds[i - 1] < index)],
+    ["Done omits older and null ids", !doneColumn.includes("#102") && !doneColumn.includes("#101") && !doneColumn.includes("Done null")],
+    ["Done links total to Activity", doneColumn.includes("href=\"/timeline\"") && doneColumn.includes("View all 8 in Activity")],
+    ["empty active columns carry compact modifier", ["pending", "in_progress", "blocked"].every((status) => compact.includes(`class="kanban__column kanban__column--${status} kanban__column--empty"`))],
+    ["Done column remains normal", compact.includes("class=\"kanban__column kanban__column--done\"") && !compact.includes("kanban__column--done kanban__column--empty")],
+    ["empty column CSS opts out of grid stretch", /kanban__column--empty[^}]*align-self:\s*start/s.test(css)],
     ["graphify iframe present when has_graph", html.indexOf("graph__frame") !== -1 && html.indexOf("/graph/alpha/graph.html") !== -1],
     ["graphify empty when no graph", graphMissing.indexOf("graph--empty") !== -1 && graphMissing.indexOf("/graph/") === -1],
     ["no external http src asset", html.indexOf("src=\"http") === -1],

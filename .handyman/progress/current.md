@@ -1,9 +1,9 @@
 ---
 type: Session Log
-feature: none
-status: idle
+feature: web_shared_navigation
+status: in_progress
 role: leader
-updated: 2026-07-19
+updated: 2026-07-20
 tags: [handyman/session/current]
 ---
 
@@ -11,10 +11,10 @@ tags: [handyman/session/current]
 
 This file is reset when a session closes and its summary moves to `[[history]]`. Keep it updated while working, not only at the end.
 
-- **Feature in progress:** _none_
-- **Start:** _-_
-- **Agent:** _-_
-- **Branch:** _-_
+- **Feature in progress:** web_shared_navigation (id 74)
+- **Start:** 2026-07-20
+- **Agent:** leader
+- **Branch:** feat/usage
 
 ## Plan
 
