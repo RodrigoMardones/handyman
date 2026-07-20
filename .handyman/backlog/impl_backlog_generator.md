@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: backlog_generator
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: sprint_workflow_reference
 status: implemented
 role: implementer

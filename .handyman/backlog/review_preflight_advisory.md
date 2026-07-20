@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: preflight_advisory
 status: approved
 role: reviewer

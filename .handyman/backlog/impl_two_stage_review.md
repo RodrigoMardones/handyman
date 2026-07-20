@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: two_stage_review
 status: implemented
 role: implementer

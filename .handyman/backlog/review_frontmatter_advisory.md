@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: frontmatter_advisory
 status: approved
 role: reviewer

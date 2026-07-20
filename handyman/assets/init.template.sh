@@ -183,7 +183,7 @@ run_test() {
 # --- Advisory checks (non-blocking) -----------------------------------------
 # A harness with no version stamp predates harness versioning; flag it so the
 # user can seal and update it. A sealed harness stays silent here - explicit
-# drift detection is node dist/upgrade_harness.js --check. Never changes EXIT_CODE.
+# drift detection is npx handyman-harness@3 upgrade_harness --check. Never changes EXIT_CODE.
 check_harness_version() {
   ver=""
   if [ -f "$PROJECT_ROOT/harness.config.json" ]; then
@@ -194,7 +194,7 @@ check_harness_version() {
   fi
   if [ -z "$ver" ]; then
     echo "NOTE: harness has no version stamp - created before harness versioning." >&2
-    echo "      run node dist/upgrade_harness.js --check (or re-scaffold) to seal and update it." >&2
+    echo "      run npx handyman-harness@3 upgrade_harness --check (or re-scaffold) to seal and update it." >&2
   fi
 }
 
@@ -259,15 +259,35 @@ check_evals() {
   count="$(_json "$eval_set" len 2>/dev/null)"
   if [ "${count:-0}" -eq 0 ]; then
     echo "NOTE: evals/trigger-eval.json has no labeled queries - the description trigger is unmeasured." >&2
-    echo "      add positive and negative queries, then run node dist/evals.js measure (see references/evals.md)." >&2
+    echo "      add positive and negative queries, then run npx handyman-harness@3 evals measure (see references/evals.md)." >&2
     return 0
   fi
   marker="$PROJECT_ROOT/evals/.last-measured"
   desc="$PROJECT_ROOT/SKILL.md"
   if [ -f "$desc" ] && { [ ! -f "$marker" ] || [ "$desc" -nt "$marker" ]; }; then
     echo "NOTE: SKILL.md changed since the last trigger measurement (or it was never measured)." >&2
-    echo "      re-run node dist/evals.js measure and refresh evals/.last-measured (see references/evals.md)." >&2
+    echo "      re-run npx handyman-harness@3 evals measure and refresh evals/.last-measured (see references/evals.md)." >&2
   fi
+}
+
+# Harness contract: run the validator as a blocking gate, so a structural gap
+# fails the verifier instead of scrolling past as advisory text. check_preflight
+# also runs validate_harness, but advisory-only: it swallows the exit code
+# (`|| true`, and preflight itself always exits 0).
+#
+# Silent on success, on purpose: check_preflight prints validate_harness's whole
+# output, NOTEs included, so echoing it here too would duplicate every advisory
+# line. This phase owns the exit code, preflight owns the advisory text.
+# Skips (0) when dist/ or node is absent, like check_preflight.
+run_validate_harness() {
+  validator="$PROJECT_ROOT/dist/validate_harness.js"
+  [ -f "$validator" ] || return 0
+  command -v node >/dev/null 2>&1 || return 0
+  if out="$(node "$validator" --root "$PROJECT_ROOT" 2>&1)"; then
+    return 0
+  fi
+  printf '%s\n' "$out" >&2
+  return 1
 }
 
 # Preflight: read-only stability report (format/drift/sync/discovery) that
@@ -289,6 +309,7 @@ if [ "$EXIT_CODE" -eq 0 ]; then
   run_phase "state" check_feature_state
   run_phase "lint"  run_lint
   run_phase "build" run_build
+  run_phase "harness" run_validate_harness
   run_phase "test"  run_test
 fi
 

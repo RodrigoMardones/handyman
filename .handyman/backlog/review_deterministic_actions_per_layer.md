@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: deterministic_actions_per_layer
 status: approved
 role: reviewer

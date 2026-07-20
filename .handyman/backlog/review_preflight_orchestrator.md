@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: preflight_orchestrator
 status: approved
 role: reviewer

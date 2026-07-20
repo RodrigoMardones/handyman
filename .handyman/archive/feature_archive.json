@@ -158,6 +158,341 @@
         "status": "done",
         "sprint": "2026-SP4"
       }
+    ],
+    "2026-SP5": [
+      {
+        "id": 9,
+        "name": "validate_harness_cli",
+        "title": "Portar validate_harness (CLI) a TS sobre el core",
+        "description": "Port de validate_harness.py (superficie CLI) -> src/validate_harness.ts. Riesgo medio: los helpers (resolve_workspace, IO, schema) ya estan en core; queda la CLI de validacion/auditoria del harness. Repunta los tests pertinentes y elimina el .py.",
+        "acceptance": [
+          "src/validate_harness.ts replica el contrato CLI de validate_harness.py (subcomandos, flags, exit codes, salida byte-identica).",
+          "Usa el core: resolveWorkspace, IO byte-identico, y validacion ajv sobre los mismos assets/schemas.",
+          "Las suites que cubren validate (via otros tests + test_docs) quedan verdes sin editar aserciones.",
+          "validate_harness.py se elimina y sus referencias en SKILL.md/references se actualizan.",
+          "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+        ],
+        "status": "done",
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 10,
+        "name": "preflight_fanout",
+        "title": "Portar preflight (fan-out de hermanos) a TS sobre el core",
+        "description": "Port de preflight.py -> src/preflight.ts. Riesgo alto: lanza 5 hermanos via subprocess (hoy invoca node dist/feature.js; el resto sigue en Python) con stdio inherit. Reusa child_process del port de feature. Repunta test_preflight.sh a node dist/preflight.js sin editar aserciones y elimina el .py.",
+        "acceptance": [
+          "src/preflight.ts replica el contrato CLI de preflight.py (worklist, flags, exit codes, salida byte-identica).",
+          "Reproduce el fan-out de hermanos via child_process (stdio inherit) y el mismo texto de bloque que los tests grepean.",
+          "test_preflight.sh parametriza la invocacion a node dist/preflight.js; la suite queda verde sin editar aserciones.",
+          "preflight.py se elimina y sus referencias en SKILL.md/references/init.sh se actualizan a node dist/preflight.js.",
+          "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+        ],
+        "status": "done",
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 11,
+        "name": "update_harness_diff",
+        "title": "Portar update_harness (unified diff) a TS sobre el core",
+        "description": "Port de update_harness.py -> src/update_harness.ts. Riesgo alto: usa difflib.unified_diff para los --dry-run; el shim core/unifiedDiff ya existe. Repunta test_update.sh a node dist/update_harness.js sin editar aserciones y elimina el .py.",
+        "acceptance": [
+          "src/update_harness.ts replica el contrato CLI de update_harness.py (subcomandos, flags, --dry-run diff, exit codes, salida byte-identica).",
+          "Usa el core: resolveWorkspace, IO byte-identico, y core/unifiedDiff para replicar difflib.unified_diff.",
+          "test_update.sh parametriza la invocacion a node dist/update_harness.js; la suite queda verde sin editar aserciones.",
+          "update_harness.py se elimina y sus referencias en SKILL.md/references se actualizan.",
+          "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+        ],
+        "status": "done",
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 12,
+        "name": "upgrade_harness_diff",
+        "title": "Portar upgrade_harness (unified diff) a TS sobre el core",
+        "description": "Port de upgrade_harness.py -> src/upgrade_harness.ts. Riesgo alto: usa difflib.unified_diff y jq-en-test; el shim core/unifiedDiff ya existe. Repunta test_upgrade.sh a node dist/upgrade_harness.js sin editar aserciones y elimina el .py.",
+        "acceptance": [
+          "src/upgrade_harness.ts replica el contrato CLI de upgrade_harness.py (subcomandos, flags, --dry-run diff, exit codes, salida byte-identica).",
+          "Usa el core: resolveWorkspace, IO byte-identico, y core/unifiedDiff para replicar difflib.unified_diff.",
+          "test_upgrade.sh parametriza la invocacion a node dist/upgrade_harness.js; la suite queda verde sin editar aserciones.",
+          "upgrade_harness.py se elimina y sus referencias en SKILL.md/references se actualizan.",
+          "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+        ],
+        "status": "done",
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 13,
+        "name": "tools_discovery_discovery",
+        "title": "Portar tools_discovery (skills/MCP/agents) a TS sobre el core",
+        "description": "Port de tools_discovery.py -> src/tools_discovery.ts. Riesgo alto: declare usa ensure_ascii=True (escapa no-ASCII), difflib (core/unifiedDiff ya existe), e importa resolve_workspace + PLATFORM_ROLE_DIRS de validate_harness. PLATFORM_ROLE_DIRS no esta en core todavia -> se anade al port (constante (\".github/agents\",\".claude/agents\")) o se mueve al core al portear #9. Repunta test_tools_discovery.sh a node dist/tools_discovery.js sin editar aserciones y elimina el .py.",
+        "acceptance": [
+          "src/tools_discovery.ts replica el contrato CLI de tools_discovery.py (list/find/check/declare; --root; --skills-dir; --json; --dry-run; exit codes 0/1/2; salida byte-identica).",
+          "Usa el core: resolveWorkspace, IO byte-identico, unifiedDiff para declare --dry-run, y replica ensure_ascii=True en declare (escapa no-ASCII).",
+          "list/find/check/declare preservan local-then-global skill-root precedence, MCP validation contra .vscode/mcp.json, y agent verification contra role dirs (PLATFORM_ROLE_DIRS).",
+          "test_tools_discovery.sh parametriza la invocacion a node dist/tools_discovery.js; la suite queda verde sin editar aserciones.",
+          "tools_discovery.py se elimina y sus referencias en SKILL.md/references se actualizan a node dist/tools_discovery.js.",
+          "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
+        ],
+        "status": "done",
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 15,
+        "name": "toolbox_port",
+        "title": "Port fleet.py to TypeScript as toolBox CLI",
+        "description": "Port the legacy fleet.py (registry, status, health, timeline, heartbeat, moc) to handyman/src/toolbox.ts over core/, renamed toolBox. Registry stays at $HOME/HANDYMAN/registry.json.",
+        "acceptance": [
+          "node dist/toolbox.js status/health/timeline/moc reproduce legacy fleet behavior against a temp HANDYMAN_ROOT",
+          "tests/test_toolbox.sh suite green in run_tests.sh"
+        ],
+        "status": "done",
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 16,
+        "name": "toolbox_observer",
+        "title": "toolBox observer: local read-only web panel",
+        "description": "toolbox serve subcommand: node:http server hard-bound to 127.0.0.1 with GET /, /api/state, /events (SSE via fs.watch+debounce). Self-contained panel (hw tokens, textContent-only) with fleet, harness and timeline hash views. Read-only.",
+        "acceptance": [
+          "toolbox serve --port 0 boots, /api/state returns snapshots+signals+timeline, panel renders kanban grouped by status",
+          "SSE event fires on feature_list.json change (test polls state)"
+        ],
+        "status": "done",
+        "depends_on": [
+          15
+        ],
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 17,
+        "name": "toolbox_graph_view",
+        "title": "toolBox observer: knowledge-graph view",
+        "description": "Serve each harness graphify-out/graph.html (iframe) and graph.json under /graph/<name>; harness view links/embeds it when present.",
+        "acceptance": [
+          "GET /graph/<name>/ returns the harness graph.html when graphify-out exists; absent graph degrades to a note"
+        ],
+        "status": "done",
+        "depends_on": [
+          16
+        ],
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 18,
+        "name": "toolbox_search",
+        "title": "toolBox observer: client-side BM25 search",
+        "description": "MiniSearch (vendored UMD served from node_modules) indexing /api/corpus/<name> (features + backlog + progress + docs md) in the browser; reindex on SSE. No server-side RAG.",
+        "acceptance": [
+          "search box returns feature and backlog hits by keyword across the fleet corpus"
+        ],
+        "status": "done",
+        "depends_on": [
+          16
+        ],
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 19,
+        "name": "toolbox_ui_project_info",
+        "title": "toolBox observer: project info in detail view (Plan A)",
+        "description": "Expose what metrics.collect() already computes in the harness detail view: per-harness KPI strip (approval rate, report coverage, closures last 14 days) + hand-rolled inline SVG sparkline of throughput (one <polyline>, theme-aware via --hw-* tokens, role=img + aria-label). Add a Docs section (business/architecture/conventions/verification) as quick-view buttons over the existing /api/md docs: whitelist, and relative dates with the absolute date in title= (port of the legacy fmt.* layer). Server side: include metrics per harness in /api/state.",
+        "acceptance": [
+          "/api/state includes per-harness metrics (throughput by date, review verdicts incl. approval rate, coverage) sourced from the same logic as metrics.collect(), degrading to null on unreadable harnesses.",
+          "Harness detail view renders a KPI strip (approval rate, coverage, closures last 14 days) and an inline SVG sparkline (<polyline>, --hw-* tokens only, role=img with aria-label; no chart library).",
+          "Docs section lists business/architecture/conventions/verification as quick-view buttons using the existing /api/md docs: mechanism, degrading gracefully when a doc is missing.",
+          "Timeline and card dates render relative (e.g. 3d ago) with the absolute date in the title attribute via a small fmt helper.",
+          "tests/test_toolbox_serve.sh covers the metrics payload in /api/state; ./init.sh exits 0."
+        ],
+        "status": "done",
+        "depends_on": [
+          16
+        ],
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 20,
+        "name": "toolbox_theme_toggle",
+        "title": "toolBox observer: light/dark/system theme toggle (Plan B)",
+        "description": "Port the legacy ux2 6.4 theme contract to the React panel. The CSS tokens already switch on :root[data-theme] and prefers-color-scheme; add the control layer only: synchronous anti-flash inline script in panelHtml() <head>, a 3-state control (light/dark/system) in the nav with aria-pressed, localStorage key hw-theme:1 (system = remove the key), matchMedia listener active only in system mode.",
+        "acceptance": [
+          "panelHtml() head carries a synchronous inline script that reads localStorage hw-theme:1 and sets data-theme on <html> before first paint (no flash).",
+          "Nav shows a 3-state theme control (light/dark/system) with aria-pressed reflecting the active state; selecting system removes the storage key and data-theme follows matchMedia('(prefers-color-scheme: dark)') live.",
+          "Explicit light/dark persist across reloads via localStorage hw-theme:1; no new hex values, tokens only.",
+          "tests/test_toolbox_serve.sh asserts the anti-flash script and theme control markup are served; ./init.sh exits 0."
+        ],
+        "status": "done",
+        "depends_on": [
+          16
+        ],
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 21,
+        "name": "toolbox_markdown_render",
+        "title": "toolBox observer: safe rendered markdown (Plan C)",
+        "description": "Replace the raw <pre> markdown viewer with marked + DOMPurify (both served as UMD from node_modules via the existing /vendor/* mechanism; add both as runtime deps). Sanitize with FORBID_TAGS/FORBID_ATTR and javascript: URL blocking; add CSP default-src 'self' on server responses as second defense. Agent-produced markdown is untrusted even though it is local. Applies to the viewer for current/history/checkpoints/backlog/docs and search result excerpts.",
+        "acceptance": [
+          "marked and dompurify are runtime dependencies served via /vendor/marked.js and /vendor/dompurify.js from node_modules UMD builds.",
+          "The md viewer renders sanitized HTML: DOMPurify with FORBID_TAGS (at least script,style,iframe,form,input) and FORBID_ATTR (event handlers), javascript: hrefs stripped; a hostile fixture proves script/onerror/javascript: do not survive.",
+          "Server responses carry Content-Security-Policy default-src 'self' (allowing inline script/style needed by the panel) as second defense.",
+          "Viewer applies to current/history/checkpoints/backlog/docs quick-views; search results keep textContent excerpts.",
+          "tests/test_toolbox_serve.sh covers vendor endpoints and the CSP header; ./init.sh exits 0."
+        ],
+        "status": "done",
+        "depends_on": [
+          16
+        ],
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 22,
+        "name": "toolbox_a11y_live",
+        "title": "toolBox observer: a11y live regions + empty states (Plan D)",
+        "description": "Two persistent live regions created once at load (polite with role=status, assertive with role=alert), initially empty; SSE updates are queued and summarized with debounce (e.g. '3 features updated in handyman'), never announced per event. SSE connection indicator uses text + color (never color alone). prefers-reduced-motion is consulted before any animation/auto-scroll. Empty states become actionable ('no projects - run handyman install').",
+        "acceptance": [
+          "Exactly two persistent live regions exist from first render (role=status aria-live=polite, role=alert), empty at load, and are the only aria-live surfaces.",
+          "SSE-driven changes enqueue and a debounced summary lands in the polite region; connection loss/recovery lands in the assertive region as text (indicator shows text + color, not color alone).",
+          "prefers-reduced-motion: reduce disables panel animations and auto-scroll behaviors.",
+          "Empty fleet/harness/search states show an actionable hint instead of a bare dash.",
+          "tests/test_toolbox_serve.sh asserts the live-region markup in the served panel; ./init.sh exits 0."
+        ],
+        "status": "done",
+        "depends_on": [
+          16
+        ],
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 23,
+        "name": "toolbox_command_palette",
+        "title": "toolBox observer: command palette + shortcuts (Plan E)",
+        "description": "Hand-rolled command palette: native <dialog> (showModal, focus return) + input + action list ranked with the MiniSearch index already loaded in the client (actions: go to project/view, open md quick-view, search). Shortcuts: Cmd/Ctrl+K palette, / focus search, j/k move, g+letter go to view, ? help, Esc close. One keydown listener with an event.target guard so typing in inputs never triggers shortcuts.",
+        "acceptance": [
+          "Cmd/Ctrl+K opens a native <dialog> palette via showModal(); Esc closes it and focus returns to the previously focused element.",
+          "Palette input filters/ranks actions (go to project, go to view, open md, search) using MiniSearch; Enter executes the selected action; j/k or arrows move the selection.",
+          "Global shortcuts work (/ focuses search, g+letter navigates views, ? opens help) and are inert while focus is on input/textarea/select or inside the palette input except its own navigation keys.",
+          "A single document-level keydown listener implements the shortcuts (no per-component listeners).",
+          "tests/test_toolbox_serve.sh asserts the palette dialog markup is served; ./init.sh exits 0."
+        ],
+        "status": "done",
+        "depends_on": [
+          16,
+          18
+        ],
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 24,
+        "name": "toolbox_llm_providers",
+        "title": "Puerto LlmProvider + adapters Z.ai/Claude/Ollama y GET /api/providers",
+        "description": "Capa LLM del toolBox (docs/analisis-peticiones-llm-toolbox.md §2-3): puerto LlmProvider en el servidor con adapter anthropic (Claude y Z.ai Coding Plan via baseURL https://api.z.ai/api/anthropic) y adapter openai-compatible (paas/v4 y Ollama); carga de keys desde .env; endpoint GET /api/providers con disponibilidad. Hallazgos empiricos: thinking disabled en llamadas cortas GLM, max_tokens<=131072, error 1113 = sin saldo.",
+        "acceptance": [
+          "Puerto LlmProvider (id, available(), draft() streaming por callback) + adapters anthropic y openai-compatible parametrizados por baseURL; copilot declarado como id futuro sin adapter",
+          "GET /api/providers responde {providers:[{id,available,model}]} sin exponer keys; available() no llama a la red salvo health check de Ollama que degrada sin lanzar",
+          "Adapter openai-compatible: thinking disabled por defecto en drafts, max_tokens capeado a 131072, 429/1113 mapeado a insufficient_balance; keys cargadas de .env sin dependencia dotenv y nunca loggeadas",
+          "Tests con fetch mockeado (exito, streaming, 401, 1113, /api/providers) cableados en run_tests.sh; ningun test toca la red",
+          "bash tests/run_tests.sh passes"
+        ],
+        "status": "done",
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 25,
+        "name": "toolbox_draft_relay",
+        "title": "POST /api/draft: relay SSE de intake nutrido con la experiencia del harness",
+        "description": "Endpoint POST /api/draft {root, prompt, provider} en toolbox_serve.ts (docs/analisis-peticiones-llm-toolbox.md §4): construye system estable (assets/feature-request.template.md + arquetipos + contrato feature.js add) y contexto volatil del harness destino (cola de features, top-k BM25 del corpus con MiniSearch en Node, skills de discovery), llama al LlmProvider elegido y retransmite deltas por SSE. Errores del proveedor como event: error. No escribe disco.",
+        "acceptance": [
+          "POST /api/draft valida root contra el registry y provider contra los disponibles; responde SSE con deltas y un evento final {archetype, draft_md, possible_duplicates}",
+          "El prompt incluye plantilla Nucleo/Opcional, 2 ejemplos por arquetipo, gate verde como ultima bala, y contexto del harness (features, top-k BM25, skills discovery)",
+          "Fallo del proveedor -> event: error SSE con codigo mapeado (p.ej. insufficient_balance); ningun otro metodo/ruta de escritura se agrega",
+          "Tests con provider fake: prompt construido, SSE bien formado, root no registrado -> 400; cableados en run_tests.sh",
+          "bash tests/run_tests.sh passes"
+        ],
+        "status": "done",
+        "depends_on": [
+          24
+        ],
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 26,
+        "name": "toolbox_intake_ui",
+        "title": "Vista de intake en el panel: redactar peticion, draft editable y copiar (Plan A)",
+        "description": "Vista #/intake en assets/toolbox_panel.js (Plan A de docs/analisis-peticiones-llm-toolbox.md §5): selector de harness destino y proveedor (GET /api/providers), textarea de peticion libre, consumo del SSE de POST /api/draft con render seguro (marked+DOMPurify), draft editable y boton copiar al portapapeles. Errores en live region assertive. El observador sigue sin escribir disco.",
+        "acceptance": [
+          "Vista #/intake con selector de harness y proveedor poblados desde /api/state y /api/providers",
+          "El draft llega por SSE y se renderiza sanitizado (DOMPurify); es editable antes de copiar; boton copiar usa clipboard API con fallback",
+          "event: error del relay se anuncia en la live region assertive existente",
+          "Tests de panel (patron de las suites toolbox existentes) cubren la vista y el flujo copiar; cableados en run_tests.sh",
+          "bash tests/run_tests.sh passes"
+        ],
+        "status": "done",
+        "depends_on": [
+          25
+        ],
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 27,
+        "name": "toolbox_intake_enhancements",
+        "title": "toolBox observer: intake UI enhancements, file tags, and direct submission",
+        "description": "Extiende la vista #/intake (feature 26) con seleccion de archivos del workspace como tags de contexto, y un endpoint de envio directo que persiste el intake en el harness destino. Backend: GET /api/files lista archivos del workspace dentro de roots registradas; POST /api/draft acepta files[] e incluye su contenido en el contexto volatil; POST /api/intake escribe el draft final en $WORKSPACE/feature-request.md (el artefacto de intake que consume el leader). Validacion 4xx de payloads invalidos/vacios sin spawning de procesos.",
+        "acceptance": [
+          "La vista de intake muestra una lista/dropdown buscable de archivos disponibles en el workspace, permitiendo seleccion multiples para incluir como tags de contexto en el prompt.",
+          "El usuario puede enviar el intake al harness desde la UI (POST /api/intake) y recibe una notificacion de exito/fallo.",
+          "El backend rechaza un payload invalido o vacio con un error HTTP 4xx y no lanza un proceso handyman.",
+          "GET /api/files?root= solo resuelve dentro de roots registradas y devuelve rutas relativas; POST /api/draft incluye el contenido de los archivos seleccionados como contexto.",
+          "bash tests/run_tests.sh passes"
+        ],
+        "status": "done",
+        "depends_on": [
+          26
+        ],
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 28,
+        "name": "start_and_close_timestamps",
+        "title": "Registrar fecha y hora exactas al iniciar/cerrar features y sprints",
+        "description": "Almacenar timestamps ISO 8601 al iniciar/cerrar features (meta.started_at/done_at) y al cerrar sprints (closed_at) para enriquecer las metricas de observer.",
+        "acceptance": [
+          "feature.js start registra meta.started_at (ISO 8601)",
+          "feature.js done registra meta.done_at (ISO 8601)",
+          "sprint.js close incluye el timestamp de cierre (closed_at)",
+          "schema feature_list draft-07 compatible con las nuevas claves (meta)",
+          "bash tests/run_tests.sh passes"
+        ],
+        "status": "done",
+        "meta": {
+          "done_at": "2026-07-18T03:24:54.366Z"
+        },
+        "sprint": "2026-SP5"
+      },
+      {
+        "id": 29,
+        "name": "sync_docs_handyman_v2",
+        "title": "Sync and update Handyman docs across references/ and .handyman/docs/",
+        "description": "Single unified documentation update to bring references/toolbox.md, references/templates.md, references/discovery.md and .handyman/docs/architecture.md + verification.md in sync with recently completed code: LLM providers (24), POST /api/draft relay + /api/intake (25,27), intake UI (26), command palette (23), observer UI Plans A-E (19-23), and start/close timestamps (28). No source code changes.",
+        "acceptance": [
+          "references/toolbox.md documents the LLM providers layer (GET /api/providers), POST /api/draft SSE relay, POST /api/intake write, and observer UI features (intake view, command palette, search, theme toggle, markdown render, a11y, project info).",
+          "references/templates.md and references/discovery.md reflect any new doc surfaces and CLI commands.",
+          ".handyman/docs/architecture.md and .handyman/docs/verification.md include the new toolBox endpoints (/api/draft, /api/intake, /api/providers, /api/files), the observer UI, and start/close timestamps.",
+          "bash tests/run_tests.sh passes (test_docs link checks and markdown linting stay green)."
+        ],
+        "status": "done",
+        "depends_on": [
+          23,
+          24,
+          25,
+          27,
+          28
+        ],
+        "meta": {
+          "started_at": "2026-07-18T03:39:19.500Z",
+          "done_at": "2026-07-18T03:54:00.373Z"
+        },
+        "sprint": "2026-SP5"
+      }
     ]
   }
 }

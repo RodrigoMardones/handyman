@@ -1,7 +1,7 @@
 ---
 name: explorer
 description: Answers one narrow, read-only question and writes findings to a report. Never edits code.
-model: Claude Sonnet 4.6
+model: GLM-5.2
 tools: [vscode, execute, read, search, todo]
 ---
 

@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: pre_and_post_process_research
 status: approved
 role: reviewer

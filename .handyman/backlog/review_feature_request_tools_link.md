@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: feature_request_tools_link
 status: approved
 role: reviewer

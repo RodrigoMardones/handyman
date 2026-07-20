@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workstation_verify
 status: implemented
 role: implementer

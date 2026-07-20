@@ -4,7 +4,7 @@
   "project_root": ".",
   "handyman_root": null,
   "harness_workspace": ".handyman",
-  "harness_version": "2.1.1",
+  "harness_version": "3.1.0",
   "models": {
     "leader": "GLM-5.2",
     "implementer": "GLM-5.2",
@@ -54,7 +54,8 @@
       "mcp-builder",
       "graphify",
       "pull-request-publish",
-      "ponytail"
+      "ponytail",
+      "design-taste-frontend"
     ],
     "mcp": [
       "nx",
@@ -70,5 +71,5 @@
   "post_run": [
     "node handyman/dist/index_md.js --root ."
   ],
-  "current_sprint": null
+  "current_sprint": "2026-SP6"
 }

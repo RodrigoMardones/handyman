@@ -124,6 +124,7 @@ LBL_B="$(json_get "$S5/.handyman/feature_list.json" "(d.features.find(f=>f.name=
 ARCH="$(json_get "$S5/.handyman/archive/feature_archive.json" "d.sprints['2026-SP1'][0].name")"
 if [ "$CODE" -eq 0 ] && [ -f "$DOC" ] && [ "$CUR" = "None" ] \
   && [ "$HAS_A" = "False" ] && [ -z "$LBL_B" ] && [ "$ARCH" = "a" ] \
+  && grep -q "^type: Sprint$" "$DOC" \
   && grep -q "2026-07-10" "$DOC" && grep -q "skills: handyman" "$DOC" \
   && grep -q "b (pending)" "$DOC"; then
   pass

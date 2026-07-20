@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: validate_harness_cli
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: harness_migrations
 status: approved
 role: reviewer

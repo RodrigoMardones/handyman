@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workstation_tokens_v2_palette
 status: implemented
 role: implementer

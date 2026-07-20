@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workstation_wcag22_markup
 status: implemented
 role: implementer

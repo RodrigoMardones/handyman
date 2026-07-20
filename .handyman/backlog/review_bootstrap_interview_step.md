@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: bootstrap_interview_step
 status: approved
 role: reviewer

@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: toolbox_intake_enhancements
 id: 27
 status: implemented

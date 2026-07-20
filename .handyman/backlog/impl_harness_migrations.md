@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: harness_migrations
 status: done
 role: implementer

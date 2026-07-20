@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: tool_discovery_reference_investigation
 status: implemented
 role: implementer

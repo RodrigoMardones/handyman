@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: upgrade_mode
 status: approved
 role: reviewer

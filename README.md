@@ -14,6 +14,8 @@ La idea central es simple: el chat coordina, pero el disco es la fuente de verda
 |---------------|---------|--------------------|
 | Instalar la skill | [Instalacion Con Skills](#-instalacion-con-skills) | Agregar Handyman a tu entorno de skills. |
 | Entender el flujo | [Que Es Handyman](#-que-es-handyman) | Roles, estado en disco y verificacion. |
+| Arrancar el panel web | [apps/web/README.md](apps/web/README.md) | El toolBox corriendo en `localhost:3210`. |
+| Ubicar el codigo | [Estructura Del Monorepo](#%EF%B8%8F-estructura-del-monorepo) | Las tres unidades del workspace. |
 | Instalar el harness | [Modos De Instalacion](#-modos-de-instalacion) | Elegir `local` o `global` sin mezclar estado. |
 | Ubicar archivos | [Archivos Principales](#-archivos-principales) | Saber que editar y que revisar. |
 | Usarlo con Obsidian | [Visualizar En Obsidian](#-visualizar-en-obsidian) | Abrir el vault sin commitear metadata local. |
@@ -31,7 +33,7 @@ Handyman define un flujo de trabajo para agentes basado en tres roles:
 - 🛠️ **Implementer:** implementa una sola feature, agrega o ajusta tests y deja evidencia en disco. Usa por defecto un modelo mas barato y rapido.
 - ✅ **Reviewer:** valida la implementacion contra arquitectura, convenciones, checkpoints y verificacion. Usa por defecto un modelo mas barato y rapido.
 
-Cada rol puede correr bajo su propio modelo: el leader usa un modelo fuerte, mientras que implementer y reviewer prefieren un modelo barato ya configurado en el editor y, si no hay, caen a `Claude Sonnet 4.6`. Mas detalles en [handyman/references/models.md](handyman/references/models.md). Ademas cada rol corre con un set de tools restringido segun el principio de menor privilegio; mas detalles en [handyman/references/tools.md](handyman/references/tools.md).
+Cada rol puede correr bajo su propio modelo: el leader usa un modelo fuerte, mientras que implementer y reviewer prefieren un modelo barato ya configurado en el editor y, si no hay, caen a `GLM-5.2`. Mas detalles en [handyman/references/models.md](handyman/references/models.md). Ademas cada rol corre con un set de tools restringido segun el principio de menor privilegio; mas detalles en [handyman/references/tools.md](handyman/references/tools.md).
 
 Este patron evita que el trabajo viva solamente en mensajes largos de chat. Los agentes escriben reportes de detalle bajo `backlog/`, el estado vivo de la sesion vive en `progress/`, el backlog de features vive en `feature_list.json`, las reglas del proyecto viven en `docs/`, y el cierre de una feature depende de una verificacion real, normalmente `./init.sh`.
 
@@ -70,6 +72,21 @@ Instala Handyman directamente desde este repositorio con el cliente de skills:
 npx skills add "RodrigoMardones/handyman"
 ```
 
+## 🗺️ Estructura Del Monorepo
+
+Este repositorio es un workspace pnpm con tres unidades:
+
+| Unidad | Que contiene |
+|--------|--------------|
+| [`handyman/`](handyman) | El toolchain TypeScript/Node (CLI de features, backlog, preflight, toolbox) y la skill (`SKILL.md`, `references/`, `assets/`). |
+| [`packages/toolbox-core/`](packages/toolbox-core) | La capa de datos HTTP-agnostica y los relays LLM que comparten el toolchain y el panel. |
+| [`apps/web/`](apps/web) | El **panel web toolBox**: la vista Next.js de los harnesses registrados. Arranque en [apps/web/README.md](apps/web/README.md). |
+
+```bash
+pnpm install
+pnpm --filter handyman build          # compila toolchain + toolbox-core
+pnpm --filter @handyman/web dev       # panel en http://localhost:3210
+```
 
 ## 🏗️ Modos De Instalacion
 
@@ -128,8 +145,8 @@ Cada rol corre con su propio modelo y un set de tools restringido (menor privile
 | Rol | Modelo | Tools |
 |-----|--------|-------|
 | `leader` | Razonamiento fuerte (default del editor) | Superficie amplia: incluye `agent`, `web`, `browser` |
-| `implementer` | Barato y rapido (fallback `Claude Sonnet 4.6`) | Sin delegacion ni web |
-| `reviewer` | Barato y rapido (fallback `Claude Sonnet 4.6`) | Sin delegacion ni web |
+| `implementer` | Barato y rapido (fallback `GLM-5.2`) | Sin delegacion ni web |
+| `reviewer` | Barato y rapido (fallback `GLM-5.2`) | Sin delegacion ni web |
 | `explorer` | El mas barato | Solo lectura: sin `edit` ni `agent` |
 
 Se declaran en el frontmatter del archivo de rol (`model:`, `tools:`) o en los mapas `models`/`tools` de `harness.config.json`. Detalles: [handyman/references/models.md](handyman/references/models.md) y [handyman/references/tools.md](handyman/references/tools.md).

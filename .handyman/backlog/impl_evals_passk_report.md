@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: evals_passk_report
 status: implemented
 role: implementer

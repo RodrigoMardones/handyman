@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: atomic_feature_intake
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: json_schema
 status: approved
 role: reviewer

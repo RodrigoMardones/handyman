@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: harness_ecosystem_research
 status: implemented
 role: implementer

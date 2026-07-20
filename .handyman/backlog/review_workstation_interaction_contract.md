@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: workstation_interaction_contract
 status: approved
 role: reviewer

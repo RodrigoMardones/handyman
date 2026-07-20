@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: skill_preflight_pointer
 status: approved
 role: reviewer

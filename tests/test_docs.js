@@ -159,13 +159,16 @@ function testObsidianContract() {
       text += readText(path.join(assetsDir, name)) + "\n";
     }
   }
-  const requiredFrontmatter = ["feature:", "status:", "role:", "updated:", "tags:"];
+  const requiredFrontmatter = ["type:", "feature:", "status:", "role:", "updated:", "tags:"];
   for (const key of requiredFrontmatter) {
     check("assets templates document frontmatter key '" + key + "'", text.includes(key));
   }
-  for (const tag of ["handyman/session/current", "handyman/history", "handyman/moc"]) {
+  // index.template.md is OKF-reserved: no frontmatter, so no handyman/moc tag.
+  for (const tag of ["handyman/session/current", "handyman/history"]) {
     check("assets templates document tag '" + tag + "'", text.includes(tag));
   }
+  const indexTemplate = readText(path.join(assetsDir, "index.template.md"));
+  check("index.template.md carries no frontmatter (OKF reserved file)", !indexTemplate.startsWith("---"));
 }
 
 function testTokenBudgets() {
@@ -405,7 +408,7 @@ function testDependsOnContract() {
   check("feature definition still rejects unknown keys", featureDef.additionalProperties === false);
   const anatomy = readText(path.join(ROOT, "references", "anatomy.md"));
   check("anatomy.md documents depends_on", anatomy.includes("depends_on"));
-  check("anatomy.md points readiness at the Node feature CLI", anatomy.includes("node dist/feature.js ready"));
+  check("anatomy.md points readiness at the Node feature CLI", anatomy.includes("npx handyman-harness@3 feature ready"));
   const doc = { project: "t", features: [
     { id: 1, name: "a", status: "done" },
     { id: 2, name: "b", status: "pending", depends_on: [1] },
@@ -420,13 +423,51 @@ function testDependsOnContract() {
 function testUnattendedLoopReference() {
   const workflow = readText(path.join(ROOT, "references", "workflow.md"));
   check("workflow.md has the Unattended Loop section", workflow.includes("## Unattended Loop"));
-  for (const token of ["node dist/feature.js ready", "exit 3", "stop", "One feature per iteration"]) {
+  for (const token of ["npx handyman-harness@3 feature ready", "exit 3", "stop", "One feature per iteration"]) {
     check("Unattended Loop documents '" + token + "'", workflow.includes(token));
   }
   check("stability check lists the worklist control", workflow.includes("**Worklist**"));
   const preflight = readText(path.join(ROOT, "src", "preflight.ts"));
   check("preflight runs the worklist block", preflight.includes('"worklist"'));
   check("preflight prints the loop stop condition", preflight.includes("loop stop condition"));
+}
+
+/**
+ * Feature 55: the reviewer template points at the assistive LLM subcommand
+ * WITHOUT eroding the role's authority. Both halves are the contract: naming
+ * the tool is useless if the signature clause goes soft, and the clause alone
+ * leaves the reviewer unaware the layer exists.
+ */
+function testReviewerToolboxPointer() {
+  const template = readText(path.join(ROOT, "assets", "role-reviewer.template.md"));
+  check("reviewer template names the review-notes subcommand",
+    template.includes("toolbox.js review-notes"));
+  check("reviewer template frames it as optional/assistive",
+    template.includes("Optional:") && template.includes("never a substitute"));
+  check("reviewer template keeps the green-verifier signature clause",
+    template.includes("green verifier"));
+  check("reviewer template forbids signing on model output",
+    template.includes("never on a model's output"));
+  check("reviewer template names the real evidence the signature rests on",
+    template.includes("the verifier and the diff"));
+}
+
+/**
+ * Feature 55: both report-producing role templates document the optional
+ * `actor:` frontmatter field. Documenting it is the whole point - nobody
+ * fills in a field that is not written down, and an undocumented field makes
+ * the collision NOTE unreachable in practice.
+ */
+function testActorFieldDocumented() {
+  for (const role of ["implementer", "reviewer"]) {
+    const template = readText(path.join(ROOT, "assets", "role-" + role + ".template.md"));
+    check(role + " template documents the actor: frontmatter field",
+      template.includes("actor:"));
+    check(role + " template states actor: is optional and non-blocking",
+      template.includes("optional and never blocks"));
+    check(role + " template explains the same-actor NOTE",
+      template.includes("not independent"));
+  }
 }
 
 function testTwoStageReview() {
@@ -546,7 +587,7 @@ function testDiscoveryReference() {
   check("references/discovery.md exists", fs.existsSync(doc) && fs.statSync(doc).isFile());
   if (fs.existsSync(doc)) {
     const body = readText(doc);
-    for (const token of ["discovery", "tools_discovery.js", "progressive disclosure", "tool_search", "discovery.agents", "Consultation agents"]) {
+    for (const token of ["discovery", "tools_discovery", "progressive disclosure", "tool_search", "discovery.agents", "Consultation agents"]) {
       check("discovery.md documents '" + token + "'", body.includes(token));
     }
     check("discovery.md documents the contract-vs-resolution path boundary", body.includes("names travel") || body.includes("Contract vs resolution"));
@@ -575,9 +616,9 @@ function testFeatureRequestToolsLink() {
   check("templates.md ties Tools>skills to discovery.skills", templates.includes("discovery.skills"));
   check("templates.md links the discovery reference", templates.includes("discovery.md"));
   const examples = readText(path.join(ROOT, "references", "examples.md"));
-  check("examples.md points to tools_discovery.js for skill verification", examples.includes("tools_discovery.js"));
+  check("examples.md points to tools_discovery.js for skill verification", examples.includes("tools_discovery"));
   const form = readText(path.join(ROOT, "assets", "feature-request.template.md"));
-  check("feature-request template ties Tools>skills to discovery", form.includes("discovery.skills") && form.includes("tools_discovery.js"));
+  check("feature-request template ties Tools>skills to discovery", form.includes("discovery.skills") && form.includes("tools_discovery"));
   check("feature-request template ties Tools>agents to discovery.agents", form.includes("discovery.agents"));
   const workflow = readText(path.join(ROOT, "references", "workflow.md"));
   check("workflow Leader Protocol ties delegation to discovery.agents", workflow.includes("discovery.agents"));
@@ -585,13 +626,13 @@ function testFeatureRequestToolsLink() {
 
 function testDescriptionGate() {
   const workflow = readText(path.join(ROOT, "references", "workflow.md"));
-  check("workflow.md documents the description trigger gate", workflow.includes("node dist/evals.js measure"));
+  check("workflow.md documents the description trigger gate", workflow.includes("npx handyman-harness@3 evals measure"));
   check("workflow.md links the evals reference", workflow.includes("evals.md"));
   const examples = readText(path.join(ROOT, "references", "examples.md"));
   check("examples.md models evals.py validate/measure",
-    examples.includes("node dist/evals.js validate") && examples.includes("node dist/evals.js measure"));
+    examples.includes("npx handyman-harness@3 evals validate") && examples.includes("npx handyman-harness@3 evals measure"));
   const form = readText(path.join(ROOT, "assets", "feature-request.template.md"));
-  check("feature-request Verification ties to re-measuring the trigger", form.includes("node dist/evals.js measure"));
+  check("feature-request Verification ties to re-measuring the trigger", form.includes("npx handyman-harness@3 evals measure"));
 }
 
 // Feature exact-moment metadata (start_and_close_timestamps): the feature_list
@@ -657,6 +698,8 @@ function main() {
   testDependsOnContract();
   testUnattendedLoopReference();
   testTwoStageReview();
+  testReviewerToolboxPointer();
+  testActorFieldDocumented();
   testEvalSet();
   testUpgradeAdvisory();
   testMarkdownLinks();

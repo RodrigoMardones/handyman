@@ -1,3 +1,7 @@
+---
+type: Doc
+---
+
 /handyman run-feature
 
 ## Feature

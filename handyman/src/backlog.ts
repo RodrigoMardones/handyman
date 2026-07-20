@@ -15,11 +15,15 @@
  *
  * Usage:
  *   node dist/backlog.js [--root PATH] impl FEATURE
- *   node dist/backlog.js [--root PATH] review FEATURE [--status approved|changes_requested]
+ *   node dist/backlog.js [--root PATH] review FEATURE [--status approved|changes_requested] [--force]
  *   node dist/backlog.js [--root PATH] explore TOPIC
  *
  * The generator never overwrites an existing entry: it leaves project-owned
- * content untouched and reports the path. Exit codes: 0 ok, 1 error, 2 usage
+ * content untouched and reports the path. `review --force` is the one exception,
+ * and it is not an overwrite: it re-stamps the verdict tokens and keeps the body,
+ * so the CHANGES_REQUESTED -> APPROVED cycle is a command instead of a hand-edit.
+ * Without `--force`, a request that contradicts the verdict on disk now exits 1
+ * instead of passing silently. Exit codes: 0 ok, 1 error, 2 usage
  * (argparse semantics: usage text on stderr, exit 2).
  */
 import {
@@ -53,6 +57,8 @@ interface ParsedArgs {
   name: string;
   status: ReviewStatus;
   date: string | null;
+  /** `review --force`: re-stamp an existing report's verdict instead of refusing. */
+  force: boolean;
 }
 
 /** Raised by `render` when a bundled template is missing (FileNotFoundError). */
@@ -195,7 +201,7 @@ function subUsage(prog: string, command: Command): string {
     return `usage: ${prog} impl [-h] feature\n`;
   }
   if (command === "review") {
-    return `usage: ${prog} review [-h] [--status {approved,changes_requested}] feature\n`;
+    return `usage: ${prog} review [-h] [--status {approved,changes_requested}] [--force] feature\n`;
   }
   return `usage: ${prog} explore [-h] topic\n`;
 }
@@ -220,9 +226,12 @@ Operations: impl Create backlog/impl_<feature>.md (role: implementer). review
 Create backlog/review_<feature>.md (role: reviewer; --status). explore Create
 backlog/explore_<topic>.md (role: explorer). Usage: node dist/backlog.js
 [--root PATH] impl FEATURE node dist/backlog.js [--root PATH] review FEATURE
-[--status approved|changes_requested] node dist/backlog.js [--root PATH]
-explore TOPIC The generator never overwrites an existing entry: it leaves
-project-owned content untouched and reports the path. Exit codes: 0 ok, 1
+[--status approved|changes_requested] [--force] node dist/backlog.js [--root
+PATH] explore TOPIC The generator never overwrites an existing entry: it leaves
+project-owned content untouched and reports the path. review --force re-stamps
+the verdict tokens of an existing report and keeps the body, so the
+CHANGES_REQUESTED -> APPROVED cycle is a command instead of a hand-edit; without
+it, a --status that contradicts the file exits 1. Exit codes: 0 ok, 1
 error, 2 usage.
 
 positional arguments:
@@ -250,6 +259,9 @@ options:
   -h, --help            show this help message and exit
   --status {approved,changes_requested}
                         Review verdict (default: approved).
+  --force               Reissue an existing report: re-stamp the verdict tokens
+                        and keep the body. Without it, a --status that
+                        contradicts the file exits 1.
 `);
   } else {
     process.stdout.write(`${usage}
@@ -305,12 +317,13 @@ function parseSubArgs(
   prog: string,
   command: Command,
   extras: string[],
-): { name: string; status: ReviewStatus; date: string | null } {
+): { name: string; status: ReviewStatus; date: string | null; force: boolean } {
   const usage = subUsage(prog, command);
   const errorProg = `${prog} ${command}`;
   let name: string | null = null;
   let status: ReviewStatus = "approved";
   let date: string | null = null;
+  let force = false;
   let positionalOnly = false;
 
   for (let i = 0; i < rest.length; i++) {
@@ -329,6 +342,8 @@ function parseSubArgs(
       i = next;
     } else if (!positionalOnly && command === "review" && arg.startsWith("--status=")) {
       status = checkStatus(arg.slice("--status=".length), usage, errorProg);
+    } else if (!positionalOnly && command === "review" && arg === "--force") {
+      force = true;
     } else if (!positionalOnly && looksLikeOption(arg)) {
       extras.push(arg);
     } else if (name === null) {
@@ -347,7 +362,7 @@ function parseSubArgs(
   if (extras.length > 0) {
     exitUsage(mainUsage(prog), prog, `unrecognized arguments: ${extras.join(" ")}`);
   }
-  return { name, status, date };
+  return { name, status, date, force };
 }
 
 /** Parse argv like the Python `build_parser()` (exit 2 on usage, 0 on help). */
@@ -439,10 +454,80 @@ function cmdImpl(args: ParsedArgs, workspace: string): number {
   return writeEntry(workspace, `impl_${name}.md`, content);
 }
 
+/**
+ * Re-stamp an existing review report with a new verdict, keeping its body.
+ *
+ * Only the three tokens that encode the verdict change - the same three
+ * `cmdReview` flips when it renders the template - so a reissued report has the
+ * same shape as a freshly generated one. Everything the reviewer wrote
+ * (findings, evidence, Required Changes) survives: that prose *is* the report,
+ * and `writeEntry`'s never-overwrite policy exists to protect exactly it.
+ * Re-rendering from the template would discard the review while claiming to
+ * update it.
+ *
+ * `bodyFlipped` is false when the `## Verdict` section carries no recognisable
+ * marker - a hand-restructured report. The caller says so instead of pretending
+ * the whole file is coherent.
+ */
+function reissueVerdict(text: string, status: ReviewStatus): [string, boolean] {
+  const other: ReviewStatus = status === "approved" ? "changes_requested" : "approved";
+  const upper = status.toUpperCase();
+  const otherUpper = other.toUpperCase();
+  const lines = text.split("\n");
+  let delimiters = 0;
+  let inVerdict = false;
+  let bodyFlipped = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] as string;
+    if (line.trim() === "---" && delimiters < 2) {
+      delimiters += 1;
+      continue;
+    }
+    // 1. The frontmatter `status:` -- the only key any consumer reads
+    //    (feature.js done, metrics.ts, sprint.ts, validate_harness.ts).
+    if (delimiters === 1 && line.startsWith("status:")) {
+      lines[i] = `status: ${status}`;
+      continue;
+    }
+    // 2. The verdict tag, so the tag list cannot contradict the frontmatter.
+    if (delimiters === 1 && line.includes(`handyman/review/${other}`)) {
+      lines[i] = line.split(`handyman/review/${other}`).join(`handyman/review/${status}`);
+      continue;
+    }
+    // 3. The human-facing marker under `## Verdict`. The leading token decides
+    //    whether to act, but the swap covers the whole line: the template ships
+    //    a hint comment naming the other verdict
+    //    (`APPROVED   <!-- or CHANGES_REQUESTED -->`), and flipping only the
+    //    first token would leave `APPROVED   <!-- or APPROVED -->`. Neither
+    //    word is a substring of the other, so the swap is unambiguous.
+    if (delimiters === 2) {
+      if (line.startsWith("## ")) {
+        inVerdict = line.trim() === "## Verdict";
+      } else if (inVerdict && line.trim() !== "") {
+        if (line.startsWith(otherUpper)) {
+          lines[i] = line.replace(/APPROVED|CHANGES_REQUESTED/g, (m) =>
+            m === "APPROVED" ? "CHANGES_REQUESTED" : "APPROVED",
+          );
+          bodyFlipped = true;
+        } else if (line.startsWith(upper)) {
+          bodyFlipped = true;
+        }
+        inVerdict = false;
+      }
+    }
+  }
+  return [lines.join("\n"), bodyFlipped];
+}
+
 function cmdReview(args: ParsedArgs, workspace: string): number {
   const name = safeSlug(args.name);
   if (name === null) {
     return err(`invalid feature name: ${pyRepr(args.name)}`);
+  }
+  const dest = join(workspace, "backlog", `review_${name}.md`);
+  if (existsSync(dest)) {
+    return reviewExisting(dest, args.status, args.force);
   }
   const replacements: Array<readonly [string, string]> = [
     ["<feature_name>", name],
@@ -459,6 +544,63 @@ function cmdReview(args: ParsedArgs, workspace: string): number {
   }
   const content = render("review", replacements);
   return writeEntry(workspace, `review_${name}.md`, content);
+}
+
+/**
+ * Handle `review <f> --status <s>` when the report already exists.
+ *
+ * The CHANGES_REQUESTED -> APPROVED cycle is the normal path of a review, and
+ * before this it had no verb: the second call printed "exists (left untouched)"
+ * and exited 0, so the only way to flip a verdict was to hand-edit the file -
+ * the very pattern the harness forbids for feature_list.json - and a caller
+ * could not tell the no-op from a write.
+ *
+ * Three directions, because "already exists" is not one situation:
+ *   - same verdict, no flag  -> 0. Re-running a command is not an error.
+ *   - different verdict, no flag -> 1, naming both. A verdict silently
+ *     discarded is worse than a refusal.
+ *   - `--force` -> re-stamp, keeping the body.
+ */
+function reviewExisting(dest: string, status: ReviewStatus, force: boolean): number {
+  const text = readFileSync(dest, "utf-8");
+  const [reissued, bodyFlipped] = reissueVerdict(text, status);
+  const declared = declaredStatus(text);
+
+  if (!force) {
+    if (declared === status) {
+      process.stdout.write(`exists (left untouched): ${dest}\n`);
+      return 0;
+    }
+    return err(
+      `${dest} declares '${declared ?? "no status"}' but --status asked for ` +
+        `'${status}'; left untouched. Re-run with --force to reissue it.`,
+    );
+  }
+
+  writeFileSync(dest, reissued, "utf-8");
+  const from = declared ?? "no status";
+  const note = bodyFlipped ? "" : "; NOTE: no verdict marker under '## Verdict' to update";
+  process.stdout.write(`reissued ${dest}: ${from} -> ${status} (body preserved)${note}\n`);
+  return 0;
+}
+
+/** The `status:` a review report's frontmatter declares, or null. */
+function declaredStatus(text: string): string | null {
+  let delimiters = 0;
+  for (const line of text.split("\n")) {
+    if (line.trim() === "---") {
+      delimiters += 1;
+      if (delimiters === 2) {
+        break;
+      }
+      continue;
+    }
+    if (delimiters === 1 && line.startsWith("status:")) {
+      const value = line.slice("status:".length).trim();
+      return value === "" ? null : value;
+    }
+  }
+  return null;
 }
 
 function cmdExplore(args: ParsedArgs, workspace: string): number {

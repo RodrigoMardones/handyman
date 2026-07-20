@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: workstation_app_shell
 status: approved
 role: reviewer

@@ -73,8 +73,8 @@ current version, and the last dated closure — it reimplements no parsing.
 
 `node handyman/dist/toolbox.js serve [--port N]` — a localhost-only, read-only
 web panel over the registry: `disk → fs.watch (debounced 250 ms) → SSE →
-browser`. The frontend is React 18 (UMD + htm from `node_modules`, no build
-step; `assets/toolbox_panel.js`). Hash views:
+browser`. The frontend is the unified Next panel (`apps/web`, served as a
+standalone build; the legacy `assets/toolbox_panel.js` was retired). Views:
 
 | Route | Content |
 |---|---|
@@ -123,7 +123,7 @@ browser: `GET /api/providers` returns only `{id, available, model}`.
 `docs/analisis-peticiones-llm-toolbox.md` §4-5 (Plan A). It builds the intake
 prompt from the bundled `assets/feature-request.template.md` (stable,
 cacheable: CORE/OPTIONAL shape + two archetype examples + the green-gate-as-
-last-bullet rule + the `node dist/feature.js add` contract) plus the volatile
+last-bullet rule + the `npx handyman-harness@3 feature add` contract) plus the volatile
 context of the target harness (feature queue, top-k BM25 duplicate candidates
 via MiniSearch in Node, discovery skills/agents, and the contents of any
 tagged workspace files named in `files[]`), calls the chosen provider
@@ -133,7 +133,7 @@ events: `delta {text}` per chunk, a final
 `result {archetype, draft_md, possible_duplicates}`, and `error {code}` on a
 provider failure (code mapped from `LlmError`). **It never writes disk** —
 the draft always goes through the human (edit/copy) before any destination;
-seeding `feature_list.json` stays with the leader (`node dist/feature.js add`).
+seeding `feature_list.json` stays with the leader (`npx handyman-harness@3 feature add`).
 The prompt-construction + relay live in `src/toolbox_draft.ts`, unit-tested
 with a fake provider (`tests/test_toolbox_draft.js`).
 
@@ -146,7 +146,7 @@ workspace's `feature-request.md` (the same intake artifact the leader consumes
 on the next `run-feature`), appends the tagged files as an HTML comment footer
 so the reference is recorded without polluting the visible body, and refuses an
 invalid or empty payload with an HTTP 4xx. It never spawns a process: the
-feature still enters `feature_list.json` the normal way, via `node dist/feature.js
+feature still enters `feature_list.json` the normal way, via `npx handyman-harness@3 feature
 add`. `GET /api/files?root=` feeds the tag picker — it returns relative paths of
 tag-eligible files inside a registered root only (never an unregistered path),
 and the chosen files ride along on both `POST /api/draft` (extra context) and
@@ -154,7 +154,8 @@ and the chosen files ride along on both `POST /api/draft` (extra context) and
 
 ### Observer UI features
 
-The panel (`assets/toolbox_panel.js`, React 18 + htm, no build step) carries a
+The observer is the unified Next panel (`apps/web`, served standalone by
+`toolbox serve`; the legacy `assets/toolbox_panel.js` was retired). It carries a
 set of intentionally hand-rolled features, each adding no chart/markdown/theme
 library:
 
@@ -228,5 +229,5 @@ as a warning, so a missing toolBox script never blocks a verified closure.
   — beyond the single intake submit that `POST /api/intake` already covers; would
   require the session-token model of the legacy workstation to gate mutating
   role-CLI calls.
-- **ToolBox upgrades** — orchestrating `node dist/upgrade_harness.js` over every
+- **ToolBox upgrades** — orchestrating `npx handyman-harness@3 upgrade_harness` over every
   harness flagged `BEHIND`.

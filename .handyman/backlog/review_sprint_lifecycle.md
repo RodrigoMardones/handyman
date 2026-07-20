@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: sprint_lifecycle
 status: approved
 role: reviewer

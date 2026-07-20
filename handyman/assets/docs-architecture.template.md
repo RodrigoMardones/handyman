@@ -1,3 +1,7 @@
+---
+type: Doc
+---
+
 # Architecture
 
 This document defines what good work means in this repo. Reviewers evaluate code against it.

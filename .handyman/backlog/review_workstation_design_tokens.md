@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: workstation_design_tokens
 status: approved
 role: reviewer

@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: feature_contract_no_dates
 status: approved
 role: reviewer

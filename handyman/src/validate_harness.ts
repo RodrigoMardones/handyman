@@ -23,6 +23,8 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
+import { computeEvidenceDebt } from "@handyman/toolbox-core/triage";
+import { parseFrontmatter } from "./core/frontmatter.js";
 import { PLATFORM_ROLE_DIRS, resolveWorkspace, validateFeatureList } from "./core/index.js";
 
 /** Core files that must exist inside the resolved HARNESS_WORKSPACE. */
@@ -41,6 +43,16 @@ const FRONTMATTER_REQUIRED: Record<string, readonly string[]> = {
   impl: ["feature", "status", "role", "updated", "tags"],
   review: ["feature", "status", "role", "updated", "tags"],
   explore: ["topic", "role", "updated", "tags"],
+};
+
+/** Pre-2.1 reports wrote `verdict:`/`date:`/`reviewer:` for what is now
+ *  `status:`/`updated:`/`role:`. `done` already honors the legacy key
+ *  (feature.ts `front.status ?? front.verdict`); the advisory must not flag
+ *  as missing what the reader accepts. */
+const FRONTMATTER_LEGACY_ALIASES: Record<string, string> = {
+  status: "verdict",
+  updated: "date",
+  role: "reviewer",
 };
 
 interface Feature {
@@ -364,12 +376,87 @@ function checkFrontmatterAdvisory(workspace: string): void {
       );
       continue;
     }
-    const missing = required.filter((k) => !keys.includes(k));
+    const missing = required.filter((k) => {
+      if (keys.includes(k)) return false;
+      const alias = FRONTMATTER_LEGACY_ALIASES[k];
+      return !(alias && keys.includes(alias));
+    });
     if (missing.length > 0) {
       process.stderr.write(`NOTE: ${path} frontmatter is missing: ${missing.join(", ")}.\n`);
     }
     if (keys.includes("tags") && !tagsLine.includes("handyman/")) {
       process.stderr.write(`NOTE: ${path} tags do not use the #handyman/ namespace.\n`);
+    }
+  }
+}
+
+function checkEvidenceDebtAdvisory(workspace: string): void {
+  /** Non-blocking advisory: a feature closed `done` whose backlog has no
+   *  review_<name>.md left no reviewable evidence behind. `checkFrontmatterAdvisory`
+   *  only inspects the reports that DO exist, so this is the other direction —
+   *  the cross against feature_list.json that nothing in the gate did before.
+   *
+   *  NOTE, not gap, on purpose: breaking the exit code of installed harnesses
+   *  that already carry legitimate debt is hostile. Warn first; hardening this
+   *  later is a one-line change, and by then it has data behind it.
+   *
+   *  Reuses computeEvidenceDebt from the core (the same computation the
+   *  triage route serves) rather than re-implementing the cross. */
+  let debt: Array<{ name?: string; missing: string }>;
+  try {
+    debt = computeEvidenceDebt(workspace);
+  } catch {
+    return; // a bare or unreadable workspace is not this advisory's problem
+  }
+  for (const entry of debt) {
+    process.stderr.write(
+      `NOTE: feature '${entry.name ?? ""}' is done but ${join(workspace, "backlog", entry.missing)} is missing.\n`,
+    );
+  }
+}
+
+function checkActorCollisionAdvisory(workspace: string): void {
+  /** Non-blocking advisory: when impl_<f>.md and review_<f>.md declare the same
+   *  `actor:`, one agent both wrote the code and signed off on it.
+   *
+   *  This makes the deviation VISIBLE, it does not prevent it - an agent that
+   *  runs all three roles and writes three different actor values passes this
+   *  check untouched. Preventing it is process (separate sessions), not code,
+   *  and pretending a checker covers it would be worse than saying so.
+   *
+   *  `actor:` is OPTIONAL on purpose: the reports that installed harnesses
+   *  already wrote have no such field, and invalidating them would be hostile.
+   *  A report without it is simply silent here. */
+  const backlog = join(workspace, "backlog");
+  if (!isDir(backlog)) {
+    return;
+  }
+  let entries: string[];
+  try {
+    entries = readdirSync(backlog).sort();
+  } catch {
+    return;
+  }
+  const actorOf = (prefix: string, feature: string): string | null => {
+    const path = join(backlog, `${prefix}_${feature}.md`);
+    if (!isFile(path)) {
+      return null;
+    }
+    const actor = parseFrontmatter(path).actor;
+    return typeof actor === "string" && actor.trim() !== "" ? actor.trim() : null;
+  };
+  for (const entry of entries) {
+    if (!entry.startsWith("impl_") || !entry.endsWith(".md")) {
+      continue;
+    }
+    const feature = entry.slice("impl_".length, -".md".length);
+    const implActor = actorOf("impl", feature);
+    const reviewActor = actorOf("review", feature);
+    if (implActor !== null && reviewActor !== null && implActor === reviewActor) {
+      process.stderr.write(
+        `NOTE: feature '${feature}' was implemented and reviewed by the same actor ` +
+          `('${implActor}'): the review is not independent.\n`,
+      );
     }
   }
 }
@@ -511,6 +598,8 @@ function main(argv: string[]): number {
   }
   const { gaps, workspace } = validate(root);
   checkFrontmatterAdvisory(workspace);
+  checkEvidenceDebtAdvisory(workspace);
+  checkActorCollisionAdvisory(workspace);
   checkBranchAdvisory(root, workspace);
 
   if (gaps.length > 0) {

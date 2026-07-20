@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: fleet_registry
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: fleet_timeline
 status: implemented
 role: implementer

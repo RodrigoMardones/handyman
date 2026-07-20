@@ -8,7 +8,7 @@
     "handyman_root": null,
     "harness_workspace": ".handyman",
     "harness_version": "1.20.20",
-    "current_sprint": null,
+    "current_sprint": "2026-SP6",
     "discovery": {
       "skills": [],
       "mcp": [],
@@ -28,316 +28,808 @@
   },
   "features": [
     {
-      "id": 9,
-      "name": "validate_harness_cli",
-      "title": "Portar validate_harness (CLI) a TS sobre el core",
-      "description": "Port de validate_harness.py (superficie CLI) -> src/validate_harness.ts. Riesgo medio: los helpers (resolve_workspace, IO, schema) ya estan en core; queda la CLI de validacion/auditoria del harness. Repunta los tests pertinentes y elimina el .py.",
+      "id": 30,
+      "name": "toolbox_fleet_summary",
+      "title": "toolBox: resumen narrativo de flota/proyecto (valor alto / esfuerzo bajo)",
+      "description": "Item 2.1 de docs/analisis-tareas-llm-toolbox.md. Dado GET /api/state (senal_counts + status_counts + timeline), pedir a un modelo barato (GLM-4.7-Flash o Haiku) un resumen de ~5 lineas de la flota (cierres recientes, features pendientes, verdicts destacados). Render con marked+DOMPurify (ya disponibles). Cache por hash del estado (si el hash no cambio, devolver el cacheado). Pull o batch, nunca LLM por evento SSE. Read-only: no escribe disco.",
       "acceptance": [
-        "src/validate_harness.ts replica el contrato CLI de validate_harness.py (subcomandos, flags, exit codes, salida byte-identica).",
-        "Usa el core: resolveWorkspace, IO byte-identico, y validacion ajv sobre los mismos assets/schemas.",
-        "Las suites que cubren validate (via otros tests + test_docs) quedan verdes sin editar aserciones.",
-        "validate_harness.py se elimina y sus referencias en SKILL.md/references se actualizan.",
-        "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
-      ],
-      "status": "done"
-    },
-    {
-      "id": 10,
-      "name": "preflight_fanout",
-      "title": "Portar preflight (fan-out de hermanos) a TS sobre el core",
-      "description": "Port de preflight.py -> src/preflight.ts. Riesgo alto: lanza 5 hermanos via subprocess (hoy invoca node dist/feature.js; el resto sigue en Python) con stdio inherit. Reusa child_process del port de feature. Repunta test_preflight.sh a node dist/preflight.js sin editar aserciones y elimina el .py.",
-      "acceptance": [
-        "src/preflight.ts replica el contrato CLI de preflight.py (worklist, flags, exit codes, salida byte-identica).",
-        "Reproduce el fan-out de hermanos via child_process (stdio inherit) y el mismo texto de bloque que los tests grepean.",
-        "test_preflight.sh parametriza la invocacion a node dist/preflight.js; la suite queda verde sin editar aserciones.",
-        "preflight.py se elimina y sus referencias en SKILL.md/references/init.sh se actualizan a node dist/preflight.js.",
-        "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
-      ],
-      "status": "done"
-    },
-    {
-      "id": 11,
-      "name": "update_harness_diff",
-      "title": "Portar update_harness (unified diff) a TS sobre el core",
-      "description": "Port de update_harness.py -> src/update_harness.ts. Riesgo alto: usa difflib.unified_diff para los --dry-run; el shim core/unifiedDiff ya existe. Repunta test_update.sh a node dist/update_harness.js sin editar aserciones y elimina el .py.",
-      "acceptance": [
-        "src/update_harness.ts replica el contrato CLI de update_harness.py (subcomandos, flags, --dry-run diff, exit codes, salida byte-identica).",
-        "Usa el core: resolveWorkspace, IO byte-identico, y core/unifiedDiff para replicar difflib.unified_diff.",
-        "test_update.sh parametriza la invocacion a node dist/update_harness.js; la suite queda verde sin editar aserciones.",
-        "update_harness.py se elimina y sus referencias en SKILL.md/references se actualizan.",
-        "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
-      ],
-      "status": "done"
-    },
-    {
-      "id": 12,
-      "name": "upgrade_harness_diff",
-      "title": "Portar upgrade_harness (unified diff) a TS sobre el core",
-      "description": "Port de upgrade_harness.py -> src/upgrade_harness.ts. Riesgo alto: usa difflib.unified_diff y jq-en-test; el shim core/unifiedDiff ya existe. Repunta test_upgrade.sh a node dist/upgrade_harness.js sin editar aserciones y elimina el .py.",
-      "acceptance": [
-        "src/upgrade_harness.ts replica el contrato CLI de upgrade_harness.py (subcomandos, flags, --dry-run diff, exit codes, salida byte-identica).",
-        "Usa el core: resolveWorkspace, IO byte-identico, y core/unifiedDiff para replicar difflib.unified_diff.",
-        "test_upgrade.sh parametriza la invocacion a node dist/upgrade_harness.js; la suite queda verde sin editar aserciones.",
-        "upgrade_harness.py se elimina y sus referencias en SKILL.md/references se actualizan.",
-        "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
-      ],
-      "status": "done"
-    },
-    {
-      "id": 13,
-      "name": "tools_discovery_discovery",
-      "title": "Portar tools_discovery (skills/MCP/agents) a TS sobre el core",
-      "description": "Port de tools_discovery.py -> src/tools_discovery.ts. Riesgo alto: declare usa ensure_ascii=True (escapa no-ASCII), difflib (core/unifiedDiff ya existe), e importa resolve_workspace + PLATFORM_ROLE_DIRS de validate_harness. PLATFORM_ROLE_DIRS no esta en core todavia -> se anade al port (constante (\".github/agents\",\".claude/agents\")) o se mueve al core al portear #9. Repunta test_tools_discovery.sh a node dist/tools_discovery.js sin editar aserciones y elimina el .py.",
-      "acceptance": [
-        "src/tools_discovery.ts replica el contrato CLI de tools_discovery.py (list/find/check/declare; --root; --skills-dir; --json; --dry-run; exit codes 0/1/2; salida byte-identica).",
-        "Usa el core: resolveWorkspace, IO byte-identico, unifiedDiff para declare --dry-run, y replica ensure_ascii=True en declare (escapa no-ASCII).",
-        "list/find/check/declare preservan local-then-global skill-root precedence, MCP validation contra .vscode/mcp.json, y agent verification contra role dirs (PLATFORM_ROLE_DIRS).",
-        "test_tools_discovery.sh parametriza la invocacion a node dist/tools_discovery.js; la suite queda verde sin editar aserciones.",
-        "tools_discovery.py se elimina y sus referencias en SKILL.md/references se actualizan a node dist/tools_discovery.js.",
-        "Se documenta la evidencia de paridad byte-identica y el verificador ./init.sh queda verde."
-      ],
-      "status": "done"
-    },
-    {
-      "id": 15,
-      "name": "toolbox_port",
-      "title": "Port fleet.py to TypeScript as toolBox CLI",
-      "description": "Port the legacy fleet.py (registry, status, health, timeline, heartbeat, moc) to handyman/src/toolbox.ts over core/, renamed toolBox. Registry stays at $HOME/HANDYMAN/registry.json.",
-      "acceptance": [
-        "node dist/toolbox.js status/health/timeline/moc reproduce legacy fleet behavior against a temp HANDYMAN_ROOT",
-        "tests/test_toolbox.sh suite green in run_tests.sh"
-      ],
-      "status": "done"
-    },
-    {
-      "id": 16,
-      "name": "toolbox_observer",
-      "title": "toolBox observer: local read-only web panel",
-      "description": "toolbox serve subcommand: node:http server hard-bound to 127.0.0.1 with GET /, /api/state, /events (SSE via fs.watch+debounce). Self-contained panel (hw tokens, textContent-only) with fleet, harness and timeline hash views. Read-only.",
-      "acceptance": [
-        "toolbox serve --port 0 boots, /api/state returns snapshots+signals+timeline, panel renders kanban grouped by status",
-        "SSE event fires on feature_list.json change (test polls state)"
+        "GET /api/state alimenta un nuevo endpoint POST /api/summarize que llama al LlmProvider elegido (zai glm-4.7-flash por defecto) y retransmite el resumen por SSE.",
+        "El resumen se cachea por hash del estado de la flota; una segunda llamada con el mismo hash devuelve el cacheado sin llamar al proveedor.",
+        "El system prompt ata el resumen a los datos de /api/state (cuenta de features por estado, cierres recientes, nombres de harness) y exige 'no se' si los datos son insuficientes (anti-alucinacion).",
+        "tests/test_toolbox_serve.sh cubre el endpoint con un provider fake (asserta SSE bien formado + cache hit); cableado en run_tests.sh. Ningun test toca la red.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
       ],
       "status": "done",
-      "depends_on": [
-        15
-      ]
-    },
-    {
-      "id": 17,
-      "name": "toolbox_graph_view",
-      "title": "toolBox observer: knowledge-graph view",
-      "description": "Serve each harness graphify-out/graph.html (iframe) and graph.json under /graph/<name>; harness view links/embeds it when present.",
-      "acceptance": [
-        "GET /graph/<name>/ returns the harness graph.html when graphify-out exists; absent graph degrades to a note"
-      ],
-      "status": "done",
-      "depends_on": [
-        16
-      ]
-    },
-    {
-      "id": 18,
-      "name": "toolbox_search",
-      "title": "toolBox observer: client-side BM25 search",
-      "description": "MiniSearch (vendored UMD served from node_modules) indexing /api/corpus/<name> (features + backlog + progress + docs md) in the browser; reindex on SSE. No server-side RAG.",
-      "acceptance": [
-        "search box returns feature and backlog hits by keyword across the fleet corpus"
-      ],
-      "status": "done",
-      "depends_on": [
-        16
-      ]
-    },
-    {
-      "id": 19,
-      "name": "toolbox_ui_project_info",
-      "title": "toolBox observer: project info in detail view (Plan A)",
-      "description": "Expose what metrics.collect() already computes in the harness detail view: per-harness KPI strip (approval rate, report coverage, closures last 14 days) + hand-rolled inline SVG sparkline of throughput (one <polyline>, theme-aware via --hw-* tokens, role=img + aria-label). Add a Docs section (business/architecture/conventions/verification) as quick-view buttons over the existing /api/md docs: whitelist, and relative dates with the absolute date in title= (port of the legacy fmt.* layer). Server side: include metrics per harness in /api/state.",
-      "acceptance": [
-        "/api/state includes per-harness metrics (throughput by date, review verdicts incl. approval rate, coverage) sourced from the same logic as metrics.collect(), degrading to null on unreadable harnesses.",
-        "Harness detail view renders a KPI strip (approval rate, coverage, closures last 14 days) and an inline SVG sparkline (<polyline>, --hw-* tokens only, role=img with aria-label; no chart library).",
-        "Docs section lists business/architecture/conventions/verification as quick-view buttons using the existing /api/md docs: mechanism, degrading gracefully when a doc is missing.",
-        "Timeline and card dates render relative (e.g. 3d ago) with the absolute date in the title attribute via a small fmt helper.",
-        "tests/test_toolbox_serve.sh covers the metrics payload in /api/state; ./init.sh exits 0."
-      ],
-      "status": "done",
-      "depends_on": [
-        16
-      ]
-    },
-    {
-      "id": 20,
-      "name": "toolbox_theme_toggle",
-      "title": "toolBox observer: light/dark/system theme toggle (Plan B)",
-      "description": "Port the legacy ux2 6.4 theme contract to the React panel. The CSS tokens already switch on :root[data-theme] and prefers-color-scheme; add the control layer only: synchronous anti-flash inline script in panelHtml() <head>, a 3-state control (light/dark/system) in the nav with aria-pressed, localStorage key hw-theme:1 (system = remove the key), matchMedia listener active only in system mode.",
-      "acceptance": [
-        "panelHtml() head carries a synchronous inline script that reads localStorage hw-theme:1 and sets data-theme on <html> before first paint (no flash).",
-        "Nav shows a 3-state theme control (light/dark/system) with aria-pressed reflecting the active state; selecting system removes the storage key and data-theme follows matchMedia('(prefers-color-scheme: dark)') live.",
-        "Explicit light/dark persist across reloads via localStorage hw-theme:1; no new hex values, tokens only.",
-        "tests/test_toolbox_serve.sh asserts the anti-flash script and theme control markup are served; ./init.sh exits 0."
-      ],
-      "status": "done",
-      "depends_on": [
-        16
-      ]
-    },
-    {
-      "id": 21,
-      "name": "toolbox_markdown_render",
-      "title": "toolBox observer: safe rendered markdown (Plan C)",
-      "description": "Replace the raw <pre> markdown viewer with marked + DOMPurify (both served as UMD from node_modules via the existing /vendor/* mechanism; add both as runtime deps). Sanitize with FORBID_TAGS/FORBID_ATTR and javascript: URL blocking; add CSP default-src 'self' on server responses as second defense. Agent-produced markdown is untrusted even though it is local. Applies to the viewer for current/history/checkpoints/backlog/docs and search result excerpts.",
-      "acceptance": [
-        "marked and dompurify are runtime dependencies served via /vendor/marked.js and /vendor/dompurify.js from node_modules UMD builds.",
-        "The md viewer renders sanitized HTML: DOMPurify with FORBID_TAGS (at least script,style,iframe,form,input) and FORBID_ATTR (event handlers), javascript: hrefs stripped; a hostile fixture proves script/onerror/javascript: do not survive.",
-        "Server responses carry Content-Security-Policy default-src 'self' (allowing inline script/style needed by the panel) as second defense.",
-        "Viewer applies to current/history/checkpoints/backlog/docs quick-views; search results keep textContent excerpts.",
-        "tests/test_toolbox_serve.sh covers vendor endpoints and the CSP header; ./init.sh exits 0."
-      ],
-      "status": "done",
-      "depends_on": [
-        16
-      ]
-    },
-    {
-      "id": 22,
-      "name": "toolbox_a11y_live",
-      "title": "toolBox observer: a11y live regions + empty states (Plan D)",
-      "description": "Two persistent live regions created once at load (polite with role=status, assertive with role=alert), initially empty; SSE updates are queued and summarized with debounce (e.g. '3 features updated in handyman'), never announced per event. SSE connection indicator uses text + color (never color alone). prefers-reduced-motion is consulted before any animation/auto-scroll. Empty states become actionable ('no projects - run handyman install').",
-      "acceptance": [
-        "Exactly two persistent live regions exist from first render (role=status aria-live=polite, role=alert), empty at load, and are the only aria-live surfaces.",
-        "SSE-driven changes enqueue and a debounced summary lands in the polite region; connection loss/recovery lands in the assertive region as text (indicator shows text + color, not color alone).",
-        "prefers-reduced-motion: reduce disables panel animations and auto-scroll behaviors.",
-        "Empty fleet/harness/search states show an actionable hint instead of a bare dash.",
-        "tests/test_toolbox_serve.sh asserts the live-region markup in the served panel; ./init.sh exits 0."
-      ],
-      "status": "done",
-      "depends_on": [
-        16
-      ]
-    },
-    {
-      "id": 23,
-      "name": "toolbox_command_palette",
-      "title": "toolBox observer: command palette + shortcuts (Plan E)",
-      "description": "Hand-rolled command palette: native <dialog> (showModal, focus return) + input + action list ranked with the MiniSearch index already loaded in the client (actions: go to project/view, open md quick-view, search). Shortcuts: Cmd/Ctrl+K palette, / focus search, j/k move, g+letter go to view, ? help, Esc close. One keydown listener with an event.target guard so typing in inputs never triggers shortcuts.",
-      "acceptance": [
-        "Cmd/Ctrl+K opens a native <dialog> palette via showModal(); Esc closes it and focus returns to the previously focused element.",
-        "Palette input filters/ranks actions (go to project, go to view, open md, search) using MiniSearch; Enter executes the selected action; j/k or arrows move the selection.",
-        "Global shortcuts work (/ focuses search, g+letter navigates views, ? opens help) and are inert while focus is on input/textarea/select or inside the palette input except its own navigation keys.",
-        "A single document-level keydown listener implements the shortcuts (no per-component listeners).",
-        "tests/test_toolbox_serve.sh asserts the palette dialog markup is served; ./init.sh exits 0."
-      ],
-      "status": "done",
-      "depends_on": [
-        16,
-        18
-      ]
-    },
-    {
-      "id": 24,
-      "name": "toolbox_llm_providers",
-      "title": "Puerto LlmProvider + adapters Z.ai/Claude/Ollama y GET /api/providers",
-      "description": "Capa LLM del toolBox (docs/analisis-peticiones-llm-toolbox.md §2-3): puerto LlmProvider en el servidor con adapter anthropic (Claude y Z.ai Coding Plan via baseURL https://api.z.ai/api/anthropic) y adapter openai-compatible (paas/v4 y Ollama); carga de keys desde .env; endpoint GET /api/providers con disponibilidad. Hallazgos empiricos: thinking disabled en llamadas cortas GLM, max_tokens<=131072, error 1113 = sin saldo.",
-      "acceptance": [
-        "Puerto LlmProvider (id, available(), draft() streaming por callback) + adapters anthropic y openai-compatible parametrizados por baseURL; copilot declarado como id futuro sin adapter",
-        "GET /api/providers responde {providers:[{id,available,model}]} sin exponer keys; available() no llama a la red salvo health check de Ollama que degrada sin lanzar",
-        "Adapter openai-compatible: thinking disabled por defecto en drafts, max_tokens capeado a 131072, 429/1113 mapeado a insufficient_balance; keys cargadas de .env sin dependencia dotenv y nunca loggeadas",
-        "Tests con fetch mockeado (exito, streaming, 401, 1113, /api/providers) cableados en run_tests.sh; ningun test toca la red",
-        "bash tests/run_tests.sh passes"
-      ],
-      "status": "done"
-    },
-    {
-      "id": 25,
-      "name": "toolbox_draft_relay",
-      "title": "POST /api/draft: relay SSE de intake nutrido con la experiencia del harness",
-      "description": "Endpoint POST /api/draft {root, prompt, provider} en toolbox_serve.ts (docs/analisis-peticiones-llm-toolbox.md §4): construye system estable (assets/feature-request.template.md + arquetipos + contrato feature.js add) y contexto volatil del harness destino (cola de features, top-k BM25 del corpus con MiniSearch en Node, skills de discovery), llama al LlmProvider elegido y retransmite deltas por SSE. Errores del proveedor como event: error. No escribe disco.",
-      "acceptance": [
-        "POST /api/draft valida root contra el registry y provider contra los disponibles; responde SSE con deltas y un evento final {archetype, draft_md, possible_duplicates}",
-        "El prompt incluye plantilla Nucleo/Opcional, 2 ejemplos por arquetipo, gate verde como ultima bala, y contexto del harness (features, top-k BM25, skills discovery)",
-        "Fallo del proveedor -> event: error SSE con codigo mapeado (p.ej. insufficient_balance); ningun otro metodo/ruta de escritura se agrega",
-        "Tests con provider fake: prompt construido, SSE bien formado, root no registrado -> 400; cableados en run_tests.sh",
-        "bash tests/run_tests.sh passes"
-      ],
-      "status": "done",
-      "depends_on": [
-        24
-      ]
-    },
-    {
-      "id": 26,
-      "name": "toolbox_intake_ui",
-      "title": "Vista de intake en el panel: redactar peticion, draft editable y copiar (Plan A)",
-      "description": "Vista #/intake en assets/toolbox_panel.js (Plan A de docs/analisis-peticiones-llm-toolbox.md §5): selector de harness destino y proveedor (GET /api/providers), textarea de peticion libre, consumo del SSE de POST /api/draft con render seguro (marked+DOMPurify), draft editable y boton copiar al portapapeles. Errores en live region assertive. El observador sigue sin escribir disco.",
-      "acceptance": [
-        "Vista #/intake con selector de harness y proveedor poblados desde /api/state y /api/providers",
-        "El draft llega por SSE y se renderiza sanitizado (DOMPurify); es editable antes de copiar; boton copiar usa clipboard API con fallback",
-        "event: error del relay se anuncia en la live region assertive existente",
-        "Tests de panel (patron de las suites toolbox existentes) cubren la vista y el flujo copiar; cableados en run_tests.sh",
-        "bash tests/run_tests.sh passes"
-      ],
-      "status": "done",
-      "depends_on": [
-        25
-      ]
-    },
-    {
-      "id": 27,
-      "name": "toolbox_intake_enhancements",
-      "title": "toolBox observer: intake UI enhancements, file tags, and direct submission",
-      "description": "Extiende la vista #/intake (feature 26) con seleccion de archivos del workspace como tags de contexto, y un endpoint de envio directo que persiste el intake en el harness destino. Backend: GET /api/files lista archivos del workspace dentro de roots registradas; POST /api/draft acepta files[] e incluye su contenido en el contexto volatil; POST /api/intake escribe el draft final en $WORKSPACE/feature-request.md (el artefacto de intake que consume el leader). Validacion 4xx de payloads invalidos/vacios sin spawning de procesos.",
-      "acceptance": [
-        "La vista de intake muestra una lista/dropdown buscable de archivos disponibles en el workspace, permitiendo seleccion multiples para incluir como tags de contexto en el prompt.",
-        "El usuario puede enviar el intake al harness desde la UI (POST /api/intake) y recibe una notificacion de exito/fallo.",
-        "El backend rechaza un payload invalido o vacio con un error HTTP 4xx y no lanza un proceso handyman.",
-        "GET /api/files?root= solo resuelve dentro de roots registradas y devuelve rutas relativas; POST /api/draft incluye el contenido de los archivos seleccionados como contexto.",
-        "bash tests/run_tests.sh passes"
-      ],
-      "status": "done",
-      "depends_on": [
-        26
-      ]
-    },
-    {
-      "id": 28,
-      "name": "start_and_close_timestamps",
-      "title": "Registrar fecha y hora exactas al iniciar/cerrar features y sprints",
-      "description": "Almacenar timestamps ISO 8601 al iniciar/cerrar features (meta.started_at/done_at) y al cerrar sprints (closed_at) para enriquecer las metricas de observer.",
-      "acceptance": [
-        "feature.js start registra meta.started_at (ISO 8601)",
-        "feature.js done registra meta.done_at (ISO 8601)",
-        "sprint.js close incluye el timestamp de cierre (closed_at)",
-        "schema feature_list draft-07 compatible con las nuevas claves (meta)",
-        "bash tests/run_tests.sh passes"
-      ],
-      "status": "done",
+      "sprint": "2026-SP6",
       "meta": {
-        "done_at": "2026-07-18T03:24:54.366Z"
+        "started_at": "2026-07-18T05:27:54.181Z",
+        "done_at": "2026-07-18T05:45:22.166Z"
       }
     },
     {
-      "id": 29,
-      "name": "sync_docs_handyman_v2",
-      "title": "Sync and update Handyman docs across references/ and .handyman/docs/",
-      "description": "Single unified documentation update to bring references/toolbox.md, references/templates.md, references/discovery.md and .handyman/docs/architecture.md + verification.md in sync with recently completed code: LLM providers (24), POST /api/draft relay + /api/intake (25,27), intake UI (26), command palette (23), observer UI Plans A-E (19-23), and start/close timestamps (28). No source code changes.",
+      "id": 31,
+      "name": "toolbox_ask_fleet",
+      "title": "toolBox: 'Ask your fleet' - RAG minimo sobre el corpus (valor alto / esfuerzo medio)",
+      "description": "Item 2.2 de docs/analisis-tareas-llm-toolbox.md. El indice MiniSearch del cliente YA es el retriever (indexa features + backlog + progress + docs). Patron: pregunta -> top-k BM25 -> relay con pregunta + fragmentos -> respuesta CITANDO fuentes por SSE. System exige citar [fuente: ruta#id] y responder 'no se' si los fragmentos no alcanzan. Read-only. Reusa buildCorpus() de toolbox_serve.ts y el patron relay de toolbox_draft.ts.",
       "acceptance": [
-        "references/toolbox.md documents the LLM providers layer (GET /api/providers), POST /api/draft SSE relay, POST /api/intake write, and observer UI features (intake view, command palette, search, theme toggle, markdown render, a11y, project info).",
-        "references/templates.md and references/discovery.md reflect any new doc surfaces and CLI commands.",
-        ".handyman/docs/architecture.md and .handyman/docs/verification.md include the new toolBox endpoints (/api/draft, /api/intake, /api/providers, /api/files), the observer UI, and start/close timestamps.",
-        "bash tests/run_tests.sh passes (test_docs link checks and markdown linting stay green)."
+        "Nueva vista #/ask en el panel (o entrada en la command palette feature 23) con caja de pregunta y selector de harness/proveedor.",
+        "POST /api/ask {root, question, provider} calcula top-k BM25 del corpus del harness (MiniSearch en Node, reusa buildCorpus), arma prompt con pregunta+fragmentos, y retransmite la respuesta por SSE; no escribe disco.",
+        "El system prompt exige al modelo citar cada afirmacion como [fuente: ruta#id] atada a un fragmento provisto, y responder 'no se' si los fragmentos no son suficientes (anti-alucinacion).",
+        "Cada cita en la respuesta se enlaza a su ruta real via GET /api/md en el render (DOMPurify).",
+        "tests/test_toolbox_serve.sh cubre /api/ask con provider fake + corpus de fixture (top-k devuelto, SSE bien formado, cita presente); cableado en run_tests.sh. Ningun test toca la red.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "meta": {
+        "started_at": "2026-07-18T05:45:28.406Z",
+        "done_at": "2026-07-18T06:01:34.937Z"
+      }
+    },
+    {
+      "id": 32,
+      "name": "toolbox_backlog_triage",
+      "title": "toolBox: triage y dedup de backlog + deuda de evidencia (valor alto / esfuerzo medio)",
+      "description": "Item 2.3 de docs/analisis-tareas-llm-toolbox.md. Salida estructurada {id, categoria, duplicado_de?, confianza} en batch sobre backlog/*.md. El modelo clasifica impl_/review_/explore_ y sugiere solapes; NUNCA auto-merge (humano en el loop). Variante nueva: detectar features cerradas sin review_ o con acceptance incompleta -> lista de 'deuda de evidencia' (hoy validate_harness no lo cubre). Read-only; el merge lo ejecuta un humano con mv/git.",
+      "acceptance": [
+        "POST /api/triage existe como route handler nativo (apps/web/app/api/triage/route.ts, export const dynamic = \"force-dynamic\"), parsea el body con readJsonObject (cap 256 KB) y responde 400 ANTES de cualquier llamada al LLM cuando el body es invalido, falta un campo de {root, provider?, model?}, el root no esta registrado (isRegisteredRoot: el registry es la allowlist de toda lectura del workspace) o el provider es desconocido.",
+        "Devuelve por SSE con el framing de apps/web/lib/relay.ts (relayResponse: event delta|result|error, headers no-store + nosniff + CSP): un result {report: [{id, categoria, duplicado_de?, confianza}]} sobre los backlog/*.md del harness, clasificando impl_/review_/explore_ y marcando solapes. El endpoint NO escribe disco.",
+        "El result incluye evidence_debt: las features en estado done cuyo backlog carece de review_<feature>.md (hueco que validate_harness no cubre). Se calcula en el server desde el estado del harness y el filesystem; NO lo infiere el modelo.",
+        "Clasificacion = modelo barato (resolveSummaryModel, mismo criterio de costo que /api/summarize y /api/ask).",
+        "El sistema NUNCA auto-mergea: el output es una sugerencia y el merge lo ejecuta un humano con mv/git; la UI muestra los reportes para decision humana.",
+        "tests/test_web_triage.sh (patron de tests/test_web_relays.sh) cubre /api/triage: las 400 de validacion, el framing SSE y un report parseable + evidence_debt calculado desde fixtures (features done sin review_). Corre contra el fake determinista (mock OpenAI-compatible en 127.0.0.1 exportado como OLLAMA_BASE_URL -> provider \"ollama\"); registrada en tests/run_tests.sh. Ningun test toca la red. El oraculo tests/test_toolbox_serve.sh solo se toca si la ruta entra al contrato negro-caja del observador.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
       ],
       "status": "done",
       "depends_on": [
-        23,
-        24,
-        25,
-        27,
-        28
+        45
+      ],
+      "sprint": "2026-SP6",
+      "meta": {
+        "started_at": "2026-07-19T05:12:39.701Z",
+        "done_at": "2026-07-19T05:20:43.101Z"
+      }
+    },
+    {
+      "id": 33,
+      "name": "toolbox_acceptance_from_diff",
+      "title": "toolBox: aceptacion desde diff o especificacion (valor medio / esfuerzo medio)",
+      "description": "Item 2.4 de docs/analisis-tareas-llm-toolbox.md. Dado el git diff de una feature in_progress (o un docs/*.md / issue crudo), el LLM propone/refina los acceptance observables y chequea que el gate verde (./init.sh o bash tests/run_tests.sh) aparezca como ultima bala (contrato de analisis-feature-request-md.md). Encaja en la vista #/intake (feature 26) como modo 'aceptacion'. Read-only (genera texto).",
+      "acceptance": [
+        "POST /api/acceptance existe como route handler nativo (apps/web/app/api/acceptance/route.ts, export const dynamic = \"force-dynamic\"), parsea el body con readJsonObject (cap 256 KB) y responde 400 ANTES de cualquier llamada al LLM cuando el body es invalido, falta un campo de {root, source, provider?, model?} con source='diff'|'spec', el root no esta registrado (isRegisteredRoot: el registry es la allowlist de toda lectura del workspace) o el provider es desconocido.",
+        "Devuelve por SSE con el framing de apps/web/lib/relay.ts (relayResponse: event delta|result|error, headers no-store + nosniff + CSP): una lista de acceptance observables y testables derivada del git diff del root registrado (source='diff') o de un docs/*.md / issue crudo (source='spec'). El endpoint NO escribe disco.",
+        "El system prompt exige verbos observables (runs, exits 0, greps, returns) y prohibe frases vagas como 'should work'; el gate verde (./init.sh o bash tests/run_tests.sh) debe aparecer como ultima bala.",
+        "La vista /intake (app/intake/page.tsx + components/IntakeClient.tsx) gana un toggle de modo (intake | aceptacion) que reusa el selector de harness/proveedor y el render markdown saneado existente (marked + DOMPurify + CSP).",
+        "El git diff se obtiene dentro del root registrado; el endpoint no escribe disco ni ejecuta comandos fuera de ese root.",
+        "tests/test_web_acceptance.sh (patron de tests/test_web_relays.sh) cubre /api/acceptance: las 400 de validacion, el framing SSE y output parseable desde fixtures diff y spec, con el gate verde como ultima bala. Corre contra el fake determinista (mock OpenAI-compatible en 127.0.0.1 exportado como OLLAMA_BASE_URL -> provider \"ollama\"); registrada en tests/run_tests.sh. Ningun test toca la red. El oraculo tests/test_toolbox_serve.sh solo se toca si la ruta entra al contrato negro-caja del observador.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "depends_on": [
+        45
+      ],
+      "sprint": "2026-SP6",
+      "meta": {
+        "started_at": "2026-07-19T05:28:07.330Z",
+        "done_at": "2026-07-19T05:34:55.265Z"
+      }
+    },
+    {
+      "id": 34,
+      "name": "toolbox_review_notes",
+      "title": "toolBox: resumen de revision (checklist para el reviewer) (valor medio / esfuerzo medio)",
+      "description": "Item 2.5 de docs/analisis-tareas-llm-toolbox.md. Dados backlog/impl_<feature>.md + el diff, el LLM produce un checklist de revision (puntos criticos, invariantes rotas, preguntas para el reviewer) que el rol reviewer usa como semilla. Endpoint POST /api/review-notes NO escribe disco (relay como /api/draft); el reviewer copia lo util a backlog/review_<feature>.md via su flujo normal. Respeta 'el reviewer nunca edita codigo': el output es un checklist, no un patch.",
+      "acceptance": [
+        "POST /api/review-notes existe como route handler nativo (apps/web/app/api/review-notes/route.ts, export const dynamic = \"force-dynamic\"), parsea el body con readJsonObject (cap 256 KB) y responde 400 ANTES de cualquier llamada al LLM cuando el body es invalido, falta un campo de {root, feature, provider?, model?}, el root no esta registrado (isRegisteredRoot: el registry es la allowlist de toda lectura del workspace) o el provider es desconocido.",
+        "Devuelve por SSE con el framing de apps/web/lib/relay.ts (relayResponse: event delta|result|error, headers no-store + nosniff + CSP): un checklist de revision construido desde backlog/impl_<feature>.md + el git diff de esa feature (puntos criticos, invariantes en riesgo, preguntas para el reviewer). El endpoint NO escribe disco.",
+        "El system prompt marca el output como borrador-verificar-todo; el contenido son preguntas/puntos a verificar (p.ej. 'invariante X respetada?', 'test cubre caso Y?'), NO un patch ni un veredicto.",
+        "El endpoint no escribe disco: el reviewer copia lo util a backlog/review_<feature>.md por su flujo normal y firma APPROVED/CHANGES_REQUESTED sobre evidencia real (verifier + diff), no sobre el resumen. Respeta 'el reviewer nunca edita codigo'.",
+        "tests/test_web_review_notes.sh (patron de tests/test_web_relays.sh) cubre /api/review-notes: las 400 de validacion, el framing SSE y un checklist parseable desde fixture impl_+diff que NO contiene veredicto (ni APPROVED ni CHANGES_REQUESTED). Corre contra el fake determinista (mock OpenAI-compatible en 127.0.0.1 exportado como OLLAMA_BASE_URL -> provider \"ollama\"); registrada en tests/run_tests.sh. Ningun test toca la red. El oraculo tests/test_toolbox_serve.sh solo se toca si la ruta entra al contrato negro-caja del observador.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "depends_on": [
+        45
+      ],
+      "sprint": "2026-SP6",
+      "meta": {
+        "started_at": "2026-07-19T05:21:07.802Z",
+        "done_at": "2026-07-19T05:27:54.815Z"
+      }
+    },
+    {
+      "id": 35,
+      "name": "toolbox_retro_lessons",
+      "title": "toolBox: retro/lecciones de features cerradas (valor medio / esfuerzo bajo)",
+      "description": "Item 2.6 de docs/analisis-tareas-llm-toolbox.md. El LLM mina progress/history.md + backlog/ cerrados y propone patrones recurrentes y anti-patrones como SUGERENCIAS para docs/conventions.md. Output: 3-5 patrones con enlace al feature que los origino. El humano decide si los promueve a docs/conventions.md. Es digest automatizado de la memoria del harness. Read-only.",
+      "acceptance": [
+        "POST /api/retro existe como route handler nativo (apps/web/app/api/retro/route.ts, export const dynamic = \"force-dynamic\"), parsea el body con readJsonObject (cap 256 KB) y responde 400 ANTES de cualquier llamada al LLM cuando el body es invalido, falta un campo de {root, provider?, model?}, el root no esta registrado (isRegisteredRoot: el registry es la allowlist de toda lectura del workspace) o el provider es desconocido.",
+        "Devuelve por SSE con el framing de apps/web/lib/relay.ts (relayResponse: event delta|result|error, headers no-store + nosniff + CSP): 3-5 patrones/anti-patrones minados de progress/history.md + los backlog/* de features cerradas, cada uno con enlace al feature de origen. El endpoint NO escribe disco.",
+        "El system prompt exige al menos 2 features como evidencia por patron (anti-generalizacion) y descarta los que no la tengan; 'no se' explicito si no hay contexto suficiente.",
+        "El endpoint no escribe docs/conventions.md ni ningun otro archivo: el output es una sugerencia que el humano promueve a mano.",
+        "tests/test_web_retro.sh (patron de tests/test_web_relays.sh) cubre /api/retro: las 400 de validacion, el framing SSE y 3-5 patrones parseables, cada uno citando >=1 feature de origen. Corre contra el fake determinista (mock OpenAI-compatible en 127.0.0.1 exportado como OLLAMA_BASE_URL -> provider \"ollama\"); registrada en tests/run_tests.sh. Ningun test toca la red. El oraculo tests/test_toolbox_serve.sh solo se toca si la ruta entra al contrato negro-caja del observador.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "depends_on": [
+        45
+      ],
+      "sprint": "2026-SP6",
+      "meta": {
+        "started_at": "2026-07-19T05:34:55.707Z",
+        "done_at": "2026-07-19T05:40:23.692Z"
+      }
+    },
+    {
+      "id": 36,
+      "name": "toolbox_parity_oracle",
+      "title": "toolBox: oraculo de paridad parametrizable para la migracion a Next.js (valor alto / esfuerzo bajo)",
+      "description": "Fase 0 de docs/sprints/plan-migracion-toolbox-nextjs.md. tests/test_toolbox_serve.sh es el oraculo black-box (~40 casos: status codes, shapes JSON, framing SSE, cache-hit) que decidira si cada pieza migrada a Next.js es equivalente. Hoy bootea dist/toolbox_serve.js hardcodeado; parametrizarlo por env (TOOLBOX_SERVE_CMD para el comando de arranque, o TOOLBOX_BASE_URL para atacar un server ya corriendo) sin editar ninguna asercion. Mismo patron de paridad que plan-migracion-typescript-bun.md seccion 6.",
+      "acceptance": [
+        "tests/test_toolbox_serve.sh respeta TOOLBOX_SERVE_CMD (comando alternativo de boot, default: el actual node dist/toolbox_serve.js) y TOOLBOX_BASE_URL (URL de un server ya corriendo; si esta presente no bootea nada ni lo mata al final).",
+        "Sin variables de entorno definidas, la suite corre EXACTAMENTE igual que hoy (mismo boot, mismos ~40 casos, cero aserciones editadas).",
+        "Con TOOLBOX_BASE_URL apuntando a un server booteado a mano en puerto efimero, la suite pasa verde (demostrado en un caso de test o en el propio run).",
+        "docs/verification.md documenta las dos variables y su proposito de oraculo de paridad para la migracion.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6"
+    },
+    {
+      "id": 37,
+      "name": "toolbox_provider_registry",
+      "title": "toolBox: registro declarativo de proveedores LLM (valor alto / esfuerzo medio)",
+      "description": "Fase 0 de docs/sprints/plan-migracion-toolbox-nextjs.md. buildProviders() en toolbox_llm.ts es imperativo (ramas por env var); agregar un proveedor exige tocar codigo y ampliar el union LlmProviderId. Reemplazarlo por una tabla declarativa PROVIDER_REGISTRY: entradas {id, adapter: 'anthropic'|'openai-compat', baseUrl, envKey, modelEnvKey, defaultModel, quirks: {auth?, thinkingControl?, healthCheck?}}. buildProviders itera la tabla; agregar un proveedor nuevo = agregar una entrada. El contrato LlmProvider (id, model, available(), draft(req, onDelta)) y LlmError NO cambian; /api/providers devuelve el mismo shape. Prepara el terreno para createProviderRegistry del AI SDK (Fase 3) sin agregar dependencias hoy.",
+      "acceptance": [
+        "toolbox_llm.ts exporta PROVIDER_REGISTRY como dato (tabla de entradas declarativas) y buildProviders(env) se reduce a iterar la tabla instanciando el adapter que corresponda; cero ramas por proveedor fuera de la tabla.",
+        "Los proveedores actuales (zai con modo paas/anthropic, claude, ollama con health-check, copilot como futuro no disponible) conservan comportamiento identico: mismos modelos por defecto, misma precedencia de env vars, mismos quirks GLM (thinking disabled, cap de max_tokens).",
+        "El shape de GET /api/providers no cambia (id, available, model) y el fake de tests via OLLAMA_BASE_URL sigue funcionando sin cambios.",
+        "tests/test_toolbox_llm.js gana un caso que registra un proveedor de prueba agregando SOLO una entrada a la tabla (sin tocar buildProviders) y verifica que se instancia y aparece en providersInfo.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "meta": {
+        "done_at": "2026-07-18T06:55:44.854Z"
+      }
+    },
+    {
+      "id": 38,
+      "name": "toolbox_next_scaffold",
+      "title": "toolBox: scaffold Next.js 16 con strangler proxy al server actual (valor alto / esfuerzo medio)",
+      "description": "Fase 0 de docs/sprints/plan-migracion-toolbox-nextjs.md, depende de la 36. Crear apps/web (Next.js 16 App Router, pnpm workspace junto al paquete handyman/ existente) que actua como proceso frontal: fallback rewrite en next.config hacia el puerto del server Node (toolbox_serve), de modo que crear app/api/x/route.ts en el futuro robe rutas sin tocar config (strangler fig). Runtime nodejs, guard de Host localhost en proxy.ts, CSP same-origin, telemetria de Next deshabilitada, output standalone documentado. CERO vistas migradas en esta feature: el criterio es que el oraculo de paridad (feature 36) pase verde atacando el puerto de Next via TOOLBOX_BASE_URL para los endpoints JSON proxeados.",
+      "acceptance": [
+        "pnpm-workspace.yaml raiz incluye apps/web y el paquete handyman existente; pnpm install + next build funcionan desde raiz.",
+        "apps/web arranca con un puerto configurable y proxea via fallback rewrite todos los paths no-Next hacia TOOLBOX_UPSTREAM (URL del server Node); GET /api/state respondido a traves de Next es byte-equivalente al del server Node.",
+        "proxy.ts rechaza Host foraneo con 403 (mismo guard anti DNS-rebinding que el server Node) y las respuestas conservan CSP same-origin; NEXT_TELEMETRY_DISABLED=1 queda fijado en los scripts.",
+        "tests/test_toolbox_serve.sh corre verde con TOOLBOX_BASE_URL apuntando al puerto de Next para los casos de endpoints JSON (los casos SSE pueden seguir atacando el puerto Node directo, documentado en el propio test o en docs/verification.md).",
+        "docs/sprints/plan-migracion-toolbox-nextjs.md queda actualizado con el comando real de arranque dual (Node + Next) y la nota de output standalone.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "meta": {
+        "started_at": "2026-07-18T06:55:50.442Z",
+        "done_at": "2026-07-18T07:19:45.618Z"
+      }
+    },
+    {
+      "id": 39,
+      "name": "toolbox_next_fleet_view",
+      "title": "toolBox: primera vista migrada a Next (/fleet con SSE en vivo) (valor medio / esfuerzo medio)",
+      "description": "Fase 0 de docs/sprints/plan-migracion-toolbox-nextjs.md, depende de la 38. Migrar la vista FleetView (tabla de flota + kanban por status + seniales) a una pagina real /fleet en apps/web: Server Component que obtiene el estado inicial de /api/state del upstream y Client Component que se suscribe a /events (EventSource directo al puerto Node, porque los rewrites de Next bufferizan SSE) para refrescar en vivo. Es la prueba de fuego del patron RSC + SSE + UI nueva antes de migrar el resto de vistas en el sprint siguiente. El panel UMD actual queda intacto y sigue siendo el default; /fleet en Next es paralelo.",
+      "acceptance": [
+        "GET /fleet en apps/web renderiza la flota real (mismos harnesses, counts por status y seniales que /api/state) con estado inicial resuelto server-side.",
+        "Un cambio en el workspace de un harness registrado (append a progress/current.md) se refleja en la vista sin recargar, via suscripcion EventSource a /events del upstream.",
+        "La pagina no carga ningun asset de origen externo (verificable con grep sobre el HTML servido: sin src=\"http, igual que el invariante del panel actual).",
+        "El panel UMD existente sigue sirviendose intacto desde el server Node y tests/test_toolbox_serve.sh pasa sin editar aserciones.",
+        "Un test (shell o del workspace apps/web) verifica el render de /fleet contra un fixture de estado con provider/upstream fake; ningun test toca la red.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "depends_on": [
+        38
       ],
       "meta": {
-        "started_at": "2026-07-18T03:39:19.500Z",
-        "done_at": "2026-07-18T03:54:00.373Z"
+        "started_at": "2026-07-18T08:30:00.000Z",
+        "done_at": "2026-07-18T08:55:00.000Z"
+      }
+    },
+    {
+      "id": 40,
+      "name": "toolbox_next_landing",
+      "title": "toolbox: Landing page en Next.js (tasteskill v2)",
+      "description": "Aprovechando el scaffold de Next.js 16 estrangulado (feature 38) y los proveedores LLM (37), generar una landing page para la app web en apps/web siguiendo estrictamente las reglas de diseno de tasteskill v2 (design-taste-frontend): auditorias de em-dash, layout, repeticion de secciones y disciplina del hero. Imagenes via gen-tool primero, fallback inmediato a Picsum-seed si no hay API keys. Mantener proxy.ts intacto para no romper el strangler pattern. Post-feature: actualizar HARNESS_WORKSPACE/docs/ con el resultado de las auditorias.",
+      "acceptance": [
+        "Exists apps/web/app/page.tsx serving a landing page with at least 8 sections and 4 different layout families.",
+        "The page contains strictly zero em-dashes (U+2014) and zero en-dashes (U+2013) verifiable via a regex/lint test.",
+        "The Pre-Flight Check (Section 14 of tasteskill) is documented in a commit message or comment with every box marked Pass or Fail with a one-line justification.",
+        "Section-Layout-Repetition and Hero discipline audits are documented passing in the repository.",
+        "The Next.js app builds successfully without type errors (pnpm --filter web build or npm run build inside apps/web).",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "depends_on": [
+        37,
+        38
+      ],
+      "meta": {
+        "started_at": "2026-07-18T07:42:56.389Z",
+        "done_at": "2026-07-18T08:15:58.250Z"
+      }
+    },
+    {
+      "id": 41,
+      "name": "toolbox_next_harness_view",
+      "title": "toolBox: vista de harness en Next (/harness/[name] con docs + features corriendo + metricas + arbol graphify)",
+      "description": "Fase 1 de docs/sprints/plan-migracion-toolbox-nextjs.md, depende de 38 y 39. Migrar la vista HarnessView del panel UMD (toolbox_panel.js) a una pagina real /harness/[name] en apps/web, reutilizando el patron RSC + SSE + renderer de strings puro de la feature 39 (toolbox_next_fleet_view) y la disciplina de design-taste-frontend (mismas skills que 38/39/40: native CSS + CSS Modules, tokens terracota-on-slate de globals.css, cero dependencias nuevas, una sola accent, Page Theme Lock + Color Consistency Lock). La pagina resuelve el snapshot del harness desde /api/state del upstream y renderiza el mismo formato que el panel: meta-list (root, version, session, last closure), MetricsStrip (approval rate, report coverage, closures 14d, sparkline de throughput), fila de signals, markdown links (current/history/checkpoints/index + docs business/architecture/conventions/verification abiertos via /api/md en un dialog), Queue/Kanban por status (pending/in_progress/done/blocked - los 'features corriendo'), y el iframe del arbol graphify (/graph/NAME/graph.html cuando has_graph). SSE live via /events del puerto Node directo (los rewrites de Next bufferizan SSE, igual que /fleet). El panel UMD queda intacto y sigue siendo el default; /harness/[name] en Next es paralelo.",
+      "acceptance": [
+        "GET /harness/[name] en apps/web renderiza el snapshot real del harness (meta-list, MetricsStrip, signals, docs, Queue/Kanban por status, iframe graphify cuando has_graph) con estado inicial resuelto server-side desde /api/state del upstream.",
+        "Un cambio en el workspace del harness (append a progress/current.md) se refleja en la vista sin recargar, via suscripcion EventSource a /events del upstream Node (no al puerto Next, que bufferiza SSE); mismo patron que /fleet.",
+        "La pagina no carga ningun asset de origen externo (grep sobre el HTML servido: sin src=\"http y sin src=\"https); mismo invariante que /fleet y el panel actual.",
+        "El panel UMD existente sigue sirviendose intacto desde el server Node y tests/test_toolbox_serve.sh pasa sin editar aserciones (48/48).",
+        "Un test (tests/test_web_harness.sh) verifica el render de /harness/[name] contra un fixture de snapshot con upstream/provider fake (harness name, metricas, status counts, kanban, signals, iframe graphify presente cuando has_graph, sin src externo, sin script inyectado); el renderer es determinista e importable sin build de Next. Ningun test toca la red.",
+        "proxy.ts roba /harness/<name> hacia Next (NEXT_HANDLED_PATHNAMES o un patron) sin romper el strangler; apps/web/app/harness/[name]/page.tsx existe.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "depends_on": [
+        38,
+        39
+      ],
+      "meta": {
+        "started_at": "2026-07-18T09:10:00.000Z",
+        "done_at": "2026-07-18T09:55:00.000Z"
+      }
+    },
+    {
+      "id": 42,
+      "name": "toolbox_core_package",
+      "title": "toolBox: packages/toolbox-core con los modulos HTTP-agnosticos (Fase 2, fundacion)",
+      "description": "Fase 2 de docs/sprints/plan-migracion-toolbox-nextjs.md via backlog/explore_toolbox_next_unification.md. Crear packages/toolbox-core (pnpm workspace) y MOVER sin reescribir los modulos HTTP-agnosticos: toolbox_llm, toolbox_draft (assetsDir pasa a parametro explicito), toolbox_ask, toolbox_summary, core/workspace (resolveWorkspace) y registry (handymanRoot/registryPath/loadRegistry/saveRegistry/isHarnessRoot), mas un state.ts nuevo con guards/corpus/md/tags/CSP extraidos de toolbox_serve.ts. handyman conserva shims re-export (dist/* estables para tests y serve). buildState queda en handyman/src/toolbox_state.ts (necesita snapshots/metrics/skill-version) expuesto via exports map ./state. apps/web gana deps workspace (handyman + @handyman/toolbox-core). CI migra de npm ci a pnpm install (workspace real). Cero cambio de comportamiento observable.",
+      "acceptance": [
+        "packages/toolbox-core existe como miembro del workspace pnpm y compila via npm run build en handyman (tsc -b con project reference) emitiendo dist/ + .d.ts; handyman lo consume via workspace:*.",
+        "toolbox_llm/draft/ask/summary y core/workspace quedan como shims re-export en handyman/src: los entrypoints dist/ existentes se conservan y test_toolbox_llm.js + test_toolbox_draft.js pasan sin editar imports ni aserciones.",
+        "toolbox_serve.ts consume guards/corpus/md/tags/CSP desde el paquete y buildState desde handyman/src/toolbox_state.ts; handyman/package.json expone exports ./state; apps/web declara ambas deps workspace y pnpm --filter web typecheck resuelve un import del paquete.",
+        "tests/test_toolbox_state.js nuevo cubre buildCorpus/resolveMd/listTagFiles sobre fixture temporal, identidad de LlmError entre paquete y shim, y shape de buildState; cableado en run_tests.sh.",
+        "tests/test_toolbox_serve.sh pasa sin editar aserciones (48/48).",
+        "ci.yml instala el workspace con pnpm (frozen lockfile) y sigue construyendo handyman + corriendo la suite completa en verde.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "depends_on": [
+        36,
+        37,
+        38
+      ],
+      "meta": {
+        "started_at": "2026-07-18T17:43:49.000Z",
+        "done_at": "2026-07-18T17:57:04.000Z"
+      }
+    },
+    {
+      "id": 43,
+      "name": "toolbox_next_runtime_events",
+      "title": "toolBox: runtime singleton en Next + /events y /api/state nativos (proceso unico)",
+      "description": "Fase 2 del plan via explore_toolbox_next_unification.md, depende de 42. Runtime singleton en apps/web (globalThis + instrumentation.ts, HMR-safe, runtime nodejs): loadDotEnv + buildProviders + SummaryCache + watchers fs.watch recursive con debounce 250ms y re-arm al cambiar el registry + bus de cambios. Robar GET /events (route handler con ReadableStream, force-dynamic, retry: 2000, keepalive 25s, frames data {\"type\":\"change\"}) y GET /api/state (mismo shape y headers CSP/no-store/nosniff). /fleet y /harness/[name] pasan a import directo de buildState (sin fetch al upstream) y FleetLive/HarnessLive a EventSource/fetch same-origin. proxy.ts suma los paths robados. El server Node conserva su superficie completa (el default del oraculo no cambia).",
+      "acceptance": [
+        "app/events/route.ts y app/api/state/route.ts existen (runtime nodejs, force-dynamic): /api/state de Next devuelve el mismo shape que el server Node con headers CSP/no-store/nosniff, y un append a progress/current.md de un harness registrado produce un frame {\"type\":\"change\"} en un EventSource conectado al puerto Next.",
+        "lib/runtime.ts + instrumentation.ts: singleton en globalThis (providers, SummaryCache, watchers, bus) que arma watchers una sola vez, sobrevive HMR y re-arma cuando cambia el set de roots del registry.",
+        "/fleet y /harness/[name] resuelven el estado inicial por import directo de buildState (force-dynamic) y sus componentes Live usan /events y /api/state relativos; el HTML servido sigue sin assets de origen externo.",
+        "test_web_fleet.sh y test_web_harness.sh actualizados al contrato same-origin (cambio deliberado documentado en el propio test) y un test nuevo cubre el hub de cambios (debounce/re-arm) transpilado puro, sin red ni build de Next.",
+        "tests/test_toolbox_serve.sh default (server Node) pasa sin editar aserciones; una corrida TOOLBOX_BASE_URL contra el puerto Next (upstream dual para rutas no robadas) queda verde y documentada en docs/verification.md.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "depends_on": [
+        42
+      ],
+      "meta": {
+        "started_at": "2026-07-18T18:01:04.000Z",
+        "done_at": "2026-07-18T18:20:07.000Z"
+      }
+    },
+    {
+      "id": 44,
+      "name": "toolbox_next_read_api",
+      "title": "toolBox: API de lectura nativa en Next (/api/corpus, /api/md, /api/files, /api/providers, /graph/*, /vendor/*)",
+      "description": "Fase 2 del plan via explore_toolbox_next_unification.md, depende de 42 y 43. Robar a Next los GET de lectura restantes como route handlers delgados sobre @handyman/toolbox-core: /api/corpus (buildCorpus), /api/md (allowlist resolveMd), /api/files (listTagFiles con guard de root registrado), /api/providers (providersInfo del runtime singleton), /graph/[name] graph.html|json (lookup por project_name + rewrite del script unpkg a /vendor/vis-network.js) y /vendor/*.js (UMDs desde node_modules). Los helpers de vendor (packageRoot/vendorText) y graph se extraen a un modulo compartido que toolbox_serve.ts reutiliza sin cambio de comportamiento. Mismos codigos y bodies de error byte a byte.",
+      "acceptance": [
+        "Route handlers en apps/web para los 6 endpoints con paridad: /api/md responde 400 en root no registrado/traversal/file fuera de whitelist y 404 en missing; /api/files 400 en root no registrado; /api/providers conserva shape {id, available, model} incluyendo copilot future; /graph 404 en harness desconocido y rewrite same-origin del vis-network; /vendor 404 en lib desconocida.",
+        "Los helpers vendor/graph viven en un modulo compartido (paquete core o export de handyman) consumido por toolbox_serve.ts y por los route handlers sin duplicar logica ni cambiar comportamiento del server Node.",
+        "proxy.ts suma los paths robados y las respuestas de Next conservan CSP same-origin y Cache-Control: no-store.",
+        "Corrida del oraculo TOOLBOX_BASE_URL contra Next verde para los casos de estos endpoints (upstream dual para lo aun no robado); el default Node pasa 48/48 sin editar aserciones.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "depends_on": [
+        42,
+        43
+      ],
+      "meta": {
+        "started_at": "2026-07-18T18:22:30.000Z",
+        "done_at": "2026-07-18T18:33:20.000Z"
+      }
+    },
+    {
+      "id": 45,
+      "name": "toolbox_next_llm_relays",
+      "title": "toolBox: relays LLM nativos en Next (/api/draft, /api/summarize, /api/ask con SSE byte-estable)",
+      "description": "Fase 2 del plan via explore_toolbox_next_unification.md, depende de 42 y 43. Robar los tres relays SSE-over-POST como route handlers que leen el body JSON con cap 256KB, validan igual que el server Node (400 antes de tocar LLM; provider default zai) y traducen onDelta/onResult/onError de relayDraft/relaySummary/relayAsk al framing byte-estable event: delta|result|error + data JSON con headers SSE identicos. /api/summarize usa la SummaryCache del runtime singleton (cache-hit por hash de digest sin llamar al provider); /api/ask reusa buildCorpus filtrado por root + retrieveTopK; /api/draft reusa buildDraftContext + readTagFiles con assetsDir del paquete handyman. resolveSummaryModel se extrae a modulo compartido (precedencia body > TOOLBOX_SUMMARY_MODEL > zai paas glm-4.7-flash). El fake de tests via OLLAMA_BASE_URL sigue funcionando sin cambios.",
+      "acceptance": [
+        "POST /api/draft, /api/summarize y /api/ask en Next responden con framing SSE identico (event: delta|result|error, data JSON) y los mismos 400/bodies de error que el server Node ante root no registrado, provider desconocido, body invalido o pregunta vacia.",
+        "/api/summarize contra Next: primer POST emite delta+result con cached:false y hash; un segundo POST con el estado sin cambios emite result cached:true con el mismo hash y el mock LLM (GET /v1/calls) reporta calls==1.",
+        "/api/ask contra Next: result con answer_md citando [fuente: ref] y fragments {ref, kind, title, score}; los refs son 1:1 con /api/md.",
+        "resolveSummaryModel vive en un modulo compartido consumido por toolbox_serve.ts y por los route handlers sin duplicacion; providers y SummaryCache provienen del runtime singleton de la feature 43.",
+        "Corrida del oraculo TOOLBOX_BASE_URL contra Next verde incluyendo los casos SSE de summarize/ask y los 400 de draft; el default Node pasa 48/48 sin editar aserciones; docs/verification.md documenta la corrida.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "depends_on": [
+        42,
+        43
+      ],
+      "meta": {
+        "started_at": "2026-07-18T18:31:30.000Z",
+        "done_at": "2026-07-18T18:40:30.000Z"
+      }
+    },
+    {
+      "id": 46,
+      "name": "toolbox_next_intake_action",
+      "title": "toolBox: intake unificado - writeIntake en el core, POST /api/intake nativo y server action submitIntake",
+      "description": "Plan de unificacion (backlog/explore_toolbox_next_unification.md, seccion 5) y handoff-2026-07-18. La UNICA escritura del sistema se unifica: extraer writeIntake(hroot, root, draft_md, files) de handleIntakeRequest a @handyman/toolbox-core (resultado discriminado + mapeo HTTP compartido intakeHttp), refactorizar el server Node para consumirla (byte-identico), robar POST /api/intake a Next (route handler con cap 256KB y los mismos 400/422/500/200) y crear el server action 'use server' submitIntake sobre la MISMA funcion core (el consumidor UI llega en la feature 48). Aqui entran formalmente los server actions a la app unificada.",
+      "acceptance": [
+        "packages/toolbox-core exporta writeIntake (orden de validacion identico al observer: root requerido, draft vacio, root no registrado, workspace, escritura; footer de files capado a 12) e intakeHttp (mapeo status/body byte-identico); toolbox_serve.ts consume ambos y elimina su logica local de escritura.",
+        "POST /api/intake en Next (force-dynamic, cap 256KB) responde 400 invalid body/root is required/root not registered/could not resolve harness workspace, 422 draft_md must not be empty, 500 could not write feature-request.md y 200 {ok, path, files, spawned_process:false}, byte-identicos al observer.",
+        "apps/web/actions/intake.ts declara 'use server' y submitIntake usa writeIntake del core via el runtime singleton (cero duplicacion de la logica de escritura); typecheck verde.",
+        "proxy.ts roba /api/intake; tests/test_toolbox_state.js gana casos unit de writeIntake/intakeHttp (ok con footer, draft vacio, root no registrado, orden) y una suite estructural cubre route+action+strangler.",
+        "tests/test_toolbox_serve.sh default pasa 48/48 sin editar aserciones; corrida dual TOOLBOX_BASE_URL contra Next verde para los 4 casos de intake servidos nativamente (incluida la escritura real de feature-request.md), documentada en docs/verification.md.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "depends_on": [
+        42,
+        43
+      ],
+      "meta": {
+        "started_at": "2026-07-18T18:44:00.000Z",
+        "done_at": "2026-07-18T19:02:23.000Z"
+      }
+    },
+    {
+      "id": 47,
+      "name": "toolbox_next_timeline_search",
+      "title": "toolBox: vistas /timeline y /search en Next + command palette + atajos + theme persistente",
+      "description": "Fase 1 restante via explore_toolbox_next_unification.md (decision D1: patron cero-deps de 39-41, CSS nativo + renderers de strings; MiniSearch pasa a dep de apps/web justificada en C3). Migrar TimelineView (state.timeline de /api/state) y SearchView (indice BM25 client-side sobre /api/corpus con apertura via /api/md), mas los transversales: command palette (ranking tipo panel), atajos de teclado (un solo listener document-level: cmd/ctrl+K, /, ?, g+letra), ThemeToggle persistente (localStorage hw-theme:1 + anti-flash) y live regions a11y con announce.",
+      "acceptance": [
+        "GET /timeline renderiza los cierres datados del estado real (RSC + renderer puro importable sin build) y se refresca via /events same-origin.",
+        "GET /search construye el indice MiniSearch client-side desde /api/corpus, busca local sin red por tecla, y abre resultados no-feature via /api/md en el dialog compartido.",
+        "Command palette (cmd/ctrl+K) con navegacion de vistas + ir a harness + abrir docs, atajos globales con guard de campos de texto, theme toggle light/dark/system persistente con anti-flash, y las dos live regions estaticas con announce polite/assertive.",
+        "El HTML servido no referencia origenes externos; renderers nuevos deterministas cubiertos por una suite transpilada pura (patron test_web_fleet/harness); MiniSearch declarada en apps/web y justificada en docs/architecture.md.",
+        "tests/test_toolbox_serve.sh default 48/48 sin editar aserciones; bash tests/run_tests.sh y ./init.sh exit 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "depends_on": [
+        43,
+        44
+      ],
+      "meta": {
+        "started_at": "2026-07-18T18:44:00.000Z",
+        "done_at": "2026-07-18T20:10:00.000Z"
+      }
+    },
+    {
+      "id": 48,
+      "name": "toolbox_next_intake_ask_ui",
+      "title": "toolBox: vistas /intake y /ask en Next + FleetSummary en /fleet (render markdown sanitizado)",
+      "description": "Fase 1 restante via explore_toolbox_next_unification.md (decision D2: marked+dompurify como deps de apps/web con la misma politica FORBID_TAGS/ATTR del panel, justificadas en C3). /intake: form harness+provider (via /api/providers), tag-picker (/api/files), draft por SSE-over-POST (/api/draft con fetch+reader, cancelable) con preview sanitizada y submit via el server action submitIntake (46) con progressive enhancement; /ask: pregunta + respuesta streamed con citas [fuente: ref] linkeadas al dialog /api/md; FleetSummary en /fleet (POST /api/summarize con (cached) y model).",
+      "acceptance": [
+        "GET /intake permite draftear (SSE delta/result/error visible en vivo), etiquetar archivos del workspace y enviar el draft revisado via el server action submitIntake; la escritura aparece en feature-request.md del harness destino.",
+        "GET /ask streamea la respuesta con citas que abren su fuente real via /api/md; FleetSummary en /fleet muestra summary con indicador (cached) y model.",
+        "Todo markdown de salida LLM se renderiza con marked+DOMPurify (FORBID_TAGS/ATTR del panel legado); ningun texto de harness se convierte en markup sin sanitizar; cero assets externos.",
+        "Renderers/composición cubiertos por suites transpiladas puras + casos estructurales; deps nuevas justificadas en docs/architecture.md.",
+        "tests/test_toolbox_serve.sh default 48/48 sin editar aserciones; bash tests/run_tests.sh y ./init.sh exit 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "depends_on": [
+        45,
+        46,
+        47
+      ],
+      "meta": {
+        "started_at": "2026-07-18T20:15:00.000Z",
+        "done_at": "2026-07-18T21:05:00.000Z"
+      }
+    },
+    {
+      "id": 49,
+      "name": "toolbox_panel_retirement",
+      "title": "toolBox: retirar el panel UMD (paridad visual alcanzada) y re-apuntar el oraculo",
+      "description": "Fase 1 cierre via explore_toolbox_next_unification.md. Con todas las vistas migradas (39-48), borrar panelHtml/PANEL_CSS de toolbox_serve.ts y assets/toolbox_panel.js, dejar de servir los UMDs react/react-dom/htm/marked/dompurify/minisearch (queda /vendor/vis-network.js para el iframe graphify), podar react 18/htm del package.json de handyman, y actualizar EN LA MISMA FEATURE los casos del oraculo que grep-ean el asset del panel (~17) y los de GET / (~6, incluido el de CSP), re-apuntandolos al equivalente de la app unificada. Requiere decidir D6 (que sirve / en la app unica).",
+      "acceptance": [
+        "toolbox_panel.js y panelHtml/PANEL_CSS eliminados; el server Node responde en / un placeholder minimo o redirect documentado; /vendor sirve solo vis-network.js.",
+        "react/react-dom/htm eliminados de handyman/package.json (marked/dompurify/minisearch solo si ya no los usa nadie del lado Node); pnpm-lock actualizado.",
+        "Los casos del oraculo re-apuntados en la misma feature (cambio deliberado documentado caso a caso, incluido el de CSP que golpea /); el resto sigue sin editar.",
+        "Corrida dual contra Next verde con el conteo nuevo documentado en docs/verification.md; decision D6 registrada.",
+        "bash tests/run_tests.sh y ./init.sh exit 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "depends_on": [
+        47,
+        48
+      ],
+      "meta": {
+        "started_at": "2026-07-18T21:11:10.302Z",
+        "done_at": "2026-07-18T21:36:00.347Z"
+      }
+    },
+    {
+      "id": 50,
+      "name": "toolbox_serve_decommission",
+      "title": "toolBox: decomisionar toolbox_serve.ts - un solo proceso Next standalone via toolbox serve",
+      "description": "Fase 4 del plan. node dist/toolbox.js serve pasa a orquestar la app unica: verificar/copiar el build standalone (estaticos incluidos), elegir puerto (soporta --port 0 eligiendo puerto libre), spawn de server.js con HOSTNAME=127.0.0.1, PORT, HANDYMAN_ROOT, TOOLBOX_ENV_DIR y TOOLBOX_REPO_ROOT, e imprimir 'toolBox observer: <URL>' (contrato de TOOLBOX_SERVE_CMD del oraculo). Borrar toolbox_serve.ts y el forward del strangler en proxy.ts (queda el Host guard), default de TOOLBOX_SERVE_CMD al wrapper, run_tests.sh construye apps/web cuando hace falta, alinear el script npm toolbox:serve (hoy --port 3000 desalineado), actualizar docs/architecture.md + verification.md y cerrar plan-migracion-toolbox-nextjs.md a docs/sprints/.",
+      "acceptance": [
+        "node dist/toolbox.js serve levanta UN solo proceso (Next standalone) en 127.0.0.1 con --port N y --port 0 soportados e imprime toolBox observer: <URL>; Ctrl+C lo detiene limpio.",
+        "toolbox_serve.ts eliminado; proxy.ts conserva solo el Host guard; los shims que solo existian para el serve se podan o documentan.",
+        "El oraculo completo corre verde via TOOLBOX_SERVE_CMD apuntando al wrapper (sin TOOLBOX_BASE_URL) con el conteo re-apuntado en la 49; run_tests.sh integra el build de apps/web sin romper el modo rapido de las suites puras.",
+        "docs/architecture.md y docs/verification.md reflejan el proceso unico; plan-migracion-toolbox-nextjs.md cerrado a docs/sprints/; script npm toolbox:serve alineado.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "sprint": "2026-SP6",
+      "depends_on": [
+        49
+      ],
+      "meta": {
+        "started_at": "2026-07-18T21:46:17.750Z",
+        "done_at": "2026-07-19T02:33:38.973Z"
+      }
+    },
+    {
+      "id": 51,
+      "name": "harness_unblock_verbs",
+      "title": "Verbos unblock y acceptance en feature.js",
+      "description": "El harness imprime «unblock blocked work» y no ofrece como. Dos verbos atomicos en feature.js: unblock (blocked -> pending) y acceptance (reemplaza la lista), por el mismo camino de escritura validada que el resto de los verbos, para no obligar a editar feature_list.json a mano (prohibido en architecture.md:170).",
+      "acceptance": [
+        "node dist/feature.js unblock <name> sobre una feature blocked la deja en pending, elimina la clave blocked_reason y sale 0.",
+        "node dist/feature.js unblock <name> sobre una feature que NO esta blocked sale con codigo distinto de 0 y no modifica feature_list.json.",
+        "node dist/feature.js acceptance <name> --acceptance A --acceptance B reemplaza la lista completa de acceptance por exactamente [A,B] y sale 0.",
+        "node dist/feature.js acceptance <name> sin ninguna --acceptance sale distinto de 0 y deja la lista intacta.",
+        "Ambos verbos validan contra assets/schemas/feature_list.schema.json antes de escribir: un resultado invalido aborta sin tocar el archivo.",
+        "tests/test_feature.sh cubre los 4 casos anteriores siguiendo el patron del caso F3 (block).",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-19T06:03:46.391Z",
+        "done_at": "2026-07-19T06:09:04.300Z"
+      }
+    },
+    {
+      "id": 52,
+      "name": "harness_evidence_debt_advisory",
+      "title": "Deuda de evidencia visible en el verificador",
+      "description": "validate_harness solo revisa el frontmatter de los review_ que existen (validate_harness.ts:318-373); nunca cruza contra feature_list.json. La feature 32 calcula esa deuda pero solo detras de POST /api/triage: el gate no la ve. Llevar computeEvidenceDebt al verificador como NOTE no bloqueante, mismo contrato que el advisory de frontmatter.",
+      "acceptance": [
+        "validate_harness imprime un NOTE: por cada feature en estado done cuyo backlog carece de review_<name>.md, nombrando el archivo faltante.",
+        "Ese NOTE no cambia el exit code: un harness con deuda de evidencia sigue saliendo 0.",
+        "Un harness sin deuda no imprime ningun NOTE de deuda: el caso limpio es silencioso.",
+        "La comprobacion reusa computeEvidenceDebt de @handyman/toolbox-core (dependencia ya declarada en handyman/package.json); no re-implementa el cruce.",
+        "tests/test_init.sh cubre las dos direcciones: un fixture con una feature done sin review imprime el NOTE y sale 0; un fixture limpio no lo imprime.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-19T06:09:15.894Z",
+        "done_at": "2026-07-19T06:15:22.142Z"
+      }
+    },
+    {
+      "id": 53,
+      "name": "toolbox_cli_review_notes",
+      "title": "Primer subcomando LLM del CLI: review-notes",
+      "description": "buildProviders tiene un solo consumidor (apps/web/lib/runtime.ts:62) y ningun subcomando de toolbox.js toca un modelo: la capa LLM es inalcanzable sin arrancar un server web. Se elige review-notes porque es el de mayor valor para un rol y el que mejor prueba la forma (workspace + diff + proveedor). Uno, no cinco.",
+      "acceptance": [
+        "node dist/toolbox.js review-notes --root <path> --feature <name> imprime el checklist en stdout sin que haya ningun toolbox serve levantado y sale 0.",
+        "Sale distinto de 0, con mensaje en stderr y antes de llamar al modelo, cuando el root no esta registrado (isRegisteredRoot), el provider es desconocido, o falta --feature.",
+        "--json emite un unico objeto JSON con checklist_md, model y diff_truncated; sin --json la salida es texto en streaming.",
+        "Reusa relayReviewNotes y las funciones de composicion del core; no re-implementa el prompt ni la lectura del diff.",
+        "La ruta HTTP POST /api/review-notes y el subcomando comparten la composicion del contexto, o el reporte del implementer anota explicitamente por que no se pudo.",
+        "tests/test_toolbox_cli_llm.sh cubre el camino feliz contra el mock OpenAI-compatible local (OLLAMA_BASE_URL), los rechazos de la bala 2, y --json; el server no se levanta en ningun caso. Ningun test toca la red.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-19T06:15:34.535Z",
+        "done_at": "2026-07-19T06:23:07.679Z"
+      }
+    },
+    {
+      "id": 54,
+      "name": "harness_roles_toolbox_pointer",
+      "title": "Los roles saben que el toolBox existe",
+      "description": "Cerrar G4: que los roles sepan que la capa LLM existe, sin que eso erosione su autoridad. El veredicto se sigue firmando sobre el verificador y el diff.",
+      "acceptance": [
+        "assets/role-reviewer.template.md menciona toolbox.js review-notes como ayuda opcional y asistiva para preparar la revision.",
+        "El mismo texto deja explicito que el veredicto se firma sobre el verificador y el diff, nunca sobre la salida del modelo.",
+        "El cambio se hace en handyman/assets/role-*.template.md, no en .github/agents/*.agent.md: esos ultimos son instancias generadas que init.sh regenera.",
+        "tests/test_docs.js verifica que la plantilla del reviewer nombra el subcomando y conserva la clausula de que la firma va sobre evidencia real.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "depends_on": [
+        53
+      ],
+      "meta": {
+        "started_at": "2026-07-19T06:23:20.961Z",
+        "done_at": "2026-07-19T16:39:45.802Z"
+      }
+    },
+    {
+      "id": 55,
+      "name": "harness_report_actor",
+      "title": "Campo actor: en los reportes y aviso de colision de roles",
+      "description": "Las features 32-35 se cerraron con leader, implementer y reviewer colapsados en un solo agente. El harness no lo detecto ni lo registro. Un campo actor: en el frontmatter de impl_/review_, y un aviso cuando ambos coinciden. Resuelve visibilidad, no cumplimiento: hace visible en el registro estructurado algo que hoy depende de una confesion en prosa.",
+      "acceptance": [
+        "Las plantillas assets/role-implementer.template.md y assets/role-reviewer.template.md documentan el campo actor: en el frontmatter de los reportes que producen.",
+        "validate_harness imprime un NOTE: cuando impl_<f>.md y review_<f>.md de una misma feature declaran el mismo actor:.",
+        "El NOTE no cambia el exit code, y un reporte sin actor: no genera ruido: el campo es opcional y los reportes historicos no se invalidan.",
+        "tests/test_docs.js verifica que las plantillas documentan actor:; tests/test_init.sh cubre el NOTE de colision y su ausencia cuando los actores difieren.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-19T16:39:56.644Z",
+        "done_at": "2026-07-19T16:44:01.648Z"
+      }
+    },
+    {
+      "id": 56,
+      "name": "harness_done_reads_review",
+      "title": "done escribe el veredicto real del review, no APPROVED constante",
+      "description": "cmdDone escribia '- **Review:** APPROVED' en progress/history.md incondicionalmente, sin abrir backlog/review_<name>.md. Es una afirmacion falsa en el registro durable que el harness existe para producir (A1 del analisis-mcp-toolbox). Decision de sprint (plan-accion-contrato-y-panel 3.3, opcion b): 'solo la verdad' - done sigue cerrando siempre y no endurece el exit code, porque romper el gate de harnesses instalados que hoy cierran sin review es hostil y el defecto real es la mentira, no la laxitud. Endurecer despues es cambiar una condicion, con datos del advisory de la feature 52.",
+      "acceptance": [
+        "node dist/feature.js done <name> lee el frontmatter de <workspace>/backlog/review_<name>.md y escribe en la entrada de history.md el status: que ese archivo declara, uppercased, no una constante.",
+        "Cuando el review declara status: changes_requested, la entrada de historia dice CHANGES_REQUESTED; done sigue cerrando la feature y sale 0 (no se endurece el exit code).",
+        "Cuando review_<name>.md no existe, la entrada dice NO REVIEW FILE y no aparece APPROVED; cuando existe pero no declara veredicto, dice NO VERDICT.",
+        "Los reviews legacy hand-written que usan la clave verdict: en vez de status: siguen resolviendo, para no invalidar el registro historico.",
+        "tests/test_feature.sh cubre las cuatro direcciones: changes_requested, approved, fallback legacy verdict:, y review ausente.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-19T20:04:17.160Z",
+        "done_at": "2026-07-19T20:08:17.576Z"
+      }
+    },
+    {
+      "id": 57,
+      "name": "harness_verb_write_contract",
+      "title": "Un solo camino de escritura validada para los 9 verbos, y guarda de estado en acceptance",
+      "description": "Solo 2 de los 9 verbos validan contra el schema antes de escribir: unblock y acceptance llaman saveValidated; add, start, block y done usan el save() pelado. Y acceptance no tiene guarda de estado: reescribe en silencio el contrato de una feature ya done, sin sello ni entrada de historia (A2/A4/A5 del analisis). Los tres defectos son la misma cosa vista tres veces - el camino de escritura no es uno solo - por eso van juntos y no como tres features que rebasarian sobre la misma funcion.",
+      "acceptance": [
+        "Los verbos que escriben feature_list.json (add, start, block, unblock, acceptance, done) lo hacen a traves de saveValidated: un resultado que no valide contra assets/schemas/feature_list.schema.json aborta sin tocar el archivo.",
+        "node dist/feature.js acceptance <name> sobre una feature en estado done sale distinto de 0 y deja la lista de acceptance intacta.",
+        "La bala 2 se puede saltar con una bandera explicita, y hacerlo deja entrada en progress/history.md registrando que se reescribio el contrato de una feature cerrada.",
+        "node dist/feature.js start <name> sobre una feature blocked sigue funcionando (blocked -> in_progress es una transicion documentada en references/workflow.md), pero ahora valida contra el schema antes de escribir.",
+        "tests/test_feature.sh cubre: la guarda de acceptance sobre done, su bandera de escape y la entrada de historia que deja, y que start desde blocked sigue verde.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "depends_on": [
+        56
+      ],
+      "meta": {
+        "started_at": "2026-07-19T20:08:36.653Z",
+        "done_at": "2026-07-19T20:15:50.892Z"
+      }
+    },
+    {
+      "id": 58,
+      "name": "backlog_review_reissue",
+      "title": "Re-emitir un veredicto es una operacion del CLI, no una edicion a mano",
+      "description": "backlog.js review <f> --status approved despues de un changes_requested previo imprime 'exists (left untouched)' y sale 0 (backlog.ts:417-424). El ciclo normal CHANGES_REQUESTED -> APPROVED no tiene verbo: hay que editar el archivo a mano, el patron que el harness prohibe para feature_list.json. Y el exit 0 impide que quien llama detecte el no-op (A3 del analisis, el que mas duele en la practica).",
+      "acceptance": [
+        "node dist/backlog.js review <f> --status <s> --force reescribe el reporte existente con el nuevo status: en el frontmatter y sale 0.",
+        "Sin --force, un reporte existente sigue sin tocarse, pero ahora sale distinto de 0 cuando el --status pedido difiere del que el archivo ya declara, nombrando ambos veredictos.",
+        "Sin --force y con el mismo --status que el archivo ya declara, sale 0: re-correr el mismo comando es idempotente, no un error.",
+        "--force preserva el cuerpo del reporte y cambia solo el frontmatter, o bien lo reescribe desde plantilla dejandolo declarado en la salida; el implementer elige y lo anota en su reporte.",
+        "tests/test_backlog.sh cubre las tres direcciones de las balas 1-3, incluido el cambio de exit code de la bala 2 (la suite black-box es el oraculo y se actualiza en el mismo commit).",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-19T20:16:01.949Z",
+        "done_at": "2026-07-19T20:23:37.226Z"
+      }
+    },
+    {
+      "id": 59,
+      "name": "init_runs_validate_harness",
+      "title": "El verificador propio corre el validador que este repo produce",
+      "description": "init.sh de este repo nunca llama a validate_harness.js. Los advisories de las features 52 (deuda de evidencia) y 55 (colision de actor) llegan solo por check_preflight, no bloqueante y a stderr. Se verificaron contra fixtures en test_init.sh, no contra el flujo vivo del repo: dos features cerradas no ejercen ningun efecto sobre su propio harness.",
+      "acceptance": [
+        "./init.sh ejecuta validate_harness sobre .handyman como fase propia, y sus gaps bloqueantes hacen salir distinto de 0.",
+        "Los advisories no bloqueantes (frontmatter, deuda de evidencia, colision de actor, rama) se imprimen sin cambiar el exit code, igual que hoy hacen por preflight.",
+        "Los NOTEs no se imprimen dos veces cuando preflight tambien corre: o se deduplica, o preflight deja de invocarlo y se anota por que.",
+        "handyman/assets/init.template.sh recibe el mismo cambio, para que los harnesses instalados lo hereden en el proximo upgrade.",
+        "tests/test_init.sh verifica que un .handyman con un gap bloqueante hace fallar ./init.sh, y que uno con solo deuda de evidencia sale 0 con NOTE.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-19T20:23:48.927Z",
+        "done_at": "2026-07-19T20:37:13.243Z"
+      }
+    },
+    {
+      "id": 60,
+      "name": "panel_idea_to_feature",
+      "title": "Primera accion del panel: registrar una feature en un harness de la flota",
+      "description": "Primera rebanada vertical de 'panel actuando como agente'. Hoy el panel puede capturar una idea (writeIntake, la unica escritura a disco de toda la superficie observer) pero no puede ejecutar nada sobre la flota. Es la accion mas chica que ejerce el recorrido completo: registry como allowlist -> root elegido -> escritura validada -> estado visible. Una, no nueve. Decisiones de sprint tomadas antes de implementar: (1) business.md acota su Out Of Scope a 'no es un runner desatendido' - el panel asiste, cada accion la dispara un humano; (2) la escritura se extrae a packages/toolbox-core y feature.js add pasa a ser una presentacion suya, misma forma que la feature 46 uso para writeIntake, en vez de spawnear un subproceso (el cuerpo de /api/intake declara spawned_process: false y esta fijado por tres suites); (3) la accion vive en /harness, el detalle de un harness, donde el root esta implicito.",
+      "acceptance": [
+        "packages/toolbox-core expone addFeature(hroot, root, name, acceptance): asigna el id siguiente, escribe feature_list.json validado contra el schema y devuelve el id asignado.",
+        "addFeature rechaza ANTES de escribir nada, con un status discriminado por causa: root no presente en el registry (isRegisteredRoot), nombre que no matchea /^[A-Za-z0-9_-]+$/, y lista de acceptance vacia.",
+        "node dist/feature.js add delega en addFeature: no queda una segunda implementacion de la escritura de feature_list.json. tests/test_feature.sh sigue verde sin modificaciones, que es la prueba de paridad.",
+        "Una ruta POST en apps/web registra una feature en un root de la flota y devuelve el id asignado, sin spawnear ningun proceso; los tres rechazos de la bala 2 salen con status distinto de 2xx y cuerpo nombrando la causa.",
+        "La pagina /harness expone la accion sobre el harness que ya esta mostrando, y tras un alta exitosa el estado mostrado refleja la feature nueva sin recargar a mano.",
+        "Una suite black-box cubre el camino feliz y los tres rechazos, sin tocar la red, siguiendo el patron de tests/test_web_relays.sh.",
+        "docs/business.md acota su Out Of Scope: lo excluido es el loop desatendido, no toda ejecucion; el panel dispara acciones iniciadas por un humano.",
+        "bash tests/run_tests.sh passes y ./init.sh exits 0."
+      ],
+      "status": "done",
+      "depends_on": [
+        56,
+        57
+      ],
+      "meta": {
+        "started_at": "2026-07-19T20:44:21.714Z",
+        "done_at": "2026-07-19T20:59:32.294Z"
+      }
+    },
+    {
+      "id": 61,
+      "name": "validator_legacy_frontmatter_alias",
+      "title": "validate_harness acepta la convencion legacy de frontmatter (date/verdict)",
+      "description": "El advisory de frontmatter marca 32 reportes historicos como incompletos porque usan date:+verdict: en vez de updated:+status:. done ya acepta la clave legacy (feature.ts:416); el validador debe espejar ese fallback en vez de contradecirlo. Opcion (a) del handoff 2026-07-19 §3.1: alias en el validador, sin reescribir reportes historicos. La migracion (b) queda nombrada como mejora futura separada.",
+      "acceptance": [
+        "validate_harness acepta verdict: como alias de status:, date: como alias de updated: y reviewer: como alias de role: al calcular claves faltantes, espejando el fallback de feature.ts:416",
+        "un reporte con la convencion legacy completa (verdict/date/reviewer) no emite NOTE de frontmatter is missing",
+        "un reporte sin la clave en ninguna de las dos convenciones sigue emitiendo NOTE (caso negativo en la suite)",
+        "./init.sh pasa y los NOTE de frontmatter sobre el backlog real bajan de 32 a 1: solo explore_workstation_ui_state_2, que carece de las claves en ambas convenciones"
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-19T21:28:06.223Z",
+        "done_at": "2026-07-19T21:34:10.704Z"
+      }
+    },
+    {
+      "id": 62,
+      "name": "license_mit_coherente",
+      "title": "Una sola historia de licencia: MIT en los cuatro package.json",
+      "description": "Decision de negocio 2026-07-19: todo MIT. handyman/package.json y packages/toolbox-core/package.json declaraban Apache-2.0 contra la evidencia MIT unanime del resto del repo (LICENSE, NOTICE, README.md:222, SKILL.md:91, footer del panel). El root y apps/web no declaraban licencia.",
+      "acceptance": [
+        "handyman/package.json y packages/toolbox-core/package.json declaran license MIT",
+        "package.json raiz y apps/web/package.json declaran license MIT",
+        "grep -r '\"license\"' de los cuatro package.json del workspace devuelve solo MIT"
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-19T21:40:38.990Z",
+        "done_at": "2026-07-19T21:42:12.106Z"
+      }
+    },
+    {
+      "id": 63,
+      "name": "repo_publico_sin_contenido_ajeno",
+      "title": "Untrackear del repo publico las skills de terceros sin licencia y el cache de graphify",
+      "description": "Decision de negocio 2026-07-19 (auditoria OSS): el repo es publico y redistribuia 14 skills de terceros sin licencia explicita (all rights reserved por defecto) mas 303 archivos de cache regenerable de graphify con rutas absolutas del autor, cost.json (telemetria personal) y los punteros .graphify_* que la propia regla de .gitignore declara machine-specific. Nada se borra del disco: solo git rm --cached + reglas de ignore. Se conservan trackeadas las 3 skills en regla: brand-guidelines y frontend-design (Apache-2.0 con LICENSE.txt) y ponytail (license: MIT en frontmatter). find-skills tambien se untrackea: su upstream vercel-labs/skills no tiene licencia (verificado va gh api, licenseInfo null) y su procedencia reproducible ya vive en skills-lock.json raiz.",
+      "acceptance": [
+        "git ls-files .agents lista solo brand-guidelines, frontend-design y ponytail",
+        "git ls-files graphify-out no lista cache/, cost.json ni .graphify_*; conserva graph.json, graph.html, GRAPH_REPORT.md y manifest.json",
+        "los archivos untrackeados siguen existiendo en disco y .gitignore los cubre para que no vuelvan a entrar",
+        "./init.sh sale 0 y la discovery de skills sigue resolviendo ponytail y design-taste-frontend desde disco"
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-19T21:43:12.457Z",
+        "done_at": "2026-07-19T21:44:45.375Z"
+      }
+    },
+    {
+      "id": 64,
+      "name": "toolchain_npm_handyman_harness",
+      "title": "Publicar el toolchain en npm como handyman-harness",
+      "description": "Decision de negocio 2026-07-19: monorepo unico + CLI en npm. El canal skills.sh esta roto: SKILL.md ordena node dist/*.js pero dist/ esta gitignoreado y workspace:* no resuelve fuera del monorepo. Publicar el paquete handyman como handyman-harness (npm 'handyman' esta tomado desde 2014; handyman-harness verificado libre; alternativa @rodrigomardones/handyman). Requiere: resolver @handyman/toolbox-core (bundlearlo con esbuild dentro del paquete publicado, o publicarlo como @rodrigomardones/toolbox-core), quitar private:true, campo bin para los 12 verbos, whitelist files que excluya .env (handyman/.env contiene una API key), prepack build, y limpiar el dist stale (toolbox_serve.js huerfano).",
+      "acceptance": [
+        "npm pack del paquete produce un tarball autocontenido: sin dependencias workspace:*, sin .env, con los 12 verbos ejecutables",
+        "npx handyman-harness feature ready funciona en un directorio fuera del monorepo",
+        "la version publicada distingue el estado post-split (no reusar 2.1.1)"
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-20T00:18:14.099Z",
+        "done_at": "2026-07-20T00:19:02.398Z"
+      }
+    },
+    {
+      "id": 65,
+      "name": "skill_invoca_npx",
+      "title": "SKILL.md y references invocan npx handyman-harness en vez de node dist/*.js",
+      "description": "Segunda mitad del canal: con el CLI en npm, los ~30 comandos node dist/*.js de SKILL.md, workflow.md, checklists.md, templates.md y examples.md pasan a npx handyman-harness@<major> con version pineada. Con esto una instalacion fresca via npx skills add queda ejecutable de punta a punta. Tambien corregir el drift de references/toolbox.md:157 (assets/toolbox_panel.js ya no existe).",
+      "acceptance": [
+        "cero referencias a node dist/ en SKILL.md y references/",
+        "una instalacion fresca de la skill en un directorio limpio puede correr preflight y feature add siguiendo solo las instrucciones de SKILL.md"
+      ],
+      "status": "done",
+      "depends_on": [
+        64
+      ],
+      "meta": {
+        "started_at": "2026-07-20T00:19:14.349Z",
+        "done_at": "2026-07-20T00:32:16.901Z"
+      }
+    },
+    {
+      "id": 66,
+      "name": "panel_visible_en_readme",
+      "title": "README de arranque para apps/web y mencion del monorepo en el README raiz",
+      "description": "La auditoria de distribucion encontro que apps/web y packages/toolbox-core son invisibles para un usuario externo: sin README propio y sin mencion en el README raiz (pre-monorepo, mtime jun-25). El panel es el north star y nadie que llegue por GitHub o skills.sh puede descubrirlo ni arrancarlo. Documentar los 4 pasos: pnpm install, pnpm --filter handyman build, crear registry (HANDYMAN_ROOT/registry.json), keys LLM opcionales; y actualizar el README raiz con el mapa del workspace.",
+      "acceptance": [
+        "apps/web/README.md existe con los pasos de arranque verificados en un clon limpio",
+        "README.md raiz nombra las tres unidades del workspace y enlaza al panel"
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-19T22:19:09.285Z",
+        "done_at": "2026-07-19T22:26:22.311Z"
+      }
+    },
+    {
+      "id": 67,
+      "name": "okf_memoria_alignment",
+      "title": "Alinear la memoria .handyman con OKF v0.1 (type: en frontmatter, logs vs conceptos)",
+      "description": "Cambio minimo conformante segun backlog/explore_okf_memoria.md con la ontologia decidida por el humano: los reportes de cierre son logs (impl_* -> type: Implementation Log, review_* -> type: Review Log) y la investigacion es conocimiento (explore_* -> type: Explore Report); docs/* -> Doc, docs/sprints/* -> Sprint, progress/* -> Session Log. Sin mover archivos: solo semantica en frontmatter, writers que emiten type: en archivos nuevos, y index_md.ts emitiendo links markdown sin frontmatter en index.md.",
+      "acceptance": [
+        "Todo .md del workspace (excluyendo .upgrade-backups/) tiene frontmatter YAML parseable con type: no vacio; los 14 huerfanos reciben frontmatter minimo",
+        "impl_* lleva type: Implementation Log; review_* lleva type: Review Log; explore_* lleva type: Explore Report; sprints Sprint; progress Session Log; docs Doc",
+        "Los writers (backlog.js impl/review/explore, sprint.js, feature.js start/done y plantillas) emiten type: en los archivos nuevos que crean",
+        "index_md.js emite links markdown relativos en vez de wikilinks y no escribe frontmatter en index.md; Obsidian sigue renderizando",
+        "Tests actualizados al nivel del cambio y ./init.sh exit 0"
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-19T23:15:26.136Z",
+        "done_at": "2026-07-19T23:30:07.161Z"
+      }
+    },
+    {
+      "id": 68,
+      "name": "version_handshake_npm",
+      "title": "Version handshake skill <-> handyman-harness",
+      "description": "La skill queda como manifiesto de uso y handyman-harness como herramientas deterministicas: currentSkillVersion() cae a package.json cuando SKILL.md no viene en el tarball, el bin expone handyman --version, y pack_npm.mjs exige paridad SKILL.md metadata.version == package.json version. Bump conjunto a 3.1.0 y publicacion npm.",
+      "acceptance": [
+        "npx handyman-harness upgrade_harness --check resuelve la version actual sin SKILL.md (fallback package.json)",
+        "handyman --version imprime la version del paquete",
+        "pack_npm.mjs falla si SKILL.md metadata.version difiere de package.json",
+        "SKILL.md y package.json declaran 3.1.0 y ./init.sh sale verde"
+      ],
+      "status": "done",
+      "meta": {
+        "started_at": "2026-07-20T00:42:50.938Z",
+        "done_at": "2026-07-20T00:52:21.373Z"
       }
     }
   ]

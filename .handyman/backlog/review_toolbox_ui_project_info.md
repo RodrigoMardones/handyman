@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: toolbox_ui_project_info
 status: approved
 role: reviewer

@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workstation_app_shell
 status: implemented
 role: implementer

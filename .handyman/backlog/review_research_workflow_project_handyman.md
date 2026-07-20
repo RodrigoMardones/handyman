@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: research_workflow_project_handyman
 status: approved
 role: reviewer

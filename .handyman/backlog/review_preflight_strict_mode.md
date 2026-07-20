@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: preflight_strict_mode
 status: approved
 role: reviewer

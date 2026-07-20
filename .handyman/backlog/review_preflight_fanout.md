@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: preflight_fanout
 status: approved
 role: reviewer

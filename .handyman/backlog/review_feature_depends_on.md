@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: feature_depends_on
 status: approved
 role: reviewer

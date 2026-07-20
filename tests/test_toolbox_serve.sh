@@ -1,23 +1,49 @@
 #!/usr/bin/env bash
-# toolBox observer tests: boots dist/toolbox_serve.js on an ephemeral port
-# against a temporary HANDYMAN_ROOT fixture (the real $HOME/HANDYMAN is never
+# toolBox observer tests: boots the toolbox serve wrapper (Next standalone,
+# `node dist/toolbox.js serve`) on an ephemeral port against a temporary
+# HANDYMAN_ROOT fixture (the real $HOME/HANDYMAN is never
 # touched) and exercises the read-only HTTP surface: panel, state, markdown
 # allowlist, corpus, graph passthrough, vendor libs, SSE and the security
-# guards (GET-only, Host check), plus the POST /api/draft intake relay (the
-# sole non-GET route; text only, writes no disk).
+# guards (GET-only, Host check), plus the POST /api/draft intake relay, the
+# POST /api/summarize fleet-summary relay and the POST /api/ask grounded Q&A
+# relay (text only, no disk writes). The summarize and ask cases run against
+# a local mock OpenAI-compatible LLM server bound to 127.0.0.1 (exported as
+# OLLAMA_BASE_URL, so provider "ollama" is the deterministic fake); no test
+# touches the network.
+#
+# Parity-oracle knobs (Next.js migration, feature toolbox_parity_oracle):
+#   TOOLBOX_SERVE_CMD  alternative boot command replacing the default
+#                      `node dist/toolbox.js serve` (the Next standalone
+#                      wrapper). Unset: the wrapper is the default.
+#   TOOLBOX_BASE_URL   URL of an already-running server; when set, this
+#                      suite boots nothing and kills nothing at the end. See
+#                      .handyman/docs/verification.md for the shared-fixture
+#                      requirement (HANDYMAN_ROOT / OLLAMA_BASE_URL) this
+#                      mode relies on.
 set -u
 
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/assert.sh
 . "$SUITE_DIR/lib/assert.sh"
 TOOLBOX="$SUITE_DIR/../handyman/dist/toolbox.js"
-SERVE="$SUITE_DIR/../handyman/dist/toolbox_serve.js"
-PANEL="$SUITE_DIR/../handyman/assets/toolbox_panel.js"
+SERVE="$SUITE_DIR/../handyman/dist/toolbox.js"
+SERVE_SUBCMD="serve"
 
 echo "toolBox observer suite (test_toolbox_serve.sh)"
 
 # --- fixture -----------------------------------------------------------------
-T="$(mktemp -d)"; FR="$T/toolboxroot"; H1="$T/proj1"
+T="$(mktemp -d)"
+if [ -n "${TOOLBOX_BASE_URL:-}" ] && [ -n "${HANDYMAN_ROOT:-}" ]; then
+  # Parity-oracle mode (TOOLBOX_BASE_URL): share the registry root with the
+  # already-running server under test instead of the suite's own throwaway
+  # one, so the fixture this suite registers below becomes visible to it
+  # (the registry is read fresh from disk on every request — see
+  # .handyman/docs/verification.md). Default (no env vars) is untouched.
+  FR="$HANDYMAN_ROOT"
+else
+  FR="$T/toolboxroot"
+fi
+H1="$T/proj1"
 ws="$H1/.handyman"
 mkdir -p "$ws/progress" "$ws/backlog" "$ws/docs" "$H1/graphify-out"
 printf '{"install_mode":"local","project_name":"proj1","project_root":".","harness_workspace":".handyman","harness_version":"1.0.0"}\n' \
@@ -44,19 +70,139 @@ printf 'export const X = 1;\n' > "$H1/src/cli.ts"
 printf 'binary\x00data' > "$H1/blob.bin"
 HANDYMAN_ROOT="$FR" node "$TOOLBOX" register "$H1" --date 2026-07-01 >/dev/null 2>&1
 
-# --- boot one server for the whole suite -------------------------------------
-SERVER_OUT="$T/server.out"
-HANDYMAN_ROOT="$FR" node "$SERVE" --port 0 > "$SERVER_OUT" 2>&1 &
-SERVER_PID=$!
-URL=""
+# --- mock OpenAI-compatible LLM server (deterministic fake provider) ---------
+# Booted BEFORE the observer and exported as OLLAMA_BASE_URL so provider
+# "ollama" (always instantiated; health check hits GET /models on the base)
+# becomes a deterministic local fake. GET /v1/calls exposes how many
+# completion calls were served — the cache-hit assertion reads it.
+MOCK_PID=""
+if [ -n "${TOOLBOX_BASE_URL:-}" ] && [ -n "${OLLAMA_BASE_URL:-}" ]; then
+  # Parity-oracle mode: the already-running server was booted with its own
+  # OLLAMA_BASE_URL (ambient here too) — reuse that same fake instead of
+  # spinning up a second, disconnected one the target server never talks to
+  # (see .handyman/docs/verification.md). The cache-hit assertion's /v1/calls
+  # readback then targets the instance the server actually calls.
+  MOCK_PORT="$(printf '%s' "$OLLAMA_BASE_URL" | sed -E 's#^https?://[^:/]+:([0-9]+).*#\1#')"
+else
+cat > "$T/mockllm.js" <<'MOCKEOF'
+const http = require("http");
+let calls = 0;
+const server = http.createServer((req, res) => {
+  if (req.method === "GET" && req.url === "/v1/models") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end("{}");
+    return;
+  }
+  if (req.method === "GET" && req.url === "/v1/calls") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ calls }));
+    return;
+  }
+  if (req.method === "POST" && req.url === "/v1/chat/completions") {
+    calls += 1;
+    let body = "";
+    req.on("data", (c) => { body += c; });
+    req.on("end", () => {
+      res.writeHead(200, { "Content-Type": "text/event-stream" });
+      const frame = (obj) => res.write("data: " + JSON.stringify(obj) + "\n\n");
+      // Prompt routing: ask prompts carry the "---- user question" marker
+      // (composeAskPrompt) and get a deterministic cited answer; everything
+      // else keeps the summarize reply so those cases pass unchanged.
+      if (body.includes("---- user question")) {
+        frame({ choices: [{ delta: { content: "the alpha feature is done " }, finish_reason: null }] });
+        frame({ choices: [{ delta: { content: "[fuente: backlog:impl_alpha.md]" }, finish_reason: null }] });
+      } else if (body.includes("Documentos del backlog")) {
+        // Triage prompts (composeTriagePrompt) get a deterministic report the
+        // suite can parse back. Fenced on purpose: parseTriageReport must
+        // survive the code block models emit even when told not to.
+        frame({ choices: [{ delta: { content: '```json\n{"report":[' }, finish_reason: null }] });
+        frame({ choices: [{ delta: { content: '{"id":"impl_alpha.md","categoria":"impl","confianza":0.8}]}\n```' }, finish_reason: null }] });
+      } else if (body.includes("Features cerradas")) {
+        // retro prompts (composeRetroPrompt). Two patterns on purpose: one
+        // properly backed by 2 features, one anecdote backed by 1 that the
+        // server must DROP and count in `discarded`.
+        frame({ choices: [{ delta: { content: '{"patterns":[' }, finish_reason: null }] });
+        frame({ choices: [{ delta: { content: '{"titulo":"shims por paquete","tipo":"patron","features":["alpha","beta"],"detalle":"d"},{"titulo":"anecdota","tipo":"patron","features":["alpha"],"detalle":"d"}]}' }, finish_reason: null }] });
+      } else if (body.includes("deduce que cambio") || body.includes("deduce los criterios")) {
+        // acceptance prompts (composeAcceptancePrompt): observable bullets
+        // ending in the green gate, so gate_last must come back true.
+        frame({ choices: [{ delta: { content: "- POST /api/x responde 400 sin root\n" }, finish_reason: null }] });
+        frame({ choices: [{ delta: { content: "- bash tests/run_tests.sh passes y ./init.sh exits 0." }, finish_reason: null }] });
+      } else if (body.includes("Feature bajo revision")) {
+        // review-notes prompts (composeReviewNotesPrompt): a checklist of
+        // questions, deliberately carrying NO verdict token.
+        frame({ choices: [{ delta: { content: "borrador: verificar todo\n" }, finish_reason: null }] });
+        frame({ choices: [{ delta: { content: "- invariante de solo-lectura respetada?" }, finish_reason: null }] });
+      } else {
+        frame({ choices: [{ delta: { content: "fleet " }, finish_reason: null }] });
+        frame({ choices: [{ delta: { content: "summary ok" }, finish_reason: null }] });
+      }
+      frame({ choices: [{ delta: {}, finish_reason: "stop" }] });
+      res.write("data: [DONE]\n\n");
+      res.end();
+    });
+    return;
+  }
+  res.writeHead(404, { "Content-Type": "application/json" });
+  res.end("{}");
+});
+server.listen(0, "127.0.0.1", () => {
+  console.log("PORT=" + server.address().port);
+});
+MOCKEOF
+MOCK_OUT="$T/mockllm.out"
+node "$T/mockllm.js" > "$MOCK_OUT" 2>&1 &
+MOCK_PID=$!
+MOCK_PORT=""
 for _ in $(seq 1 50); do
-  URL="$(sed -n 's/^toolBox observer: //p' "$SERVER_OUT" | tr -d '[:space:]')"
-  [ -n "$URL" ] && break
+  MOCK_PORT="$(sed -n 's/^PORT=//p' "$MOCK_OUT" | tr -d '[:space:]')"
+  [ -n "$MOCK_PORT" ] && break
   sleep 0.1
 done
+fi
+
+# --- boot one server for the whole suite (or reuse an already-running one) --
+# The default boot is the new single-process wrapper: `node dist/toolbox.js
+# serve` spawns the Next standalone server (apps/web/.next/standalone/apps/web/
+# server.js), resolves its own repo root by walking up from cwd, and prints
+# `toolBox observer: <URL>`. TOOLBOX_SERVE_CMD: alternative boot command
+# standing in for that default (parity target: an equivalent Next.js
+# entrypoint). TOOLBOX_BASE_URL: URL of an already-running server; when set,
+# this suite boots nothing and — since it never started it — kills nothing at
+# the end either.
+SERVER_PID=""
+if [ -n "${TOOLBOX_BASE_URL:-}" ]; then
+  URL="$TOOLBOX_BASE_URL"
+  case "$URL" in
+    */) ;;
+    *) URL="$URL/" ;;
+  esac
+else
+  SERVER_OUT="$T/server.out"
+  if [ -n "${TOOLBOX_SERVE_CMD:-}" ]; then
+    HANDYMAN_ROOT="$FR" OLLAMA_BASE_URL="http://127.0.0.1:$MOCK_PORT/v1" \
+      bash -c "exec $TOOLBOX_SERVE_CMD --port 0" > "$SERVER_OUT" 2>&1 &
+  else
+    HANDYMAN_ROOT="$FR" OLLAMA_BASE_URL="http://127.0.0.1:$MOCK_PORT/v1" \
+      node "$SERVE" $SERVE_SUBCMD --port 0 > "$SERVER_OUT" 2>&1 &
+  fi
+  SERVER_PID=$!
+  URL=""
+  for _ in $(seq 1 50); do
+    URL="$(sed -n 's/^toolBox observer: //p' "$SERVER_OUT" | tr -d '[:space:]')"
+    [ -n "$URL" ] && break
+    sleep 0.1
+  done
+fi
 cleanup() {
-  kill "$SERVER_PID" >/dev/null 2>&1
-  wait "$SERVER_PID" 2>/dev/null
+  if [ -n "$SERVER_PID" ]; then
+    kill "$SERVER_PID" >/dev/null 2>&1
+    wait "$SERVER_PID" 2>/dev/null
+  fi
+  if [ -n "$MOCK_PID" ]; then
+    kill "$MOCK_PID" >/dev/null 2>&1
+    wait "$MOCK_PID" 2>/dev/null
+  fi
   rm -rf "$T"
 }
 trap cleanup EXIT
@@ -68,141 +214,60 @@ else
   fail "no URL in server output: $(cat "$SERVER_OUT")"
 fi
 
-# --- TS1: panel --------------------------------------------------------------
-start_case "GET / returns the React panel with root div and the six vendor scripts"
+# --- TS0: DNS-rebinding host guard (apps/web/proxy.ts) -----------------------
+# proxy() is the single request-level guard left after feature 50 decommissioned
+# the Node observer: a browser lured to a hostname that resolves to 127.0.0.1
+# must not be able to read this process. Loopback Hosts pass, anything else is
+# 403. Previously verified by hand only; pinned here so removing the guard
+# fails the suite.
+start_case "a non-loopback Host header is rejected with 403 (DNS-rebinding guard)"
+EVIL_CODE="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: evil.example' "$URL")"
+LOOPBACK_CODE="$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: localhost' "$URL")"
+if [ "$EVIL_CODE" = "403" ] && [ "$LOOPBACK_CODE" = "200" ]; then
+  pass
+else
+  fail "host guard drifted: evil.example -> $EVIL_CODE (want 403), localhost -> $LOOPBACK_CODE (want 200)"
+fi
+
+# --- TS1: GET / (unified Next.js landing, feature toolbox_serve_decommission) ---
+# The retired-panel placeholder served by the old Node observer was an
+# interim state during the strangler migration. Feature 50
+# (toolbox_serve_decommission) made the Next standalone process the single
+# entrypoint, so `/` now serves the unified landing (apps/web/app/page.tsx)
+# instead of the placeholder. This case is the final carve-out of that
+# migration: the structural security contract the placeholder case carried
+# (no UMD React/htm/marked/dompurify/minisearch vendors, no external
+# scripts, no legacy `id="root"` UMD mount) is preserved against the landing
+# body. The migrated panel-asset cases these used to point at still live in
+# the Next-app suites below; only the placeholder-specific assertions are
+# inverted here (the landing is SSR/RSC HTML, not a UMD React mount).
+#   - panel asset JS / sparkline / fmt helpers   -> test_web_fleet.sh (renderFleetHtml)
+#   - anti-flash theme script + 3-state control  -> test_web_timeline_search.sh (theme keeps hw-theme:1 + layout injects anti-flash snippet)
+#   - two static live regions / reduced-motion   -> test_web_timeline_search.sh (ToolboxShell renders both static live regions)
+#   - SSE summary queue + connection announce    -> test_web_intake_ask.sh (FleetSummaryClient) + test_web_timeline_search.sh (announce)
+#   - actionable empty-state hints               -> test_web_fleet.sh / test_web_harness.sh (render*Html fixtures)
+#   - command palette (cmdk, MiniSearch-ranked)  -> test_web_timeline_search.sh (palette builds view/harness/doc actions)
+#   - single document keydown listener + guard   -> test_web_timeline_search.sh (shortcut interpreter) + test_web_intake_ask.sh (exactly ONE document.addEventListener('keydown'))
+start_case "GET / serves the unified Next.js landing (no UMD vendors, same-origin only)"
 BODY="$(curl -s "$URL")"
-if printf '%s' "$BODY" | grep -q 'id="root"' \
-  && printf '%s' "$BODY" | grep -q '/vendor/react.js' \
-  && printf '%s' "$BODY" | grep -q '/vendor/react-dom.js' \
-  && printf '%s' "$BODY" | grep -q '/vendor/htm.js' \
-  && printf '%s' "$BODY" | grep -q '/vendor/minisearch.js' \
-  && printf '%s' "$BODY" | grep -q '/vendor/marked.js' \
-  && printf '%s' "$BODY" | grep -q '/vendor/dompurify.js' \
-  && ! printf '%s' "$BODY" | grep -qE 'src="https?://'; then
+# The landing embeds placeholder marketing images from picsum.photos (an
+# `<img src="https://picsum.photos/...">`), which is benign editorial
+# content, NOT script execution. The security contract this case carries is
+# "no external SCRIPT execution and no retired UMD vendors" — so the
+# external-src check is scoped to `<script ... src="https://...">`, not to
+# every src attribute.
+if printf '%s' "$BODY" | grep -qi '<html' \
+  && ! printf '%s' "$BODY" | grep -q '/vendor/react.js' \
+  && ! printf '%s' "$BODY" | grep -q '/vendor/react-dom.js' \
+  && ! printf '%s' "$BODY" | grep -q '/vendor/htm.js' \
+  && ! printf '%s' "$BODY" | grep -q '/vendor/minisearch.js' \
+  && ! printf '%s' "$BODY" | grep -q '/vendor/marked.js' \
+  && ! printf '%s' "$BODY" | grep -q '/vendor/dompurify.js' \
+  && ! printf '%s' "$BODY" | grep -q 'id="root"' \
+  && ! printf '%s' "$BODY" | grep -qE '<script[^>]*src="https?://'; then
   pass
 else
-  fail "panel body missing pieces: $(printf '%s' "$BODY" | head -3)"
-fi
-
-start_case "panel asset is valid JS (node --check)"
-if node --check "$PANEL" >/dev/null 2>&1; then
-  pass
-else
-  fail "node --check rejected assets/toolbox_panel.js"
-fi
-
-start_case "panel asset ships the sparkline (accessible polyline) and fmt helpers"
-if grep -q '<polyline' "$PANEL" \
-  && grep -q 'role="img"' "$PANEL" \
-  && grep -q 'aria-label' "$PANEL" \
-  && grep -q 'const fmt = {' "$PANEL"; then
-  pass
-else
-  fail "panel asset missing sparkline/fmt markers"
-fi
-
-# --- TS1b: theme toggle (Plan B) ---------------------------------------------
-start_case "panel <head> ships the synchronous anti-flash theme script"
-# Positional on purpose: the inlined panel asset in <body> also mentions
-# hw-theme:1, so a bare grep would pass without the head script. The first
-# hw-theme:1 line must come strictly BEFORE the first <style> line — only
-# the anti-flash <head> script can satisfy that.
-THEME_LINE="$(printf '%s\n' "$BODY" | grep -n 'hw-theme:1' | head -1 | cut -d: -f1)"
-STYLE_LINE="$(printf '%s\n' "$BODY" | grep -n '<style>' | head -1 | cut -d: -f1)"
-if [ -n "$THEME_LINE" ] && [ -n "$STYLE_LINE" ] && [ "$THEME_LINE" -lt "$STYLE_LINE" ]; then
-  pass
-else
-  fail "anti-flash script not before <style> in /: theme=${THEME_LINE:-none} style=${STYLE_LINE:-none}"
-fi
-
-start_case "panel asset ships the 3-state theme control (aria-pressed, system mode)"
-if grep -q 'hw-theme:1' "$PANEL" \
-  && grep -q 'aria-pressed' "$PANEL" \
-  && grep -q 'prefers-color-scheme: dark' "$PANEL" \
-  && grep -q 'removeItem' "$PANEL"; then
-  pass
-else
-  fail "panel asset missing theme toggle markers"
-fi
-
-# --- TS1c: a11y live regions (Plan D) ----------------------------------------
-start_case "panel ships exactly two static live regions, empty, before #root"
-# Positional + exhaustive: both regions must be static HTML BEFORE the root
-# div (present and empty from the first byte, outside the React tree), the
-# polite one as role=status aria-live=polite, the assertive one as
-# role=alert with NO aria-live attribute (the explicit combo double-announces
-# on VoiceOver/iOS), and no other aria-live surface may exist anywhere in
-# the served page (inlined panel asset included).
-POLITE_LINE="$(printf '%s\n' "$BODY" | grep -n 'id="live-polite" class="visually-hidden" role="status" aria-live="polite"></div>' | head -1 | cut -d: -f1)"
-ALERT_LINE="$(printf '%s\n' "$BODY" | grep -n 'id="live-assertive" class="visually-hidden" role="alert"></div>' | head -1 | cut -d: -f1)"
-ROOT_LINE="$(printf '%s\n' "$BODY" | grep -n 'id="root"' | head -1 | cut -d: -f1)"
-LIVE_COUNT="$(printf '%s' "$BODY" | grep -o 'aria-live' | wc -l | tr -d ' ')"
-if [ -n "$POLITE_LINE" ] && [ -n "$ALERT_LINE" ] && [ -n "$ROOT_LINE" ] \
-  && [ "$POLITE_LINE" -lt "$ROOT_LINE" ] && [ "$ALERT_LINE" -lt "$ROOT_LINE" ] \
-  && [ "$LIVE_COUNT" = "1" ] \
-  && ! printf '%s' "$BODY" | grep -q 'aria-live="assertive"'; then
-  pass
-else
-  fail "live regions wrong: polite=${POLITE_LINE:-none} alert=${ALERT_LINE:-none} root=${ROOT_LINE:-none} aria_live_count=$LIVE_COUNT"
-fi
-
-start_case "served panel carries the prefers-reduced-motion guard"
-if printf '%s' "$BODY" | grep -q 'prefers-reduced-motion: reduce'; then
-  pass
-else
-  fail "no prefers-reduced-motion guard in served CSS"
-fi
-
-start_case "panel asset queues SSE summaries and announces connection changes"
-if grep -q 'ANNOUNCE_DEBOUNCE_MS' "$PANEL" \
-  && grep -q 'diffSummary' "$PANEL" \
-  && grep -q 'live-polite' "$PANEL" \
-  && grep -q 'live-assertive' "$PANEL" \
-  && grep -q 'feature(s) updated in' "$PANEL" \
-  && grep -q 'live updates disconnected' "$PANEL" \
-  && grep -q 'live updates reconnected' "$PANEL" \
-  && grep -q 'is-down' "$PANEL"; then
-  pass
-else
-  fail "panel asset missing announcer markers"
-fi
-
-start_case "empty states are actionable hints, not bare dashes"
-if grep -q 'register one with' "$PANEL" \
-  && grep -q 'add one with' "$PANEL" \
-  && grep -q 'close a feature' "$PANEL" \
-  && grep -q 'try a shorter term' "$PANEL"; then
-  pass
-else
-  fail "panel asset missing actionable empty-state hints"
-fi
-
-# --- TS1d: command palette + shortcuts (Plan E) --------------------------------
-start_case "served panel ships the command palette dialog (⌘K, MiniSearch-ranked)"
-# The palette dialog is rendered by the inlined panel asset, so the served
-# page must carry its markup markers: the dialog class, the palette input id
-# (the keydown listener's target guard), showModal usage and the ⌘K/Ctrl+K
-# handling (metaKey), plus the MiniSearch ranking path.
-if printf '%s' "$BODY" | grep -q 'class="palette"' \
-  && printf '%s' "$BODY" | grep -q 'palette-input' \
-  && printf '%s' "$BODY" | grep -q 'metaKey' \
-  && printf '%s' "$BODY" | grep -q 'rankActions'; then
-  pass
-else
-  fail "served panel missing palette markers"
-fi
-
-start_case "shortcuts ride a single document keydown listener with a field guard"
-KD_COUNT="$(grep -c 'addEventListener("keydown"' "$PANEL" | tr -d ' ')"
-if [ "$KD_COUNT" = "1" ] \
-  && grep -q 'isContentEditable' "$PANEL" \
-  && grep -q 'showModal' "$PANEL" \
-  && grep -q 'global-search' "$PANEL" \
-  && grep -q 'gArmedRef' "$PANEL" \
-  && grep -q 'SHORTCUTS_HELP' "$PANEL"; then
-  pass
-else
-  fail "keydown listeners=$KD_COUNT or missing guard/shortcut markers"
+  fail "landing body missing/wrong: $(printf '%s' "$BODY" | head -5)"
 fi
 
 # --- TS2: state --------------------------------------------------------------
@@ -329,43 +394,65 @@ else
 fi
 
 # --- TS6: vendors ------------------------------------------------------------
-start_case "vendor libs (react, react-dom, htm, minisearch, marked, dompurify) serve from node_modules"
-ALL_OK=yes
+# Feature toolbox_panel_retirement: the React panel UMDs (react/react-dom/
+# htm/marked/dompurify/minisearch) were deleted; only vis-network remains
+# (graphify graph renderer, same-origin rewrite of unpkg). The retired panel
+# vendors now 404; the unknown-vendor guard still holds.
+start_case "vendor lib vis-network.js serves from node_modules; retired UMDs 404"
+V_OK="$(curl -s -o /dev/null -w '%{http_code}' "${URL}vendor/vis-network.js")"
+ALL_RETIRED=yes
 for v in react.js react-dom.js htm.js minisearch.js marked.js dompurify.js; do
   CODE="$(curl -s -o /dev/null -w '%{http_code}' "${URL}vendor/$v")"
-  [ "$CODE" = "200" ] || ALL_OK="no($v=$CODE)"
+  [ "$CODE" = "404" ] || ALL_RETIRED="no($v=$CODE)"
 done
 UNKNOWN="$(curl -s -o /dev/null -w '%{http_code}' "${URL}vendor/evil.js")"
-if [ "$ALL_OK" = "yes" ] && [ "$UNKNOWN" = "404" ]; then
+if [ "$V_OK" = "200" ] && [ "$ALL_RETIRED" = "yes" ] && [ "$UNKNOWN" = "404" ]; then
   pass
 else
-  fail "vendors=$ALL_OK unknown=$UNKNOWN"
+  fail "vis=$V_OK retired=$ALL_RETIRED unknown=$UNKNOWN"
 fi
 
 # --- TS6b: CSP (Plan C) ------------------------------------------------------
-start_case "server responses carry Content-Security-Policy default-src 'self'"
-CSP="$(curl -s -D - -o /dev/null "${URL}" | grep -i '^content-security-policy:' )"
-if printf '%s' "$CSP" | grep -qi "default-src 'self'" \
-  && printf '%s' "$CSP" | grep -qi "script-src" \
-  && printf '%s' "$CSP" | grep -qi "style-src"; then
+# CSP constrains what a DOCUMENT may load, so the HTML pages are the surface
+# that actually needs it. Probing only the JSON APIs, where CSP is near-inert,
+# would keep this case green while every page went unprotected - which is
+# exactly what happened between features 49 and 50, when the Node observer
+# (whose send() applied CSP to its HTML) was retired and Next served the pages
+# with no CSP at all. So both surfaces are asserted:
+#   - pages  -> HTML_CSP_HEADER (apps/web/next.config.ts headers()), which is
+#               CSP_HEADER plus the landing's picsum.photos placeholder images
+#   - JSON   -> the stricter CSP_HEADER (apps/web/lib/respond.ts), which must
+#               NOT pick up the image allowance
+start_case "HTML pages and API responses both carry Content-Security-Policy default-src 'self'"
+csp_of() { curl -s -D - -o /dev/null "$1" | grep -i '^content-security-policy:'; }
+CSP_ROOT="$(csp_of "${URL}")"
+CSP_FLEET="$(csp_of "${URL}fleet")"
+CSP_API="$(csp_of "${URL}api/state")"
+CSP_OK=yes
+for header in "$CSP_ROOT" "$CSP_FLEET" "$CSP_API"; do
+  printf '%s' "$header" | grep -qi "default-src 'self'" || CSP_OK=no
+  printf '%s' "$header" | grep -qi "script-src" || CSP_OK=no
+  printf '%s' "$header" | grep -qi "style-src" || CSP_OK=no
+done
+# The page CSP must actually CARRY the picsum allowance, and the API CSP must
+# NOT. Asserting only the shared directives above would go green if
+# HTML_CSP_HEADER's .replace ever silently no-ops (e.g. CSP_HEADER's img-src
+# clause gets reworded): pages would fall back to plain CSP_HEADER, every
+# sub-assertion would still pass, and the landing's images would be blocked -
+# the same "green while broken" shape this case exists to catch.
+printf '%s' "$CSP_ROOT" | grep -qi "picsum" || CSP_OK=no
+printf '%s' "$CSP_FLEET" | grep -qi "picsum" || CSP_OK=no
+printf '%s' "$CSP_API" | grep -qi "picsum" && CSP_OK=no
+if [ "$CSP_OK" = "yes" ]; then
   pass
 else
-  fail "CSP missing/default-src absent: $(printf '%s' "$CSP" | head -c 200)"
+  fail "CSP gap: / -> $(printf '%s' "$CSP_ROOT" | head -c 80) | /fleet -> $(printf '%s' "$CSP_FLEET" | head -c 80) | /api/state -> $(printf '%s' "$CSP_API" | head -c 80)"
 fi
 
-# --- TS6c: safe markdown render (Plan C) -------------------------------------
-start_case "panel asset renders sanitized markdown (DOMPurify + FORBID_TAGS + marked)"
-if grep -q 'DOMPurify.sanitize' "$PANEL" \
-  && grep -q 'FORBID_TAGS' "$PANEL" \
-  && grep -qi 'script' "$PANEL" \
-  && grep -qi 'iframe' "$PANEL" \
-  && grep -q 'marked.parse' "$PANEL" \
-  && grep -q 'dangerouslySetInnerHTML' "$PANEL" \
-  && grep -q 'javascript' "$PANEL"; then
-  pass
-else
-  fail "panel asset missing safe-markdown markers (DOMPurify/FORBID_TAGS/marked/dangerouslySetInnerHTML/javascript-block)"
-fi
+# --- TS6c: safe markdown render (Plan C) [RETIRED, feature ------------------
+# toolbox_panel_retirement] — DOMPurify + marked now live in apps/web
+# (lib/md.ts, D2): see test_web_intake_ask.sh "lib/md.ts exports the FORBID
+# consts" and "marked + dompurify are declared apps/web deps".
 
 # --- TS7: security guards ----------------------------------------------------
 start_case "observer is read-only (POST 405) and refuses foreign Host headers"
@@ -400,65 +487,314 @@ else
   fail "draft malformed body got $D_BAD (want 400)"
 fi
 
-# --- TS7c: intake view (Plan A panel) ----------------------------------------
-# The intake view is browser JS; like the other panel assertions these are
-# structural (the asset is the contract): the route, the SSE-over-POST client,
-# the sanitized render + editable draft, the clipboard fallback, and the
-# assertive announcement on a provider error.
-start_case "panel asset ships the #/intake route, nav link and palette action"
-if grep -q '#/intake' "$PANEL" \
-  && grep -q 'href="#/intake"' "$PANEL" \
-  && grep -q 'view_intake' "$PANEL"; then
+# --- TS7b2: fleet summary relay (POST /api/summarize) -------------------------
+# The summary relays the /api/state digest through the fake provider (the
+# mock LLM behind OLLAMA_BASE_URL) and caches by the digest hash. The two
+# summarize calls are adjacent ON PURPOSE, with no workspace mutation between
+# them (TS8 mutates the workspace, which changes the hash): the second call
+# must be a cache hit that never reaches the provider.
+start_case "POST /api/summarize streams SSE delta + result from the fake provider"
+S1="$T/sum1.out"
+curl -s -X POST "${URL}api/summarize" \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"ollama"}' > "$S1"
+awk '/^event: result/{getline; sub(/^data: /, ""); print; exit}' "$S1" > "$T/sum1.json"
+SUM1="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/sum1.json" 'd.summary_md' 2>/dev/null)"
+CACHED1="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/sum1.json" 'd.cached' 2>/dev/null)"
+HASH1="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/sum1.json" 'd.hash' 2>/dev/null)"
+if grep -q '^event: delta' "$S1" && grep -q '^event: result' "$S1" \
+  && [ "$SUM1" = "fleet summary ok" ] && [ "$CACHED1" = "False" ] && [ -n "$HASH1" ]; then
   pass
 else
-  fail "intake route/nav/palette missing in panel asset"
+  fail "summarize stream wrong: cached=$CACHED1 summary=$SUM1 body=$(head -c 200 "$S1")"
 fi
 
-start_case "panel intake posts to /api/draft and parses the SSE stream"
-if grep -q '"/api/draft"' "$PANEL" \
-  && grep -q 'method: "POST"' "$PANEL" \
-  && grep -q 'parseSseFrame' "$PANEL" \
-  && grep -q 'getReader' "$PANEL" \
-  && grep -q '"event:"' "$PANEL"; then
+start_case "second identical POST /api/summarize is a cache hit (provider not called again)"
+S2="$T/sum2.out"
+curl -s -X POST "${URL}api/summarize" \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"ollama"}' > "$S2"
+awk '/^event: result/{getline; sub(/^data: /, ""); print; exit}' "$S2" > "$T/sum2.json"
+SUM2="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/sum2.json" 'd.summary_md' 2>/dev/null)"
+CACHED2="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/sum2.json" 'd.cached' 2>/dev/null)"
+HASH2="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/sum2.json" 'd.hash' 2>/dev/null)"
+curl -s "http://127.0.0.1:$MOCK_PORT/v1/calls" > "$T/calls.json"
+CALLS="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/calls.json" 'd.calls' 2>/dev/null)"
+if [ "$CACHED2" = "True" ] && [ "$SUM2" = "fleet summary ok" ] \
+  && [ "$HASH2" = "$HASH1" ] && [ "$CALLS" = "1" ]; then
   pass
 else
-  fail "intake SSE-over-POST client missing markers"
+  fail "cache hit wrong: cached=$CACHED2 summary=$SUM2 hash_match=$([ "$HASH2" = "$HASH1" ] && echo y) calls=$CALLS"
 fi
 
-start_case "panel intake fetches /api/providers and /api/state for the selectors"
-if grep -q '"/api/providers"' "$PANEL" \
-  && grep -q 'p.available' "$PANEL" \
-  && grep -q 'IntakeView' "$PANEL"; then
+start_case "POST /api/summarize rejects an unknown provider with 400"
+S_CODE="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/summarize" \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"nope"}')"
+if [ "$S_CODE" = "400" ]; then
   pass
 else
-  fail "intake provider/harness selectors missing"
+  fail "summarize unknown provider got $S_CODE (want 400)"
 fi
 
-start_case "panel intake renders the draft sanitized and keeps it editable"
-if grep -q 'renderMd(draftMd)' "$PANEL" \
-  && grep -q 'dangerouslySetInnerHTML' "$PANEL" \
-  && grep -q 'DOMPurify' "$PANEL"; then
+# [RETIRED, feature toolbox_panel_retirement] panel asset fleet Summarize
+# control -> apps/web: test_web_intake_ask.sh "fleet summary files exist",
+# "FleetSummaryClient is mounted on /fleet" and "FleetSummaryClient POSTs
+# /api/summarize and surfaces (cached) + model from result".
+
+# --- TS7b3: grounded fleet Q&A relay (POST /api/ask) -------------------------
+# /api/ask retrieves the BM25 top-k fragments of the target harness corpus
+# (reusing buildCorpus server-side) and relays the provider's cited answer
+# over SSE; no disk writes, no cache. The mock LLM routes on the
+# "---- user question" prompt marker (composeAskPrompt) and replies with a
+# citation bound to a fixture backlog doc. These cases run AFTER the two
+# summarize calls on purpose: the mock call counter is shared, and the
+# summarize cache-hit assertion (calls=1) must have already been made.
+start_case "POST /api/ask streams SSE delta + result with citation and top-k fragments"
+A1="$T/ask1.out"
+curl -s -X POST "${URL}api/ask" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","question":"which feature is done?","provider":"ollama"}' > "$A1"
+awk '/^event: result/{getline; sub(/^data: /, ""); print; exit}' "$A1" > "$T/ask1.json"
+ANS="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/ask1.json" 'd.answer_md' 2>/dev/null)"
+FRAGS="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/ask1.json" 'd.fragments.length' 2>/dev/null)"
+SHAPE="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/ask1.json" 'd.fragments.length > 0 && d.fragments.every(f => typeof f.ref === "string" && typeof f.kind === "string" && typeof f.title === "string" && typeof f.score === "number")' 2>/dev/null)"
+HIT="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/ask1.json" 'd.fragments.some(f => f.ref === "feature:alpha")' 2>/dev/null)"
+if grep -q '^event: delta' "$A1" && grep -q '^event: result' "$A1" \
+  && printf '%s' "$ANS" | grep -qF '[fuente: backlog:impl_alpha.md]' \
+  && [ "$SHAPE" = "True" ] && [ "$HIT" = "True" ]; then
   pass
 else
-  fail "intake sanitized render missing"
+  fail "ask stream wrong: frags=$FRAGS shape=$SHAPE hit=$HIT ans=$ANS body=$(head -c 200 "$A1")"
 fi
 
-start_case "panel intake copy button uses the clipboard API with a fallback"
-if grep -q 'copyToClipboard' "$PANEL" \
-  && grep -q 'navigator.clipboard' "$PANEL" \
-  && grep -q 'execCommand("copy")' "$PANEL"; then
+start_case "POST /api/ask rejects an unregistered root with 400"
+A_ROOT="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/ask" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"/not/registered","question":"anything?","provider":"ollama"}')"
+if [ "$A_ROOT" = "400" ]; then
   pass
 else
-  fail "intake clipboard copy/fallback missing"
+  fail "ask unregistered root got $A_ROOT (want 400)"
 fi
 
-start_case "panel intake announces a provider error in the assertive region"
-if grep -q 'announce.assertive' "$PANEL" \
-  && grep -q 'draft failed' "$PANEL"; then
+start_case "POST /api/ask rejects an empty or missing question with 400"
+A_EMPTY="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/ask" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","question":"   ","provider":"ollama"}')"
+A_MISS="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/ask" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","provider":"ollama"}')"
+if [ "$A_EMPTY" = "400" ] && [ "$A_MISS" = "400" ]; then
   pass
 else
-  fail "intake error -> assertive announcement missing"
+  fail "ask empty=$A_EMPTY missing=$A_MISS (want 400/400)"
 fi
+
+# --- TS7b4: backlog triage relay (POST /api/triage, feature 32) ---------------
+# /api/triage classifies the target harness's backlog/*.md through the cheap
+# model and returns that report alongside the SERVER-COMPUTED evidence debt
+# (features done with no review_<name>.md). The mock routes on the
+# "Documentos del backlog" prompt marker (composeTriagePrompt) and answers
+# with a FENCED json report, so this also pins that parseTriageReport survives
+# the code block. No disk writes, no cache. Runs after the summarize cache
+# assertion for the same reason the ask cases do: the mock counter is shared.
+# The fixture harness has no done-without-review feature on purpose (that
+# computation is unit-tested in tests/test_toolbox_triage.js), so here the
+# contract asserted is that evidence_debt ships as an array on every reply.
+start_case "POST /api/triage streams SSE delta + result with a parsed report and evidence_debt"
+G1="$T/triage1.out"
+curl -s -X POST "${URL}api/triage" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","provider":"ollama"}' > "$G1"
+awk '/^event: result/{getline; sub(/^data: /, ""); print; exit}' "$G1" > "$T/triage1.json"
+REP="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/triage1.json" 'd.report.length > 0 && d.report.every(r => typeof r.id === "string" && typeof r.categoria === "string" && typeof r.confianza === "number")' 2>/dev/null)"
+DEBT="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/triage1.json" 'Array.isArray(d.evidence_debt)' 2>/dev/null)"
+SEEN="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/triage1.json" 'd.report.some(r => r.id === "impl_alpha.md")' 2>/dev/null)"
+if grep -q '^event: delta' "$G1" && grep -q '^event: result' "$G1" \
+  && [ "$REP" = "True" ] && [ "$DEBT" = "True" ] && [ "$SEEN" = "True" ]; then
+  pass
+else
+  fail "triage stream wrong: report=$REP debt=$DEBT seen=$SEEN body=$(head -c 200 "$G1")"
+fi
+
+start_case "POST /api/triage rejects an unregistered root with 400"
+G_ROOT="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/triage" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"/not/registered","provider":"ollama"}')"
+G_MISS="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/triage" \
+  -H 'Content-Type: application/json' \
+  -d '{"provider":"ollama"}')"
+if [ "$G_ROOT" = "400" ] && [ "$G_MISS" = "400" ]; then
+  pass
+else
+  fail "triage unregistered=$G_ROOT missing-root=$G_MISS (want 400/400)"
+fi
+
+start_case "POST /api/triage rejects an unknown provider with 400"
+G_PROV="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/triage" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","provider":"nope"}')"
+if [ "$G_PROV" = "400" ]; then
+  pass
+else
+  fail "triage unknown provider got $G_PROV (want 400)"
+fi
+
+# --- TS7b5: review-notes relay (POST /api/review-notes, feature 34) -----------
+# Seeds the reviewer with a checklist built from backlog/impl_<feature>.md plus
+# the working diff. The fixture harness is NOT a git repo, which is deliberate
+# here: it exercises the documented degradation (readFeatureDiff -> empty diff,
+# never a throw) end to end, so a checklist still comes back from the impl
+# report alone. The mock routes on the "Feature bajo revision" marker and
+# answers with questions carrying no verdict token.
+start_case "POST /api/review-notes streams a checklist with no verdict"
+N1="$T/notes1.out"
+curl -s -X POST "${URL}api/review-notes" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","feature":"alpha","provider":"ollama"}' > "$N1"
+awk '/^event: result/{getline; sub(/^data: /, ""); print; exit}' "$N1" > "$T/notes1.json"
+CL="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/notes1.json" 'd.checklist_md' 2>/dev/null)"
+TRUNC="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/notes1.json" 'd.diff_truncated === false' 2>/dev/null)"
+if grep -q '^event: delta' "$N1" && grep -q '^event: result' "$N1" \
+  && printf '%s' "$CL" | grep -q 'invariante' \
+  && ! printf '%s' "$CL" | grep -qE 'APPROVED|CHANGES_REQUESTED' \
+  && [ "$TRUNC" = "True" ]; then
+  pass
+else
+  fail "review-notes stream wrong: trunc=$TRUNC checklist=$CL body=$(head -c 200 "$N1")"
+fi
+
+start_case "POST /api/review-notes rejects a missing or malformed feature with 400"
+N_MISS="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/review-notes" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","provider":"ollama"}')"
+N_BAD="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/review-notes" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","feature":"../../etc/passwd","provider":"ollama"}')"
+if [ "$N_MISS" = "400" ] && [ "$N_BAD" = "400" ]; then
+  pass
+else
+  fail "review-notes missing=$N_MISS traversal=$N_BAD (want 400/400)"
+fi
+
+start_case "POST /api/review-notes rejects an unregistered root with 400"
+N_ROOT="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/review-notes" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"/not/registered","feature":"alpha","provider":"ollama"}')"
+if [ "$N_ROOT" = "400" ]; then
+  pass
+else
+  fail "review-notes unregistered root got $N_ROOT (want 400)"
+fi
+
+# --- TS7b6: acceptance relay (POST /api/acceptance, feature 33) ---------------
+# Drafts observable acceptance from the working diff or a pasted spec. The mock
+# answers with bullets ending in the green gate, so this pins the server-side
+# gate_last check end to end (the model is reported, never censored).
+start_case "POST /api/acceptance (source=spec) streams bullets and reports gate_last"
+C1="$T/acc1.out"
+curl -s -X POST "${URL}api/acceptance" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","source":"spec","spec":"quiero un endpoint nuevo","provider":"ollama"}' > "$C1"
+awk '/^event: result/{getline; sub(/^data: /, ""); print; exit}' "$C1" > "$T/acc1.json"
+AMD="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/acc1.json" 'd.acceptance_md' 2>/dev/null)"
+GATE_OK="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/acc1.json" 'd.gate_last === true' 2>/dev/null)"
+SRC="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/acc1.json" 'd.source' 2>/dev/null)"
+if grep -q '^event: delta' "$C1" && grep -q '^event: result' "$C1" \
+  && printf '%s' "$AMD" | grep -q 'responde 400' \
+  && [ "$GATE_OK" = "True" ] && [ "$SRC" = "spec" ]; then
+  pass
+else
+  fail "acceptance spec stream wrong: gate=$GATE_OK src=$SRC md=$AMD body=$(head -c 200 "$C1")"
+fi
+
+start_case "POST /api/acceptance (source=diff) works without a spec field"
+C2="$T/acc2.out"
+curl -s -X POST "${URL}api/acceptance" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","source":"diff","provider":"ollama"}' > "$C2"
+awk '/^event: result/{getline; sub(/^data: /, ""); print; exit}' "$C2" > "$T/acc2.json"
+SRC2="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/acc2.json" 'd.source' 2>/dev/null)"
+TR2="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/acc2.json" 'd.diff_truncated === false' 2>/dev/null)"
+if grep -q '^event: result' "$C2" && [ "$SRC2" = "diff" ] && [ "$TR2" = "True" ]; then
+  pass
+else
+  fail "acceptance diff stream wrong: src=$SRC2 trunc=$TR2 body=$(head -c 200 "$C2")"
+fi
+
+start_case "POST /api/acceptance rejects a bad source and a spec-mode empty spec with 400"
+C_SRC="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/acceptance" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","source":"nope","provider":"ollama"}')"
+C_SPEC="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/acceptance" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","source":"spec","spec":"   ","provider":"ollama"}')"
+if [ "$C_SRC" = "400" ] && [ "$C_SPEC" = "400" ]; then
+  pass
+else
+  fail "acceptance bad-source=$C_SRC empty-spec=$C_SPEC (want 400/400)"
+fi
+
+# --- TS7b7: retro relay (POST /api/retro, feature 35) -------------------------
+# Mines history + the backlog of closed features for recurring patterns. The
+# mock answers with TWO patterns, one of them backed by a single feature, so
+# this pins end to end that the anti-generalisation bar is enforced by the
+# SERVER (one survives, one lands in `discarded`) and not merely requested in
+# the prompt. Suggestions only: docs/conventions.md is never written.
+start_case "POST /api/retro streams patterns and drops the one-feature anecdote"
+R1="$T/retro1.out"
+curl -s -X POST "${URL}api/retro" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","provider":"ollama"}' > "$R1"
+awk '/^event: result/{getline; sub(/^data: /, ""); print; exit}' "$R1" > "$T/retro1.json"
+PN="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/retro1.json" 'd.patterns.length' 2>/dev/null)"
+PEV="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/retro1.json" 'd.patterns.every(p => Array.isArray(p.features) && p.features.length >= 2 && typeof p.titulo === "string")' 2>/dev/null)"
+PDIS="$(node "$SUITE_DIR/lib/jsonget.js" read "$T/retro1.json" 'd.discarded' 2>/dev/null)"
+if grep -q '^event: delta' "$R1" && grep -q '^event: result' "$R1" \
+  && [ "$PN" = "1" ] && [ "$PEV" = "True" ] && [ "$PDIS" = "1" ]; then
+  pass
+else
+  fail "retro stream wrong: n=$PN evidence=$PEV discarded=$PDIS body=$(head -c 200 "$R1")"
+fi
+
+start_case "POST /api/retro rejects an unregistered root and an unknown provider with 400"
+R_ROOT="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/retro" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"/not/registered","provider":"ollama"}')"
+R_PROV="$(curl -s -o /dev/null -w '%{http_code}' -X POST "${URL}api/retro" \
+  -H 'Content-Type: application/json' \
+  -d '{"root":"'"$H1"'","provider":"nope"}')"
+if [ "$R_ROOT" = "400" ] && [ "$R_PROV" = "400" ]; then
+  pass
+else
+  fail "retro unregistered=$R_ROOT unknown-provider=$R_PROV (want 400/400)"
+fi
+
+# The whole tanda (32-35) must leave docs/conventions.md untouched: the retro
+# output is a suggestion a human promotes, never a write.
+start_case "no LLM relay wrote into the fixture workspace docs"
+if [ ! -f "$ws/docs/conventions.md" ]; then
+  pass
+else
+  fail "a relay created docs/conventions.md in the fixture: the layer must stay read-only"
+fi
+
+# [RETIRED, feature toolbox_panel_retirement] panel asset #/ask view ->
+# apps/web: test_web_intake_ask.sh "ask view files exist" and "AskClient
+# POSTs /api/ask, calls linkCitations+renderSanitized, delegates #cite= to
+# MdDialog via /api/md".
+
+# --- TS7c: intake view (Plan A panel) [RETIRED, feature ----------------------
+# toolbox_panel_retirement] — the whole intake panel surface (route, SSE-over-
+# POST client, provider/harness selectors, sanitized render, clipboard,
+# assertive announce) moved to apps/web. Pointers:
+#   - route / nav / palette action           -> test_web_intake_ask.sh "intake view files exist"
+#   - posts to /api/draft + SSE parsing       -> test_web_relays.sh (draft route) + test_web_intake.sh
+#   - fetches /api/providers + /api/state     -> test_web_intake_ask.sh "IntakeClient wires submitIntake, /api/providers + /api/files + /api/draft"
+#   - renders draft sanitized + editable      -> test_web_intake_ask.sh "renderIntakePreviewHtml" + "renderSanitized"
+#   - clipboard copy + fallback               -> apps/web IntakeClient (structural; cero-deps patron D1)
+#   - assertive announce on provider error    -> test_web_timeline_search.sh "announce merges queued polite messages"
 
 # --- TS7d: intake enhancements (file tags + direct submission) ---------------
 # GET /api/files lists taggable workspace files (relative paths) inside a
@@ -529,25 +865,10 @@ else
   fail "intake write failed: ok=$I_OK proc=$I_PROC file-exists=$([ -f "$ws/feature-request.md" ] && echo y)"
 fi
 
-start_case "panel asset ships the file-tag picker and the direct Submit action"
-if grep -q 'tag-picker' "$PANEL" \
-  && grep -q 'toggleTag' "$PANEL" \
-  && grep -q 'selectedTags' "$PANEL" \
-  && grep -q '/api/files' "$PANEL" \
-  && grep -q 'submitIntake' "$PANEL" \
-  && grep -q '>Submit<' "$PANEL"; then
-  pass
-else
-  fail "intake tag picker / submit markers missing in panel asset"
-fi
-
-start_case "panel intake announces submit success/failure in the live regions"
-if grep -q 'intake submitted to harness' "$PANEL" \
-  && grep -q 'submission failed' "$PANEL"; then
-  pass
-else
-  fail "intake submit notifications missing in panel asset"
-fi
+# [RETIRED, feature toolbox_panel_retirement] file-tag picker + direct Submit
+# + submit notifications -> apps/web: test_web_intake.sh "submitIntake server
+# action" and test_web_intake_ask.sh "IntakeClient wires submitIntake";
+# announce -> test_web_timeline_search.sh "announce".
 
 # --- TS8: SSE live change ----------------------------------------------------
 start_case "SSE emits a change event when the workspace mutates"

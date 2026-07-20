@@ -8,9 +8,9 @@
   "current_sprint": null,
   "models": {
     "leader": "editor-default",
-    "implementer": "Claude Sonnet 4.6",
-    "reviewer": "Claude Sonnet 4.6",
-    "explorer": "Claude Sonnet 4.6"
+    "implementer": "GLM-5.2",
+    "reviewer": "GLM-5.2",
+    "explorer": "GLM-5.2"
   },
   "tools": {
     "leader": ["vscode", "execute", "read", "agent", "edit", "search", "web", "browser", "todo"],

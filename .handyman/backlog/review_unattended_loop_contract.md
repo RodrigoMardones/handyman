@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: unattended_loop_contract
 status: approved
 role: reviewer

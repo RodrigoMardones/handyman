@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: post_run_hooks
 status: approved
 role: reviewer

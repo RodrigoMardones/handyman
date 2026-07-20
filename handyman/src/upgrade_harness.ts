@@ -54,6 +54,10 @@ const ASSETS = fileURLToPath(new URL("../assets", import.meta.url));
 /** SKILL.md that ships beside this script (same package-root resolution). */
 const SKILL_MD = fileURLToPath(new URL("../SKILL.md", import.meta.url));
 
+/** package.json at the package root: the version source when SKILL.md is
+ *  absent (the published `handyman-harness` tarball ships no SKILL.md). */
+const PKG_JSON = fileURLToPath(new URL("../package.json", import.meta.url));
+
 /** A comparable `[major, minor, patch]` semver tuple. */
 export type SemVer = readonly [number, number, number];
 
@@ -209,16 +213,24 @@ function truthyString(value: unknown): string | null {
   return null;
 }
 
-/** `metadata.version` from the SKILL.md shipped beside this script. */
+/** `metadata.version` from the SKILL.md shipped beside this script, falling
+ *  back to the package.json version. The two agree by construction: the pack
+ *  script refuses to build a tarball where they differ. */
 export function currentSkillVersion(): string {
-  let text: string;
   try {
-    text = readTextUniversal(SKILL_MD);
+    const match = /^\s+version:\s*(.+)$/m.exec(readTextUniversal(SKILL_MD));
+    if (match) {
+      return (match[1] as string).trim();
+    }
+  } catch {
+    // no SKILL.md beside the script: published-tarball layout
+  }
+  try {
+    const version = JSON.parse(readTextUniversal(PKG_JSON)).version;
+    return typeof version === "string" ? version : "";
   } catch {
     return "";
   }
-  const match = /^\s+version:\s*(.+)$/m.exec(text);
-  return match ? (match[1] as string).trim() : "";
 }
 
 /** `harness_version` from harness.config.json, else feature_list.json config. */

@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: fleet_heartbeat
 status: approved
 role: reviewer

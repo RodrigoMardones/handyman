@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: fleet_heartbeat
 status: implemented
 role: implementer

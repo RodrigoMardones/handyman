@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: evals_trigger_eval
 status: implemented
 role: implementer

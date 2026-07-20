@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: fleet_timeline
 status: approved
 role: reviewer

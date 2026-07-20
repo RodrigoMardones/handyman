@@ -13,8 +13,13 @@ import { execFileSync } from "node:child_process";
  *   start  Mark a feature in_progress, enforcing the single-in_progress
  *          invariant, and refresh progress/current.md.
  *   block  Mark a feature blocked and record the reason.
+ *   unblock Clear a block: blocked -> pending, dropping blocked_reason.
+ *   acceptance Replace a feature's acceptance list wholesale. Refuses a `done`
+ *          feature unless `--force`, which records the override in history.md.
  *   done   Run the verifier; only on exit 0 mark the feature done, append a
- *          rich progress/history.md entry, and reset progress/current.md.
+ *          rich progress/history.md entry whose Review line carries the
+ *          verdict read from backlog/review_<name>.md, and reset
+ *          progress/current.md.
  *   ready  List the pending features whose depends_on are all satisfied
  *          (done or archived). The unattended-loop work detector: exit 0
  *          means claimable work exists, exit 3 means the backlog is drained.
@@ -30,6 +35,8 @@ import { execFileSync } from "node:child_process";
  *                        [--acceptance LINE]... [--depends-on ID]...
  *   node dist/feature.js [--root PATH] start NAME [--no-preflight]
  *   node dist/feature.js [--root PATH] block NAME --reason WHY
+ *   node dist/feature.js [--root PATH] unblock NAME
+ *   node dist/feature.js [--root PATH] acceptance NAME --acceptance LINE [--acceptance LINE]... [--force]
  *   node dist/feature.js [--root PATH] done NAME [--verifier PATH] [--date YYYY-MM-DD]
  *   node dist/feature.js [--root PATH] ready [--json]
  *   node dist/feature.js [--root PATH] log LINE
@@ -49,7 +56,14 @@ import {
 } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadFeatureList, resolveWorkspace, saveFeatureList } from "./core/index.js";
+import { addFeature } from "./core/featureWrite.js";
+import { parseFrontmatter } from "./core/frontmatter.js";
+import {
+  loadFeatureList,
+  resolveWorkspace,
+  saveFeatureList,
+  validateFeatureList,
+} from "./core/index.js";
 
 /** Bundled dist directory (sibling resolution): preflight.js is now the Node
  *  port and lives beside feature.js in dist/, not in scripts/ (mirrors
@@ -63,6 +77,7 @@ const VALID_STATUS = ["pending", "in_progress", "done", "blocked"] as const;
 
 const SESSION_TEMPLATE =
   "---\n" +
+  "type: Session Log\n" +
   "feature: {feature}\n" +
   "status: {status}\n" +
   "role: leader\n" +
@@ -181,6 +196,26 @@ function load(workspace: string): [Record<string, unknown>, string] {
 /** Save with the exact bytes Python writes (indent 2, ensure_ascii false, trailing newline). */
 function save(path: string, data: unknown): void {
   saveFeatureList(path, data);
+}
+
+/**
+ * Save only if the result still satisfies `assets/schemas/feature_list.schema.json`.
+ *
+ * The single write path: every verb that touches feature_list.json (`add`,
+ * `start`, `block`, `unblock`, `acceptance`, `done`) runs the schema before the
+ * file, so a malformed result aborts with the file untouched rather than
+ * leaving state the `check_schema` gate would reject. `save()` stays private to
+ * this function - a second caller would be a second contract.
+ *
+ * Returns 0 on a successful write, 1 on a validation failure.
+ */
+function saveValidated(path: string, data: unknown): number {
+  const result = validateFeatureList(data);
+  if (!result.valid) {
+    return err(`refusing to write invalid feature_list.json: ${result.errors.join("; ")}`);
+  }
+  save(path, data);
+  return 0;
 }
 
 // --- preflight (read-only stability report run before starting work) ---------
@@ -358,6 +393,29 @@ function sessionBranch(workspace: string): string | null {
     }
   }
   return null;
+}
+
+/**
+ * The review verdict for a feature, read from the reviewer's own file.
+ *
+ * `done` used to assert `APPROVED` unconditionally, which put a claim the
+ * tool had not verified into history.md -- the durable record the harness
+ * exists to produce. The verdict now comes from `backlog/review_<name>.md`,
+ * uppercased. `status:` is the canonical key: it is what the template behind
+ * `backlog.js review` stamps, what references/workflow.md documents, and what
+ * metrics.ts and sprint.ts already tally. `verdict:` is a fallback for the
+ * hand-written reviews that predate that convention. When neither key can be
+ * read the marker says so instead of substituting a verdict: an absent review
+ * is a fact worth recording, not a blank to fill in.
+ */
+function reviewVerdict(workspace: string, name: string): string {
+  const path = join(workspace, "backlog", `review_${name}.md`);
+  if (!isFile(path)) {
+    return "NO REVIEW FILE";
+  }
+  const front = parseFrontmatter(path);
+  const verdict = (front.status ?? front.verdict)?.trim();
+  return verdict ? verdict.toUpperCase() : "NO VERDICT";
 }
 
 // --- current.md writing ------------------------------------------------------
@@ -566,15 +624,6 @@ function archivedIds(workspace: string): Set<number> {
   return ids;
 }
 
-function archivedMaxId(workspace: string): number {
-  let max = 0;
-  for (const id of archivedIds(workspace)) {
-    if (id > max) {
-      max = id;
-    }
-  }
-  return max;
-}
 
 function unmetDeps(feature: Feature, features: Feature[], archived: Set<number>): number[] {
   const byId = new Map<number, Feature>();
@@ -608,33 +657,27 @@ function cmdAdd(
   },
   workspace: string,
 ): number {
-  const [data, path] = load(workspace);
-  const features = ensureFeaturesArray(data);
-  if (find(features, args.name) !== undefined) {
+  // The append itself lives in core/featureWrite.ts (feature 60), so this verb
+  // and the panel's POST route are two presentations of ONE write instead of
+  // two implementations that drift. What stays here is the CLI's own contract:
+  // its exact stderr strings and exit codes, which the black-box oracle pins.
+  const result = addFeature(workspace, {
+    name: args.name,
+    acceptance: args.acceptance ?? [],
+    title: args.title,
+    description: args.description,
+    dependsOn: args.dependsOn,
+  });
+  if (result.status === "duplicate_name") {
     return err(`feature '${args.name}' already exists`);
   }
-  let liveMax = 0;
-  for (const f of features) {
-    const id = typeof f.id === "number" ? f.id : 0;
-    if (id > liveMax) {
-      liveMax = id;
-    }
+  if (result.status === "invalid_state") {
+    return err(`refusing to write invalid feature_list.json: ${result.errors.join("; ")}`);
   }
-  const nextId = Math.max(liveMax, archivedMaxId(workspace)) + 1;
-  const feature: Feature = {
-    id: nextId,
-    name: args.name,
-    title: args.title ?? args.name,
-    description: args.description ?? "",
-    acceptance: [...(args.acceptance ?? [])],
-    status: "pending",
-  };
-  if (args.dependsOn && args.dependsOn.length > 0) {
-    feature.depends_on = [...new Set(args.dependsOn)].sort((a, b) => a - b);
+  if (result.status === "write_error") {
+    return err(`could not write feature_list.json under ${workspace}`);
   }
-  features.push(feature);
-  save(path, data);
-  process.stdout.write(`added feature ${nextId} '${args.name}' (pending)\n`);
+  process.stdout.write(`added feature ${result.id} '${args.name}' (pending)\n`);
   return 0;
 }
 
@@ -705,7 +748,10 @@ function cmdStart(
   feature.status = "in_progress";
   delete feature.blocked_reason;
   stampMeta(feature, "started_at", nowIso());
-  save(path, data);
+  const rcStart = saveValidated(path, data);
+  if (rcStart !== 0) {
+    return rcStart;
+  }
   const today = args.date ?? todayIsoDate();
   writeCurrent(workspace, {
     feature: args.name,
@@ -729,9 +775,122 @@ function cmdBlock(args: { name: string; reason: string }, workspace: string): nu
   }
   feature.status = "blocked";
   feature.blocked_reason = args.reason;
-  save(path, data);
+  const rc = saveValidated(path, data);
+  if (rc !== 0) {
+    return rc;
+  }
   process.stdout.write(`blocked feature ${feature.id ?? ""} '${args.name}': ${args.reason}\n`);
   return 0;
+}
+
+/**
+ * Clear a block: `blocked` -> `pending`, dropping `blocked_reason`.
+ *
+ * The inverse of `block`, and the reason `worklist` can finally say "unblock
+ * blocked work" and mean a command. Refuses any other source status: reviving a
+ * feature that was never blocked is a state-machine jump, not an unblock, and
+ * silently allowing it would let `unblock` reopen a `done` feature.
+ */
+function cmdUnblock(args: { name: string }, workspace: string): number {
+  const [data, path] = load(workspace);
+  const features = (data.features as Feature[] | undefined) ?? [];
+  const feature = find(features, args.name);
+  if (feature === undefined) {
+    return err(`feature '${args.name}' not found`);
+  }
+  if (feature.status !== "blocked") {
+    return err(`feature '${args.name}' is not blocked (status: ${feature.status ?? "unknown"})`);
+  }
+  feature.status = "pending";
+  delete feature.blocked_reason;
+  const rc = saveValidated(path, data);
+  if (rc !== 0) {
+    return rc;
+  }
+  process.stdout.write(`unblocked feature ${feature.id ?? ""} '${args.name}' (pending)\n`);
+  return 0;
+}
+
+/**
+ * Replace a feature's acceptance list wholesale.
+ *
+ * Whole-list replacement, not append: an acceptance list is a contract read as
+ * a unit, and editing it by hand is what `architecture.md` forbids. At least
+ * one `--acceptance` is required so a forgotten flag cannot silently erase the
+ * contract - clearing a list is not something you do by omission.
+ *
+ * A `done` feature is refused. Its acceptance list is the contract a reviewer
+ * already signed against, so rewriting it silently would retro-date the terms
+ * of a closed verdict and leave `backlog/review_<name>.md` attesting to a
+ * contract that no longer exists. `--force` still allows it - sometimes a
+ * closed contract really does need a correction - but never silently: the
+ * override appends its own `progress/history.md` entry, so the rewrite is a
+ * fact in the durable record rather than a diff nobody sees.
+ */
+function cmdAcceptance(
+  args: CommonArgs & { name: string; acceptance: string[]; force: boolean },
+  workspace: string,
+  root: string,
+): number {
+  const [data, path] = load(workspace);
+  const features = (data.features as Feature[] | undefined) ?? [];
+  const feature = find(features, args.name);
+  if (feature === undefined) {
+    return err(`feature '${args.name}' not found`);
+  }
+  const wasDone = feature.status === "done";
+  if (wasDone && !args.force) {
+    return err(
+      `feature '${args.name}' is done: its acceptance list is the contract its ` +
+        `review signed against. Re-run with --force to rewrite it anyway ` +
+        `(the override is recorded in progress/history.md).`,
+    );
+  }
+  const before = Array.isArray(feature.acceptance) ? feature.acceptance.length : 0;
+  feature.acceptance = [...args.acceptance];
+  const rc = saveValidated(path, data);
+  if (rc !== 0) {
+    return rc;
+  }
+  if (wasDone) {
+    appendAcceptanceOverride(workspace, root, args, feature, before);
+  }
+  process.stdout.write(
+    `feature ${feature.id ?? ""} '${args.name}': ${args.acceptance.length} acceptance criteria\n`,
+  );
+  return 0;
+}
+
+/**
+ * Record a `--force`d acceptance rewrite of a closed feature in history.md.
+ *
+ * Mirrors the shape `cmdDone` appends so the file stays one scannable format,
+ * but says plainly that the feature was not reopened: the entry documents a
+ * contract edit, not a state transition.
+ */
+function appendAcceptanceOverride(
+  workspace: string,
+  root: string,
+  args: CommonArgs & { name: string; acceptance: string[] },
+  feature: Feature,
+  before: number,
+): void {
+  const history = join(workspace, "progress", "history.md");
+  if (!isFile(history)) {
+    return;
+  }
+  const today = args.date ?? todayIsoDate();
+  const branch = sessionBranch(workspace) ?? gitBranch(root) ?? "...";
+  appendFileSync(
+    history,
+    `\n## ${today} - Feature ${feature.id ?? ""}: ${args.name} (acceptance rewritten)\n` +
+      `- **Agent:** leader\n` +
+      `- **Branch:** ${branch}\n` +
+      `- **Change:** acceptance list rewritten on a done feature via --force ` +
+      `(${before} -> ${args.acceptance.length} criteria)\n` +
+      `- **Warning:** backlog/review_${args.name}.md signed the previous contract\n` +
+      `- **Closure:** unchanged (still done)\n`,
+  );
 }
 
 function cmdDone(
@@ -770,7 +929,10 @@ function cmdDone(
   feature.status = "done";
   delete feature.blocked_reason;
   stampMeta(feature, "done_at", nowIso());
-  save(path, data);
+  const rcDone = saveValidated(path, data);
+  if (rcDone !== 0) {
+    return rcDone;
+  }
 
   const today = args.date ?? todayIsoDate();
   const history = join(workspace, "progress", "history.md");
@@ -785,7 +947,7 @@ function cmdDone(
       `- **Changes:** ...\n` +
       `- **Tools:** ${tools}\n` +
       `- **Verification:** verifier exit 0\n` +
-      `- **Review:** APPROVED -> backlog/review_${args.name}.md\n` +
+      `- **Review:** ${reviewVerdict(workspace, args.name)} -> backlog/review_${args.name}.md\n` +
       `- **Closure:** done\n`;
     appendFileSync(history, entry);
   }
@@ -808,13 +970,6 @@ function appendFileSync(path: string, text: string): void {
   writeFileSync(path, existing + text, "utf-8");
 }
 
-/** Ensure `data.features` is a mutable array, returning it (mirrors setdefault). */
-function ensureFeaturesArray(data: Record<string, unknown>): Feature[] {
-  if (!Array.isArray(data.features)) {
-    data.features = [];
-  }
-  return data.features as Feature[];
-}
 
 // --- argparse-compatible CLI -------------------------------------------------
 
@@ -828,7 +983,7 @@ class FileNotFoundError extends Error {
 }
 
 function mainUsage(prog: string): string {
-  return `usage: ${prog} [-h] [--root ROOT] {add,start,block,done,ready,log,next} ...\n`;
+  return `usage: ${prog} [-h] [--root ROOT] {add,start,block,unblock,acceptance,done,ready,log,next} ...\n`;
 }
 
 /**
@@ -877,14 +1032,17 @@ function optionValue(
 
 function printMainHelp(prog: string): never {
   process.stdout.write(
-    `usage: ${prog} [-h] [--root ROOT] {add,start,block,done,ready,log,next} ...
+    `usage: ${prog} [-h] [--root ROOT] {add,start,block,unblock,acceptance,done,ready,log,next} ...
 
 Handyman feature-state CLI. Atomic transitions over feature_list.json so agents
 never hand-edit the state machine (the root cause of split-scope, two_in_progress,
 and history-drift risks documented in references/checklists.md). Operations: add
 Append a new pending feature (auto-incremented id). start Mark a feature
 in_progress, enforcing the single_in_progress invariant, and refresh
-progress/current.md. block Mark a feature blocked and record the reason. done Run
+progress/current.md. block Mark a feature blocked and record the reason. unblock
+Clear a block: blocked -> pending, dropping blocked_reason. acceptance Replace a
+feature's acceptance list wholesale (at least one --acceptance required; a done
+feature is refused unless --force, which is recorded in history.md). done Run
 the verifier; only on exit 0 mark the feature done, append a rich
 progress/history.md entry, and reset progress/current.md. ready List the pending
 features whose depends_on are all satisfied (done or archived). The
@@ -893,7 +1051,7 @@ the backlog is drained. log Append a bullet to the Log section of
 progress/current.md. next Set the Next Step section of progress/current.md.
 
 positional arguments:
-  {add,start,block,done,ready,log,next}
+  {add,start,block,unblock,acceptance,done,ready,log,next}
 
 options:
   -h, --help            show this help message and exit
@@ -914,6 +1072,7 @@ interface ParsedArgs {
   dependsOn?: number[];
   noPreflight?: boolean;
   reason?: string;
+  force?: boolean;
   verifier?: string | null;
   tools?: string | null;
   json?: boolean;
@@ -922,7 +1081,7 @@ interface ParsedArgs {
   date?: string | null;
 }
 
-const COMMANDS = ["add", "start", "block", "done", "ready", "log", "next"];
+const COMMANDS = ["add", "start", "block", "unblock", "acceptance", "done", "ready", "log", "next"];
 
 /** Parse argv like the Python `build_parser()` (exit 2 on usage, 0 on help). */
 function parseArgs(argv: string[], prog: string): ParsedArgs {
@@ -946,7 +1105,7 @@ function parseArgs(argv: string[], prog: string): ParsedArgs {
         exitUsage(
           usage,
           prog,
-          `argument command: invalid choice: '${arg}' (choose from 'add', 'start', 'block', 'done', 'ready', 'log', 'next')`,
+          `argument command: invalid choice: '${arg}' (choose from 'add', 'start', 'block', 'unblock', 'acceptance', 'done', 'ready', 'log', 'next')`,
         );
       }
       command = arg;
@@ -974,6 +1133,12 @@ function parseSubArgs(command: string, rest: string[], root: string, prog: strin
   }
   if (command === "block") {
     return parseBlock(rest, base, errorProg);
+  }
+  if (command === "unblock") {
+    return parseUnblock(rest, base, errorProg);
+  }
+  if (command === "acceptance") {
+    return parseAcceptance(rest, base, errorProg);
   }
   if (command === "done") {
     return parseDone(rest, base, errorProg);
@@ -1130,6 +1295,88 @@ function parseBlock(rest: string[], base: ParsedArgs, errorProg: string): Parsed
     exitUsage(mainUsage(prog0()), errorProg, `unrecognized arguments: ${extras.join(" ")}`);
   }
   return { ...base, name, reason };
+}
+
+function parseUnblock(rest: string[], base: ParsedArgs, errorProg: string): ParsedArgs {
+  const usage = `usage: ${errorProg} [-h] name\n`;
+  let name: string | null = null;
+  const extras: string[] = [];
+  let positionalOnly = false;
+  for (const arg of rest) {
+    if (!positionalOnly && (arg === "-h" || arg === "--help")) {
+      process.stdout.write(`${usage}options:\n  -h, --help  show this help message and exit\n`);
+      process.exit(0);
+    } else if (!positionalOnly && arg === "--") {
+      positionalOnly = true;
+    } else if (!positionalOnly && looksLikeOption(arg)) {
+      extras.push(arg);
+    } else if (name === null) {
+      name = arg;
+    } else {
+      extras.push(arg);
+    }
+  }
+  if (name === null) {
+    exitUsage(usage, errorProg, "the following arguments are required: name");
+  }
+  if (extras.length > 0) {
+    exitUsage(mainUsage(prog0()), errorProg, `unrecognized arguments: ${extras.join(" ")}`);
+  }
+  return { ...base, name };
+}
+
+function parseAcceptance(rest: string[], base: ParsedArgs, errorProg: string): ParsedArgs {
+  const usage = `usage: ${errorProg} [-h] --acceptance ACCEPTANCE [--acceptance ACCEPTANCE ...] [--force] name\n`;
+  let name: string | null = null;
+  const acceptance: string[] = [];
+  const extras: string[] = [];
+  let force = false;
+  let positionalOnly = false;
+  for (let i = 0; i < rest.length; i++) {
+    const arg = rest[i]!;
+    if (!positionalOnly && (arg === "-h" || arg === "--help")) {
+      process.stdout.write(
+        `${usage}options:\n  -h, --help  show this help message and exit\n  --acceptance ACCEPTANCE\n              Acceptance criterion (repeatable). Replaces the whole list.\n  --force     Rewrite the contract of a done feature anyway; the override is\n              recorded in progress/history.md.\n`,
+      );
+      process.exit(0);
+    } else if (!positionalOnly && arg === "--") {
+      positionalOnly = true;
+    } else if (!positionalOnly && arg === "--force") {
+      force = true;
+    } else if (!positionalOnly && arg === "--date") {
+      // Accepted for the same reason start/done/log/next accept it: --force
+      // appends a dated history.md entry, and a dated record needs a pinnable
+      // date to be testable.
+      [, i] = optionValue(rest, i, "--date", usage, errorProg);
+      base.date = rest[i]!;
+    } else if (!positionalOnly && arg.startsWith("--date=")) {
+      base.date = arg.slice("--date=".length);
+    } else if (!positionalOnly && arg === "--acceptance") {
+      const [v, next] = optionValue(rest, i, "--acceptance", usage, errorProg);
+      acceptance.push(v);
+      i = next;
+    } else if (!positionalOnly && arg.startsWith("--acceptance=")) {
+      acceptance.push(arg.slice("--acceptance=".length));
+    } else if (!positionalOnly && looksLikeOption(arg)) {
+      extras.push(arg);
+    } else if (name === null) {
+      name = arg;
+    } else {
+      extras.push(arg);
+    }
+  }
+  // Required, not optional-with-empty-default: a forgotten flag must not read as
+  // "clear the acceptance list".
+  if (acceptance.length === 0) {
+    exitUsage(usage, errorProg, "the following arguments are required: --acceptance");
+  }
+  if (name === null) {
+    exitUsage(usage, errorProg, "the following arguments are required: name");
+  }
+  if (extras.length > 0) {
+    exitUsage(mainUsage(prog0()), errorProg, `unrecognized arguments: ${extras.join(" ")}`);
+  }
+  return { ...base, name, acceptance, force };
 }
 
 function parseDone(rest: string[], base: ParsedArgs, errorProg: string): ParsedArgs {
@@ -1343,6 +1590,19 @@ function dispatch(args: ParsedArgs, workspace: string, root: string): number {
         );
       case "block":
         return cmdBlock({ name: args.name!, reason: args.reason! }, workspace);
+      case "unblock":
+        return cmdUnblock({ name: args.name! }, workspace);
+      case "acceptance":
+        return cmdAcceptance(
+          {
+            name: args.name!,
+            acceptance: args.acceptance ?? [],
+            force: args.force ?? false,
+            date: args.date ?? null,
+          },
+          workspace,
+          root,
+        );
       case "done":
         return cmdDone(
           {

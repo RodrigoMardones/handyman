@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: branch_provenance
 status: approved
 role: reviewer

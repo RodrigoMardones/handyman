@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: tools_discovery_agents_advisory
 status: approved
 role: reviewer

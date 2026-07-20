@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workstation_detail_declutter
 status: implemented
 role: implementer

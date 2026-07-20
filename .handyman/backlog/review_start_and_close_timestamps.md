@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: start_and_close_timestamps
 status: approved
 role: reviewer

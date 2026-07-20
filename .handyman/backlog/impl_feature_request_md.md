@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: feature_request_md
 status: implemented
 role: implementer

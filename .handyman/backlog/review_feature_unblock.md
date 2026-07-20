@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: feature_unblock
 status: approved
 role: reviewer

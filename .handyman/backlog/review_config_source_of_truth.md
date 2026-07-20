@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: config_source_of_truth
 status: approved
 role: reviewer

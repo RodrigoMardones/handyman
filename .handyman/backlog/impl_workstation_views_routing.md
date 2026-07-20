@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workstation_views_routing
 status: implemented
 role: implementer

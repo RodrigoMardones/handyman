@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 /**
  * Handyman toolBox: read-only observation of every registered harness.
  *
@@ -20,7 +20,7 @@ import { spawnSync } from "node:child_process";
  *   heartbeat        append a closure event (post_run hook)
  *   timeline         merged closure chronology across the toolBox
  *   moc              regenerate the global toolBox MOC at $HANDYMAN_ROOT/index.md
- *   serve            local read-only web observer (see toolbox_serve.ts)
+ *   serve            boot the unified Next standalone observer (see serveMain)
  *
  * Usage:
  *   node dist/toolbox.js [--handyman-root PATH] <subcommand> [options]
@@ -35,34 +35,42 @@ import {
   accessSync,
   appendFileSync,
   constants,
+  existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
   statSync,
   writeFileSync,
 } from "node:fs";
+import { request as httpRequest } from "node:http";
+import { createServer } from "node:net";
 import { homedir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
+import {
+  handymanRoot,
+  isHarnessRoot,
+  loadRegistry,
+  type Registry,
+  type RegistryEntry,
+  registryPath,
+  saveRegistry,
+} from "@handyman/toolbox-core/registry";
 import { parseFrontmatter } from "./core/frontmatter.js";
 import { resolveWorkspace } from "./core/index.js";
 import { NOTES_HEADING, preservedNotes } from "./index_md.js";
 import { collect, historyClosures } from "./metrics.js";
+import { REVIEW_NOTES_USAGE, reviewNotesMain } from "./toolbox_review_notes_cli.js";
 import { currentSkillVersion, parseVersion, readInstalledVersion } from "./upgrade_harness.js";
+
+export type { Registry, RegistryEntry };
+// Registry primitives moved to @handyman/toolbox-core (feature 42); the
+// historical exports of this module stay stable for serve and the tests.
+export { handymanRoot, loadRegistry, registryPath };
 
 const STATUSES = ["pending", "in_progress", "done", "blocked"] as const;
 
 // Directories never descended into while discovering harnesses.
 const DISCOVER_PRUNE = new Set(["node_modules", "graphify-out", "__pycache__", ".git"]);
-
-export interface RegistryEntry {
-  project_root: string;
-  registered: string;
-}
-
-export interface Registry {
-  version: number;
-  harnesses: RegistryEntry[];
-}
 
 export interface Session {
   feature: string | null;
@@ -144,70 +152,8 @@ function readJson(path: string): unknown {
 }
 
 // --- registry ----------------------------------------------------------------
-
-/** toolBox root: --handyman-root flag, else $HANDYMAN_ROOT, else ~/HANDYMAN. */
-export function handymanRoot(cliOverride: string | null): string {
-  if (cliOverride) {
-    return resolve(cliOverride.replace(/^~(?=$|\/)/, homedir()));
-  }
-  const env = process.env.HANDYMAN_ROOT;
-  if (env) {
-    return resolve(env.replace(/^~(?=$|\/)/, homedir()));
-  }
-  return join(homedir(), "HANDYMAN");
-}
-
-export function registryPath(hroot: string): string {
-  return join(hroot, "registry.json");
-}
-
-/**
- * Return [registry, error]. Missing file -> empty registry, no error.
- * A corrupted registry is returned empty WITH an error so read-only
- * commands can degrade while writing commands refuse to clobber it.
- */
-export function loadRegistry(hroot: string): [Registry, string | null] {
-  const empty: Registry = { version: 1, harnesses: [] };
-  const path = registryPath(hroot);
-  let raw: string;
-  try {
-    raw = readFileSync(path, "utf-8");
-  } catch {
-    return [empty, null];
-  }
-  let data: unknown;
-  try {
-    data = JSON.parse(raw);
-  } catch {
-    return [empty, `registry does not parse: ${path}`];
-  }
-  if (
-    !data ||
-    typeof data !== "object" ||
-    Array.isArray(data) ||
-    !Array.isArray((data as Record<string, unknown>).harnesses)
-  ) {
-    return [empty, `registry has no 'harnesses' array: ${path}`];
-  }
-  const record = data as Record<string, unknown>;
-  const harnesses = (record.harnesses as unknown[])
-    .filter((e): e is Record<string, unknown> => !!e && typeof e === "object" && !Array.isArray(e))
-    .map((e) => ({
-      project_root: String(e.project_root ?? ""),
-      registered: String(e.registered ?? ""),
-    }));
-  return [{ version: Number(record.version ?? 1), harnesses }, null];
-}
-
-function saveRegistry(hroot: string, data: Registry): void {
-  mkdirSync(hroot, { recursive: true });
-  writeFileSync(registryPath(hroot), `${JSON.stringify(data, null, 2)}\n`, "utf-8");
-}
-
-/** A registrable root resolves a workspace holding feature_list.json. */
-function isHarnessRoot(root: string): boolean {
-  return isFile(join(resolveWorkspace(root), "feature_list.json"));
-}
+// handymanRoot/registryPath/loadRegistry/saveRegistry/isHarnessRoot live in
+// @handyman/toolbox-core/registry since feature 42 (moved verbatim).
 
 function cmdRegister(hroot: string, target: string, stamp: string): number {
   const root = resolve(target.replace(/^~(?=$|\/)/, homedir()));
@@ -857,7 +803,7 @@ export function toolboxTimeline(hroot: string, snaps: Snapshot[]): TimelineEntry
     }
     const workspace = String(snap.workspace ?? "");
     for (const closure of historyClosures(workspace)) {
-      seen.add(`${snap.project_root} ${closure.name} ${closure.date}`);
+      seen.add(`${snap.project_root}\0${closure.name}\0${closure.date}`);
       entries.push({
         date: closure.date,
         project_name: snap.project_name,
@@ -869,7 +815,7 @@ export function toolboxTimeline(hroot: string, snaps: Snapshot[]): TimelineEntry
     }
   }
   for (const event of loadEvents(hroot)) {
-    const key = `${event.project_root} ${event.feature} ${event.date}`;
+    const key = `${event.project_root}\0${event.feature}\0${event.date}`;
     if (seen.has(key)) {
       continue;
     }
@@ -1030,7 +976,7 @@ const DARK_TOKENS = `    color-scheme: dark;
     --hw-info: #82AEE8;
     --hw-backdrop: rgba(0, 0, 0, 0.55);`;
 
-export const HTML_STYLE = `
+const HTML_STYLE = `
   :root {
     color-scheme: light dark;
     --hw-bg: #F7F8FA;
@@ -1121,7 +1067,7 @@ export const FAVICON =
   "data:image/svg+xml,%3Csvg%20xmlns='http%3A//www.w3.org/2000/svg'" +
   "%20viewBox='0%200%2016%2016'%3E%3Crect%20width='16'%20height='16'" +
   "%20rx='3'%20fill='%23E8A33D'/%3E%3C/svg%3E";
-export const FAVICON_LINK = `<link rel="icon" href="${FAVICON}">`;
+const FAVICON_LINK = `<link rel="icon" href="${FAVICON}">`;
 
 export function escapeHtml(value: string): string {
   return value
@@ -1239,7 +1185,249 @@ function cmdMoc(hroot: string, html: boolean): number {
 
 const USAGE =
   "usage: toolbox.js [--handyman-root PATH] " +
-  "{register,unregister,list,discover,status,health,heartbeat,timeline,moc,serve} ...";
+  "{register,unregister,list,discover,status,health,heartbeat,timeline,moc,review-notes,serve} ...";
+
+/**
+ * Repo-root resolution for `serve` (feature 50, mirrors
+ * apps/web/lib/toolboxState.ts): `TOOLBOX_REPO_ROOT` wins when the handyman
+ * dist entry exists under it; otherwise walk up from cwd until it does. The
+ * standalone Next server boots with its own cwd deep under the repo, so the
+ * walk still finds the root; the override covers exotic layouts.
+ */
+const STANDALONE_SERVER = join("apps", "web", ".next", "standalone", "apps", "web", "server.js");
+const STANDALONE_STATIC = join(
+  "apps",
+  "web",
+  ".next",
+  "standalone",
+  "apps",
+  "web",
+  ".next",
+  "static",
+);
+const STANDALONE_STATIC_SRC = join("apps", "web", ".next", "static");
+const TOOLBOX_DIST_ENTRY = join("handyman", "dist", "toolbox_state.js");
+const MAX_WALK_UP = 8;
+
+function findRepoRoot(): string {
+  const override = process.env.TOOLBOX_REPO_ROOT;
+  if (override && existsSync(join(override, TOOLBOX_DIST_ENTRY))) {
+    return resolve(override);
+  }
+  let dir = process.cwd();
+  for (let i = 0; i < MAX_WALK_UP; i++) {
+    if (existsSync(join(dir, TOOLBOX_DIST_ENTRY))) {
+      return dir;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) {
+      break;
+    }
+    dir = parent;
+  }
+  throw new Error(
+    `toolbox serve: repo root not found walking up from ${process.cwd()} ` +
+      "(set TOOLBOX_REPO_ROOT or run from inside the repo).",
+  );
+}
+
+/**
+ * Resolve `--port N` (default 8765, the legacy TOOLBOX_UPSTREAM default) and
+ * `--port 0` (OS-assigned free port, resolved up front so the URL printed to
+ * stdout is the real one). Mirrors the old `parseServeArgs` flag shape so the
+ * oracle's `... --port 0` invocation stays identical.
+ */
+function parseServePort(argv: string[]): number {
+  let port = 8765;
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i] as string;
+    if (arg === "--port") {
+      port = Number.parseInt(argv[i + 1] ?? "", 10) || 0;
+      i++;
+    } else if (arg.startsWith("--port=")) {
+      port = Number.parseInt(arg.slice("--port=".length), 10) || 0;
+    }
+  }
+  return port;
+}
+
+/** Grab an ephemeral free port from the OS, then release it for the child. */
+function ephemeralPort(): Promise<number> {
+  return new Promise((resolveP, rejectP) => {
+    const probe = createServer();
+    probe.unref();
+    probe.on("error", rejectP);
+    probe.listen(0, "127.0.0.1", () => {
+      const addr = probe.address();
+      const port = addr && typeof addr === "object" ? addr.port : 0;
+      probe.close(() => resolveP(typeof port === "number" ? port : 0));
+    });
+  });
+}
+
+/**
+ * Poll the spawned Next standalone server until it accepts an HTTP
+ * connection. Any response (2xx/4xx/5xx) counts as "listening"; an
+ * ECONNREFUSED/ECONNRESET (the kernel rejecting the connect because nothing
+ * is bound yet) means not-ready and is retried. Total budget ~10s
+ * (100 attempts x ~100ms). Used by `serveMain` to close the race between
+ * `spawn()` and the URL print: the parity oracle reads the URL on first
+ * sight and fires assertions immediately, so printing it before Next is
+ * listening produces empty bodies / `000` status codes.
+ */
+function waitForReady(port: number, attempts = 100, delayMs = 100): Promise<void> {
+  return new Promise((resolveP, rejectP) => {
+    const fail = (): void => {
+      rejectP(new Error("server did not become ready within 10s"));
+    };
+    const scheduleNext = (remaining: number): void => {
+      if (remaining <= 0) {
+        fail();
+        return;
+      }
+      setTimeout(() => probe(remaining - 1), delayMs);
+    };
+    const probe = (remaining: number): void => {
+      const req = httpRequest(
+        {
+          host: "127.0.0.1",
+          port,
+          path: "/api/state",
+          method: "GET",
+          timeout: 1000,
+        },
+        (res) => {
+          // Drain so the underlying socket frees cleanly.
+          res.resume();
+          res.on("end", () => resolveP());
+          res.on("error", () => scheduleNext(remaining));
+        },
+      );
+      req.on("error", (err: NodeJS.ErrnoException) => {
+        // Connection refused/reset = not yet listening; retry on budget.
+        if (err.code === "ECONNREFUSED" || err.code === "ECONNRESET") {
+          scheduleNext(remaining);
+          return;
+        }
+        rejectP(err);
+      });
+      req.on("timeout", () => {
+        req.destroy();
+        scheduleNext(remaining);
+      });
+      req.end();
+    };
+    probe(attempts);
+  });
+}
+
+/**
+ * `toolbox serve` (feature 50): one process — the Next.js standalone server
+ * (apps/web/.next/standalone/apps/web/server.js) that already hosts the
+ * unified UI and the migrated API. The old Node observer (toolbox_serve.ts)
+ * is gone; this wrapper is the single entrypoint contract the parity oracle
+ * greps for ("toolBox observer: <URL>").
+ *
+ * Contract:
+ *   - `--port N` binds 127.0.0.1:N; `--port 0` picks a free port.
+ *   - Prints `toolBox observer: http://127.0.0.1:<PORT>/` to stdout (oracle).
+ *   - Verifies the standalone server.js exists (clear error pointing at the
+ *     build command otherwise); also warns if the static assets copy step
+ *     has not run, since Next standalone does not bundle them.
+ *   - Forwards SIGINT/SIGTERM to the child and exits with the child's code.
+ */
+export function serveMain(argv: string[]): void {
+  let repoRoot: string;
+  try {
+    repoRoot = findRepoRoot();
+  } catch (err) {
+    process.stderr.write(`toolbox serve: ${String((err as Error).message)}\n`);
+    process.exit(1);
+    return; // unreachable; keeps the type checker happy
+  }
+  const serverPath = join(repoRoot, STANDALONE_SERVER);
+  if (!existsSync(serverPath)) {
+    process.stderr.write(
+      `toolbox serve: Next standalone server not found at ${serverPath}\n` +
+        `  Build apps/web first:  pnpm --filter @handyman/web build\n` +
+        `  then copy statics:     mkdir -p ${STANDALONE_STATIC} && cp -r ${STANDALONE_STATIC_SRC}/* ${STANDALONE_STATIC}/\n`,
+    );
+    process.exit(1);
+    return;
+  }
+  if (!existsSync(join(repoRoot, STANDALONE_STATIC))) {
+    process.stderr.write(
+      `toolbox serve: WARNING ${STANDALONE_STATIC} is missing. ` +
+        `Run: mkdir -p ${STANDALONE_STATIC} && cp -r ${STANDALONE_STATIC_SRC}/* ${STANDALONE_STATIC}/\n`,
+    );
+  }
+  const requestedPort = parseServePort(argv);
+  const useEphemeral = requestedPort === 0;
+  const childEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    HOSTNAME: "127.0.0.1",
+    NEXT_TELEMETRY_DISABLED: "1",
+    HANDYMAN_ROOT: process.env.HANDYMAN_ROOT ?? "",
+    TOOLBOX_REPO_ROOT: repoRoot,
+  };
+  if (process.env.TOOLBOX_ENV_DIR) {
+    childEnv.TOOLBOX_ENV_DIR = process.env.TOOLBOX_ENV_DIR;
+  }
+
+  const boot = async (port: number): Promise<void> => {
+    childEnv.PORT = String(port);
+    const child = spawn(process.execPath, [serverPath], {
+      stdio: ["ignore", "inherit", "inherit"],
+      env: childEnv,
+      cwd: repoRoot,
+    });
+    // Attach signal + child-exit handlers IMMEDIATELY after spawn so Ctrl+C
+    // during the readiness probe below still kills the child cleanly (the
+    // URL is not printed until the probe succeeds, but the handlers must be
+    // wired the whole time).
+    const forward = (signal: NodeJS.Signals): void => {
+      child.kill(signal);
+    };
+    process.on("SIGINT", () => forward("SIGINT"));
+    process.on("SIGTERM", () => forward("SIGTERM"));
+    child.on("exit", (code, sig) => {
+      if (sig) {
+        process.exit(0);
+      }
+      process.exit(code ?? 0);
+    });
+    // Close the spawn->URL race: the oracle extracts the URL on first sight
+    // and fires assertions immediately. Printing the URL before Next.js is
+    // accepting connections produced empty bodies / `000` (observed: URL at
+    // ~200ms, /api/state 200 at ~300ms). Wait for ANY HTTP response first.
+    try {
+      await waitForReady(port);
+    } catch (err) {
+      process.stderr.write(`toolbox serve: ${String((err as Error).message)}\n`);
+      try {
+        child.kill("SIGTERM");
+      } catch {
+        // child already gone — nothing to do; the exit handler will fire
+      }
+      process.exit(1);
+    }
+    process.stdout.write(`toolBox observer: http://127.0.0.1:${port}/\n`);
+  };
+
+  if (!useEphemeral) {
+    void boot(requestedPort);
+    return;
+  }
+  ephemeralPort().then(
+    (port) => void boot(port),
+    (err) => {
+      process.stderr.write(
+        `toolbox serve: could not resolve a free port: ${String((err as Error).message)}\n`,
+      );
+      process.exit(1);
+    },
+  );
+}
 
 interface Flags {
   positional: string[];
@@ -1365,12 +1553,26 @@ export function main(argv: string[]): number {
     case "moc":
       return cmdMoc(hroot, flags.options.get("html") === true);
     case "serve": {
-      // Reached only via programmatic main() calls: the CLI guard below
-      // routes `toolbox.js serve` to toolbox_serve.js before main() runs
-      // (the server must outlive a sync exit code).
-      process.stderr.write("toolbox serve runs as its own process: node dist/toolbox_serve.js\n");
-      return 2;
+      // `serve` is long-running (spawns + blocks on the Next standalone
+      // child). main() is normally only called for the short-lived
+      // subcommands; the direct-execution guard at the bottom routes
+      // `toolbox.js serve` to serveMain BEFORE main() so the sync
+      // process.exit path never runs for it. If a programmatic caller
+      // invokes main(["serve", ...]) anyway, hand off to serveMain; the
+      // child's exit handler will end the process (main's numeric return
+      // is unreachable in that path).
+      const portRaw = flags.options.get("port");
+      const tail: string[] = portRaw !== undefined ? ["--port", String(portRaw)] : [];
+      serveMain(tail);
+      return 0;
     }
+    case "review-notes":
+      // Async: the direct-execution guard routes it before main() is ever
+      // called. A programmatic caller must await reviewNotesMain itself.
+      process.stderr.write(
+        `${REVIEW_NOTES_USAGE}\nreview-notes is async; call reviewNotesMain() directly.\n`,
+      );
+      return 2;
     default:
       process.stderr.write(`${USAGE}\nunknown subcommand: ${command}\n`);
       return 2;
@@ -1378,11 +1580,24 @@ export function main(argv: string[]): number {
 }
 
 // Run when executed directly (mirrors Python `if __name__ == "__main__"`).
-// `serve` is long-running, so it must dodge the sync process.exit path.
+// `serve` is long-running: it spawns the Next standalone child and blocks on
+// it, so it must dodge the sync process.exit path used by the other
+// subcommands.
 if (import.meta.url === `file://${process.argv[1]}`) {
   const argv = process.argv.slice(2);
   if (argv[0] === "serve") {
-    import("./toolbox_serve.js").then((mod) => mod.serveMain(argv.slice(1)));
+    serveMain(argv.slice(1));
+  } else if (argv[0] === "review-notes") {
+    // Async like serve, so it must dodge the sync process.exit path too.
+    reviewNotesMain(argv.slice(1)).then(
+      (code) => process.exit(code),
+      (error) => {
+        process.stderr.write(
+          `review-notes: ${error instanceof Error ? error.message : String(error)}\n`,
+        );
+        process.exit(1);
+      },
+    );
   } else {
     process.exit(main(argv));
   }

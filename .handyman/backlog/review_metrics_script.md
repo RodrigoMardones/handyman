@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: metrics_script
 status: approved
 role: reviewer

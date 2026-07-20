@@ -1,29 +1,38 @@
-```markdown
-[Implementation]
-/handyman run-feature
+---
+type: Doc
+---
 
+[Implementation]
 ## Feature
-- name: sync_docs_handyman_v2
-- title: Sync and update Handyman docs across references/ and .handyman/docs/
+- name: toolbox_next_landing
+- title: toolbox: Landing page en Next.js (tasteskill v2)
 
 ## Context
-The harness tooling has evolved rapidly with multiple recently completed features (LLM integration, toolBox UI enhancements, command palette, intake UI, etc.) and the documentation in `references/` (e.g., `toolbox.md`, `discovery.md`, `templates.md`) and `.handyman/docs/` (business, architecture, conventions, verification) needs to reflect these changes. This is a single, unified documentation update feature to bring the textual representation of the harness in sync with its code state. possible overlap with #28 start_and_close_timestamps (docs might mention timestamps).
+Aprovechando el scaffold de Next.js 16 estrangulado (feature #38) y los proveedores LLM (#37), la tarea pide generar la mayor cantidad de funcionalidad posible para la app web creando una landing page. La página se construye siguiendo estrictamente las reglas de diseño de "tasteskill v2", incluyendo auditorías de em-dash, layout y disciplina del hero.
 
 ## Scope
-- Includes: Markdown files in `references/` and `.handyman/docs/`. No source code changes.
+- Includes: apps/web/app/page.tsx (o alias /home), componentes de UI bajo apps/web/components/ (si aplica), imágenes generadas/vía Picsum, implementación de las 4 auditorías de tasteskill.
 
 ## Acceptance criteria (observable and testable)
-- `references/toolbox.md`, `references/templates.md`, and `references/discovery.md` accurately document the recently added features (intake relay, LLM providers, command palette).
-- `.handyman/docs/architecture.md` and `.handyman/docs/verification.md` include the new toolBox endpoints, `/api/draft` relay, and any new CLI commands.
-- `bash tests/run_tests.sh` passes (ensuring `test_docs.py` link checks and markdown linting remain green).
+- Exists `apps/web/app/page.tsx` serving a landing page with at least 8 sections and 4 different layout families.
+- The page contains strictly zero em-dashes (U+2014) and zero en-dashes (U+2013) verifiable via a regex/lint test.
+- The "Pre-Flight Check" (Section 14 of tasteskill) is documented in a commit message or comment with every box marked Pass or Fail with a one-line justification.
+- Section-Layout-Repetition and Hero discipline audits are documented passing in the repository.
+- The Next.js app builds successfully without type errors (`pnpm --filter @handyman/web build` or `npm run build` inside `apps/web`).
+- bash tests/run_tests.sh passes
 
 ## Verification
 - Gate that must stay green: ./init.sh
-- Functional check: `grep -r "POST /api/draft" references/ .handyman/docs/` returns matches in the updated documentation.
+- Functional check: running `cd apps/web && pnpm run build` outputs a successful Next.js compilation without TS errors, and a node script asserting `!/[—–]/.test(pageSource)` passes.
 
-## Tools
-- skills: handyman
+## Considerations
+- Apego estricto a tasteskill v2: layouts limpios, uso de imágenes reales (gen-tool primero, Picsum-seed después).
+- Si el ambiente no tiene API keys para el gen-tool de imágenes, caer inmediatamente a Picsum-seed.
+- Mantener el proxy.ts intacto para no romper el strangler pattern. possible overlap with #39 (fleet view), aunque este request prioriza la landing sobre /fleet.
+
+## Post-feature
+- Actualizar HARNESS_WORKSPACE/docs/ con el resultado de las auditorías (Pre-Flight Check, Section-Layout-Repetition, Hero discipline).
 ```
 
-<!-- intake context files: handyman/references/anatomy.md, handyman/references/discovery.md, handyman/references/graphify.md, handyman/references/models.md, handyman/references/checklists.md, handyman/references/evals.md, handyman/references/examples.md, handyman/references/obsidian.md, handyman/references/README.md, handyman/references/security.md, handyman/references/templates.md, handyman/references/toolbox.md -->
+<!-- intake context files: apps/web/app/layout.tsx, apps/web/next-env.d.ts, apps/web/next.config.ts, apps/web/package.json, apps/web/proxy.ts, apps/web/tsconfig.json -->
 

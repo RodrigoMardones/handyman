@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: bootstrap_interview_step
 status: implemented
 role: implementer

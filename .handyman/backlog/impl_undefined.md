@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workstation_theme_toggle
 status: implemented
 role: implementer

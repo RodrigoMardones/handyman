@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: atomic_feature_intake
 status: approved
 role: reviewer

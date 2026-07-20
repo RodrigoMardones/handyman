@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: security_snyk_w011
 status: approved
 role: reviewer

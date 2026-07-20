@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: toolbox_llm_providers
 status: implemented
 role: implementer
