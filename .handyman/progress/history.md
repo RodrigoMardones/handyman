@@ -1,4 +1,5 @@
 ---
+type: Session Log
 tags: [handyman/history]
 ---
 
@@ -8,21 +9,24 @@ Append-only. Do not edit earlier entries during normal work.
 
 ---
 
-## 2026-07-17 - Feature 25: toolbox_draft_relay
-- **Agent:** leader -> implementer
-- **Plan:** POST /api/draft relay SSE de intake nutrido con la experiencia del
-  harness (docs/analisis-peticiones-llm-toolbox.md §4-5, Plan A). Nuevo modulo
-  `toolbox_draft.ts` (system estable + contexto volatil + dedup BM25 + relay
-  inyectable); handler POST en `toolbox_serve.ts` antes del guard GET-only.
-- **Changes:** new `handyman/src/toolbox_draft.ts`; `handyman/src/toolbox_serve.ts`
-  (POST /api/draft SSE, doc header); new `tests/test_toolbox_draft.js`;
-  `tests/test_toolbox_serve.sh` (2 casos 400); `tests/run_tests.sh`;
-  `handyman/references/toolbox.md` (endpoint + seccion relay).
-- **Verification:** `./init.sh` exits 0 (VERIFIER: all gates passed);
-  `bash tests/run_tests.sh` green (draft 23/23, serve 26/26, ALL SUITES PASSED).
+## 2026-07-18 - Feature 48: toolbox_next_intake_ask_ui
+- **Agent:** leader -> implementer (x2) -> reviewer (x2)
+- **Plan:** Fase 1 final de la migracion (decision D2: marked+DOMPurify como deps de apps/web con la misma politica FORBID del panel legado). Tres vistas nuevas sobre 43-47: `/intake` (form + tag-picker + draft SSE-over-POST cancelable + preview sanitizada + submit via server action `submitIntake` con progressive enhancement), `/ask` (pregunta + respuesta streamed con citas `[fuente: ref]` linkeadas al dialog compartido `/api/md`), y `FleetSummary` al pie de `/fleet` (POST `/api/summarize` con `(cached)` y `model`). Politica FORBID vive una sola vez en `apps/web/lib/md.ts` (seam pura con deps inyectables).
+- **Changes:** new `apps/web/lib/md.ts` (pure seam), `apps/web/app/intake/{page.tsx,page.module.css,intakeHtml.ts}`, `apps/web/app/ask/{page.tsx,page.module.css,askHtml.ts}`, `apps/web/app/fleet/summaryHtml.ts`; new components `IntakeClient.tsx`/`AskClient.tsx`/`FleetSummaryClient.tsx` (+css); new `tests/test_web_intake_ask.sh` (19/19 transpiled-pure + structural, incluye caso de regression para el mount de FleetSummary en /fleet). Modified `apps/web/{proxy.ts,package.json}`, `apps/web/app/fleet/page.tsx` (mount FleetSummaryClient), `.handyman/docs/architecture.md` (C3 D2), `pnpm-lock.yaml`, `tests/run_tests.sh`.
+- **Verification:** `./init.sh` exit 0 (lint OK tras fix SC2034); `bash tests/run_tests.sh` ALL SUITES PASSED (545 PASS); `bash tests/test_web_intake_ask.sh` 19/19; `bash tests/test_web_timeline_search.sh` 16/16; `bash tests/test_toolbox_serve.sh` 48/48 (oracle working-tree diff vacio); `cd apps/web && npx tsc --noEmit` 0 errors.
+- **Review:** CHANGES_REQUESTED -> backlog/review_toolbox_next_intake_ask_ui.md (FleetSummaryClient nunca montado en /fleet); fix aplicado + caso de regression; re-review **APPROVED** -> backlog/review_toolbox_next_intake_ask_ui.md.
 - **Closure:** done
 
----
+## 2026-07-18 - Feature 47: toolbox_next_timeline_search
+- **Agent:** leader -> implementer -> reviewer
+- **Plan:** migrar TimelineView y SearchView a la app Next unificada con el patron cero-deps de 39-41 (RSC + renderer puro de strings), mas transversales (command palette cmd/ctrl+K, atajos globales con guard de inputs, ThemeToggle persistente con anti-flash, dos live regions con announce). MiniSearch pasa a dep de apps/web justificada en docs/architecture.md (C3 / decision D1 de explore_toolbox_next_unification.md).
+- **Changes:** new `apps/web/app/timeline/{page.tsx,page.module.css,timelineHtml.ts}` + `apps/web/app/search/{page.tsx,page.module.css,searchHtml.ts}`; new components `ToolboxShell.tsx`, `MdDialog.tsx` (+css), `TimelineLive.tsx`, `SearchClient.tsx`; new lib `apps/web/lib/{palette,shortcuts,theme,announce}.ts`; new `tests/test_web_timeline_search.sh` (16/16 transpiled-pure). Modified `apps/web/{proxy.ts,layout.tsx,globals.css,package.json}`, `apps/web/app/fleet/page.tsx`, `apps/web/app/harness/[name]/page.tsx`, `.handyman/docs/architecture.md`, `pnpm-lock.yaml`.
+- **Verification:** `./init.sh` exit 0 (status: ok); `bash tests/run_tests.sh` ALL SUITES PASSED; `bash tests/test_web_timeline_search.sh` 16/16; `bash tests/test_toolbox_serve.sh` 48/48 (oracle untouched: `git diff main..HEAD -- tests/test_toolbox_serve.sh` empty for feature 47 scope).
+- **Review:** APPROVED -> backlog/review_toolbox_next_timeline_search.md
+- **Closure:** done
+
+## 2026-07-17 - Feature 25: toolbox_draft_relay
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-06-17 - Feature 3: feature_cli
 - **Agent:** leader -> implementer -> reviewer
@@ -907,191 +911,398 @@ Append-only. Do not edit earlier entries during normal work.
 - archived to sprint 2026-SP4; narrative in docs/sprints/sprint.2026-SP4.md
 
 ## 2026-07-16 - Feature 9: validate_harness_cli
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/ts-port-validate-harness (worktree ../handyman-wt-validate)
-- **Plan:** ...
-- **Changes:** ...
-- **Tools:** ...
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_validate_harness_cli.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-16 - Feature 11: update_harness_diff
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** port/update-harness (worktree scratchpad/wt-update-harness), merge --no-ff en feat/migration-to-node-bun
-- **Plan:** port update_harness.py -> src/update_harness.ts sobre el core (unifiedDiff), repuntar test_update.sh sin editar aserciones, paridad byte-identica, rm .py + refs.
-- **Changes:** src/update_harness.ts (nuevo, ~900 LOC); preflight.py sync block -> node dist; references/{models,tools,workflow}.md repuntadas; test_update.sh repuntado (0 aserciones); update_harness.py eliminado. Paridad 31/31 escenarios byte-identicos vs python3.12.
-- **Tools:** agents: implementer+reviewer (sonnet); skills: handyman; core: unifiedDiff
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_update_harness_diff.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-16 - Feature 12: upgrade_harness_diff
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** port/upgrade-harness (worktree scratchpad/wt-upgrade-harness), merge --no-ff en feat/migration-to-node-bun
-- **Plan:** port upgrade_harness.py -> src/upgrade_harness.ts sobre el core (resolveWorkspace + unifiedDiff), repuntar test_upgrade.sh sin editar aserciones, paridad byte-identica, rm .py + refs.
-- **Changes:** src/upgrade_harness.ts (nuevo, ~650 LOC); preflight.py drift block -> node dist; SKILL.md, references/{anatomy,workflow}.md, init.sh e init.template.sh repuntados; test_upgrade.sh repuntado (0 aserciones); upgrade_harness.py eliminado. Paridad 28/28 escenarios byte-identicos vs python3.12.
-- **Tools:** agents: implementer+reviewer (sonnet); skills: handyman; core: unifiedDiff, resolveWorkspace
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_upgrade_harness_diff.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-16 - Feature 10: preflight_fanout
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** port/preflight (worktree scratchpad/wt-preflight), merge --no-ff en feat/migration-to-node-bun
-- **Plan:** port preflight.py -> src/preflight.ts (fan-out de hermanos via spawnSync capture-and-reprint; discovery sigue en python3 hasta #13), repuntar test_preflight.sh sin editar aserciones, paridad byte-identica, rm .py + refs.
-- **Changes:** src/preflight.ts (nuevo, ~370 LOC); feature.ts runPreflight -> node dist/preflight.js; SKILL.md, references/{anatomy,checklists,workflow}.md, init.sh, init.template.sh repuntados; _resolve_compat.py docstring (solo tools_discovery.py queda); test_preflight.sh repuntado (0 aserciones); test_docs.py 2 aserciones de consistencia repuntadas; preflight.py eliminado. Paridad 23/23 escenarios byte-identicos sin divergencias.
-- **Tools:** agents: implementer+reviewer (sonnet); skills: handyman; core: resolveWorkspace; node: child_process spawnSync
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_preflight_fanout.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 13: tools_discovery_discovery
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/migration-to-node-bun (commit 87c6557)
-- **Plan:** ultimo port Python->TS (strangler fig). scripts/tools_discovery.py -> src/tools_discovery.ts sobre el core; repuntar tests/test_tools_discovery.sh (0 aserciones) + preflight.ts discovery block + referencias activas + aserciones pinneadas de test_docs; eliminar tools_discovery.py y _resolve_compat.py (deuda #9); paridad byte-identica; gates; cerrar.
-- **Changes:** src/tools_discovery.ts (nuevo, ~970 LOC) reusa resolveWorkspace/PLATFORM_ROLE_DIRS/parseFrontmatter/unifiedDiff/validateHarnessConfig + serializador propio asciiStringify (replica json.dumps ensure_ascii=True, clave de #13); preflight.ts discovery block -> node dist/tools_discovery.js (ultima dependencia viva del .py); test_tools_discovery.sh SUT -> node dist (16 invocaciones); test_docs.py 3 aserciones -> tools_discovery.js; references/{discovery,workflow,templates,examples,README,anatomy}.md + feature-request.template.md repuntados + fila tools_discovery.ts en anatomy; git rm tools_discovery.py (467 LOC) + _resolve_compat.py (62 LOC). scripts/ queda solo scaffold.sh: 0 CLIs Python.
-- **Tools:** agents: leader+implementer+reviewer (GLM-5.2); skills: handyman; core: resolveWorkspace, PLATFORM_ROLE_DIRS, parseFrontmatter, unifiedDiff, validateHarnessConfig; node: fs/path/os; serializador asciiStringify para ensure_ascii.
-- **Verification:** paridad 20/20 byte-identica (py vs node, incl unicode/ensure_ascii y argparse usage exit-2); gates typecheck/vitest(77)/lint/build=0; run_tests ALL SUITES PASSED; verifier exit 0.
-- **Review:** APPROVED -> backlog/impl_tools_discovery_discovery.md (auto-verificacion de paridad byte-identica + todos los gates verdes; review delegate no requerido para port fiel con oraculo intacto).
-- **Closure:** done — cierra la migracion strangler-fig (0 CLIs Python restantes). Cutover final pendiente: single-track Node en CI + publicar dist/ + quitar jq de init.template.sh.
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 15: toolbox_port
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/rag-investigation
-- **Plan:** ...
-- **Changes:** ...
-- **Tools:** ...
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_toolbox_port.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 16: toolbox_observer
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/rag-investigation
-- **Plan:** ...
-- **Changes:** ...
-- **Tools:** ...
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_toolbox_observer.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 17: toolbox_graph_view
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/rag-investigation
-- **Plan:** ...
-- **Changes:** ...
-- **Tools:** ...
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_toolbox_graph_view.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 18: toolbox_search
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/rag-investigation
-- **Plan:** ...
-- **Changes:** ...
-- **Tools:** ...
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_toolbox_search.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 19: toolbox_ui_project_info
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/toolbox-ui-observer
-- **Plan:** Plan A of docs/analisis-ui-observador-toolbox.md (metrics KPIs + sparkline + docs quick-view + relative dates)
-- **Changes:** handyman/src/toolbox_serve.ts, handyman/assets/toolbox_panel.js, tests/test_toolbox_serve.sh
-- **Tools:** agent (implementer, reviewer), ./init.sh
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_toolbox_ui_project_info.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 20: toolbox_theme_toggle
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/toolbox-ui-observer
-- **Plan:** Plan B of docs/analisis-ui-observador-toolbox.md (anti-flash script, data-theme, 3-state control, hw-theme:1)
-- **Changes:** handyman/src/toolbox_serve.ts, handyman/assets/toolbox_panel.js, tests/test_toolbox_serve.sh
-- **Tools:** agent (implementer, reviewer), ./init.sh
-- **Verification:** verifier exit 0 (after 1 review round: positional anti-flash test assertion)
-- **Review:** APPROVED -> backlog/review_toolbox_theme_toggle.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 21: toolbox_markdown_render
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** `feat/toolbox-ui-observer`
-- **Plan:** Plan C of `docs/analisis-ui-observador-toolbox.md` — replace the raw `<pre>` markdown viewer in the observer panel with safe rendered markdown via marked + DOMPurify (both UMD from `node_modules` over the existing `/vendor/*` mechanism), sanitize aggressively, and add a `default-src 'self'` CSP header on every server response as a second defense. Agent markdown stays untrusted even though local; search excerpts keep textContent.
-- **Changes:** `handyman/package.json` + lockfile (runtime deps `marked ^12.0.0`, `dompurify ^3.2.0`); `handyman/src/toolbox_serve.ts` (`CSP_HEADER` wired into `send()` so every response carries it; `vendorFiles` entries `marked.js`/`dompurify.js`; `panelHtml()` two new vendor `<script>` tags; `.md-body` prose CSS on existing `--hw-*` tokens); `handyman/assets/toolbox_panel.js` (`escapeHtml`, `renderMd` = `marked.parse` then `DOMPurify.sanitize` with `FORBID_TAGS`/`FORBID_ATTR`/`ALLOWED_URI_REGEXP` blocking `javascript:`/`data:`/`vbscript:` + graceful-degrade to escaped text; `MdDialog` renders via a single `dangerouslySetInnerHTML` with the sanitized HTML; `SearchHit`/`SearchView` untouched); `tests/test_toolbox_serve.sh` (TS1/TS6 extended to the six vendors; new TS6b CSP header, TS6c sanitize-config markers).
-- **Tools:** marked 12.0.2, dompurify 3.4.12 (UMD globals, no bundler)
-- **Verification:** `./init.sh` exit 0 (docs 194/194, toolBox observer suite 17/17 incl. new TS6b/TS6c); `npm run build` clean; `npm run lint` exit 0. Closed by dogfooding `feature done toolbox_markdown_render`.
-- **Review:** APPROVED -> backlog/review_toolbox_markdown_render.md (non-blocking note: the `/events` SSE response uses its own `writeHead`, so it omits the CSP header — no impact, SSE is not a document context and the consuming page already carries `connect-src 'self'`).
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 22: toolbox_a11y_live
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/toolbox-ui-observer
-- **Plan:** ...
-- **Changes:** ...
-- **Tools:** ...
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_toolbox_a11y_live.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 23: toolbox_command_palette
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/toolbox-ui-observer
-- **Plan:** ...
-- **Changes:** ...
-- **Tools:** ...
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_toolbox_command_palette.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 24: toolbox_llm_providers
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/toolbox-ui-observer
-- **Plan:** capa LLM del toolBox (docs/analisis-peticiones-llm-toolbox.md §2-3): puerto LlmProvider con adapters por protocolo, parametrizados por baseUrl; hallazgo empirico clave: el GLM Coding Plan sirve GLM-5.2 solo por el endpoint Anthropic-compatible.
-- **Changes:** handyman/src/toolbox_llm.ts (nuevo: puerto, adapter Anthropic para Claude/Z.ai, adapter OpenAI-compatible para paas-v4/Ollama, buildProviders, providersInfo con copilot como id futuro, loadDotEnv sin dep); toolbox_serve.ts (GET /api/providers + carga .env); tests/test_toolbox_llm.js (15 casos mockeados, sin red) + caso black-box en test_toolbox_serve.sh; run_tests.sh; references/toolbox.md (seccion LLM layer).
-- **Tools:** handyman, ponytail, claude-api
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_toolbox_llm_providers.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 26: toolbox_intake_ui
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/toolbox-ui-observer
-- **Plan:** ...
-- **Changes:** ...
-- **Tools:** ...
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_toolbox_intake_ui.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 27: toolbox_intake_enhancements
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/toolbox-ui-observer
-- **Plan:** ...
-- **Changes:** ...
-- **Tools:** ...
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_toolbox_intake_enhancements.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 28: start_and_close_timestamps
-- **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/toolbox-ui-observer
-- **Plan:** ...
-- **Changes:** ...
-- **Tools:** skills: handyman
-- **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_start_and_close_timestamps.md
-- **Closure:** done
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
 
 ## 2026-07-17 - Feature 29: sync_docs_handyman_v2
+- archived to sprint 2026-SP5; narrative in docs/sprints/sprint.2026-SP5.md
+
+## 2026-07-18 - Feature 30: toolbox_fleet_summary
 - **Agent:** leader -> implementer -> reviewer
-- **Branch:** feat/toolbox-ui-observer
+- **Branch:** feat/llm-toolbox-tasks
 - **Plan:** ...
 - **Changes:** ...
 - **Tools:** ...
 - **Verification:** verifier exit 0
-- **Review:** APPROVED -> backlog/review_sync_docs_handyman_v2.md
+- **Review:** APPROVED -> backlog/review_toolbox_fleet_summary.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 31: toolbox_ask_fleet
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_toolbox_ask_fleet.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 36: toolbox_parity_oracle
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** parametrizar el oraculo black-box (tests/test_toolbox_serve.sh) por env sin editar aserciones; demostrar corrida verde contra server externo; documentar en docs/verification.md.
+- **Changes:** tests/test_toolbox_serve.sh (TOOLBOX_SERVE_CMD para boot alternativo, TOOLBOX_BASE_URL para server ya corriendo sin boot/kill, reuso de HANDYMAN_ROOT/OLLAMA_BASE_URL en modo paridad), .handyman/docs/verification.md (nueva subseccion con ambas variables y el requisito de fixture compartida).
+- **Tools:** subagentes implementer y reviewer (sonnet); evidencia en backlog/impl_toolbox_parity_oracle.md (corrida 48/48 verde via TOOLBOX_BASE_URL).
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_toolbox_parity_oracle.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 37: toolbox_provider_registry
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** reemplazar buildProviders() imperativo por tabla declarativa PROVIDER_REGISTRY conservando contrato LlmProvider, shape de /api/providers y quirks GLM; test que agrega proveedor solo con una entrada.
+- **Changes:** handyman/src/toolbox_llm.ts (PROVIDER_REGISTRY exportado como dato, buildProviders itera la tabla sin ramas por id, quirks declarativos, LlmProviderId derivado de la tabla), tests/test_toolbox_llm.js (caso nuevo: proveedor de prueba via entrada en la tabla, visible en providersInfo).
+- **Tools:** subagentes implementer y reviewer (sonnet); evidencia en backlog/impl_toolbox_provider_registry.md.
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_toolbox_provider_registry.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 38: toolbox_next_scaffold
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** scaffold apps/web (Next.js 16, pnpm workspace) as a strangler proxy in front of the existing Node server, zero migrated views; proxy Host guard + CSP; verify the parity oracle green through the Next port; document the real dual-boot command.
+- **Changes:** pnpm-workspace.yaml + root package.json/pnpm-lock.yaml (new); apps/web/{package.json,tsconfig.json,next.config.ts,proxy.ts,app/layout.tsx} (new); .gitignore (Next build artifacts); .handyman/docs/sprints/plan-migracion-toolbox-nextjs.md (dual-boot command, standalone note, rewrites-vs-proxy.ts finding); .handyman/docs/verification.md (apps/web paragraph in the TOOLBOX_BASE_URL section).
+- **Tools:** implemented and reviewed directly (leader/implementer/reviewer in one session); evidence in backlog/impl_toolbox_next_scaffold.md and backlog/review_toolbox_next_scaffold.md.
+- **Verification:** verifier exit 0; tests/test_toolbox_serve.sh 48/48 via TOOLBOX_BASE_URL against the Next standalone server (including SSE, beyond the JSON-only acceptance bar); bash tests/run_tests.sh 48/48 unchanged default mode; pnpm --filter @handyman/web build/typecheck clean.
+- **Review:** APPROVED -> backlog/review_toolbox_next_scaffold.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 40: toolbox_next_landing
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** Landing page en apps/web siguiendo tasteskill v2 (design-taste-frontend): 8+ secciones, 4+ familias de layout, ban de em/en-dash con test, 4 auditorias documentadas, build Next verde, proxy.ts intacto.
+- **Changes:** apps/web/app/page.tsx (9 secciones, Pre-Flight Check como comentario), page.module.css, globals.css (tokens + dark mode), components/ScrollReveal.tsx+css (unico client component), layout.tsx (metadata + comentario actualizado), tests/test_web_landing.sh (wired en run_tests.sh), docs/current/audit-toolbox-next-landing.md, docs/verification.md (carve-out de paridad en GET /).
+- **Tools:** design-taste-frontend
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_toolbox_next_landing.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 39: toolbox_next_fleet_view
+- **Agent:** leader -> implementer -> reviewer (una sola sesion)
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** migrar la vista FleetView a una pagina real /fleet en apps/web (RSC + SSE), primera vista migrada del strangler. Server Component resuelve el estado inicial desde el upstream /api/state; Client Component (FleetLive) se suscribe a /events del puerto Node via EventSource y refresca in vivo. Mismas skills de diseno que toolbox_next_landing (design-taste-frontend): native CSS + CSS Modules, paleta terracotta-on-slate y tokens ya definidos en globals.css, cero dependencias nuevas, Page Theme Lock + Color Consistency Lock heredados.
+- **Changes:** apps/web/app/fleet/{page.tsx (RSC), fleetHtml.ts (renderer puro y testeable), page.module.css} (new); apps/web/components/FleetLive.tsx (SSE client, new); apps/web/proxy.ts (NEXT_HANDLED_PATHNAME -> NEXT_HANDLED_PATHNAMES = Set con "/" y "/fleet", strangler explicito); tests/test_web_fleet.sh (9 casos, transpila fleetHtml.ts con el typescript del proyecto y corre el render contra un fixture sin red) y tests/run_tests.sh (wiring). Evidencia en backlog/impl_toolbox_next_fleet_view.md y backlog/review_toolbox_next_fleet_view.md.
+- **Tools:** design-taste-frontend
+- **Verification:** verifier exit 0; tsc --noEmit y next build limpios (/fleet lista como ƒ Dynamic); test_toolbox_serve.sh 48/48 sin editar aserciones; test_web_fleet.sh 9/9; smoke live: curl /fleet via Next dev contra un upstream fake devolvio HTTP 200 con la flota real renderizada y cero assets externos (src="http/https" = 0), Host foraneo -> 403, URL de /events del upstream presente en el client bundle.
+- **Review:** APPROVED -> backlog/review_toolbox_next_fleet_view.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 41: toolbox_next_harness_view
+- **Agent:** leader -> implementer -> reviewer (una sola sesion)
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** migrar la vista HarnessView del panel UMD a una pagina real /harness/[name] en apps/web, reutilizando el patron RSC + SSE + renderer de strings puro de la feature 39 (toolbox_next_fleet_view) y la disciplina de design-taste-frontend (mismas skills que 38/39/40). Mismo formato que el panel: meta-list (root/version/session/last closure) + MetricsStrip (approval rate, report coverage, closures 14d, sparkline de throughput) + signals + Workspace/Docs (current/history/checkpoints/index + business/architecture/conventions/verification via /api/md dialog) + Queue/Kanban por status (pending/in_progress/done/blocked - los 'features corriendo') + iframe del arbol graphify (/graph/NAME/graph.html).
+- **Changes:** apps/web/app/harness/harnessHtml.ts (renderer puro y testeable, nuevo); apps/web/app/harness/[name]/{page.tsx (RSC), page.module.css} (nuevos); apps/web/components/HarnessLive.tsx (SSE client + dialog /api/md, nuevo); apps/web/proxy.ts (NEXT_HANDLED_PREFIXES = ["/harness/"] + match por prefijo, strangler explicito); tests/test_web_harness.sh (11 casos, transpila harnessHtml.ts con el typescript del proyecto y corre el render contra un fixture sin red) y tests/run_tests.sh (wiring). Evidencia en backlog/impl_toolbox_next_harness_view.md y backlog/review_toolbox_next_harness_view.md.
+- **Tools:** design-taste-frontend
+- **Verification:** verifier exit 0; tsc --noEmit y next build limpios (/harness/[name] lista como ƒ Dynamic, server-rendered on demand); test_toolbox_serve.sh 48/48 sin editar aserciones; test_web_harness.sh 11/11 (render de meta/kpis/signals/docs/kanban/graphify + degrade + determinismo + proxy + SSE + dialog).
+- **Review:** APPROVED -> backlog/review_toolbox_next_harness_view.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 42: toolbox_core_package
+- **Agent:** leader -> implementer -> reviewer (una sola sesion)
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** Fase 2 del plan-migracion-toolbox-nextjs via backlog/explore_toolbox_next_unification.md: crear packages/toolbox-core (@handyman/toolbox-core, workspace pnpm) y mover sin reescribir la capa HTTP-agnostica del toolBox (llm/draft/ask/summary, registry, resolveWorkspace, y state.ts con guards/corpus/md/tags/CSP extraidos de toolbox_serve.ts), dejando shims re-export en handyman para que los entrypoints dist/ historicos no cambien. buildState queda en handyman/src/toolbox_state.ts (necesita snapshots/metrics) expuesto via exports "./state". Cero cambio de comportamiento observable.
+- **Changes:** packages/toolbox-core/{package.json,tsconfig.json,src/{llm,draft,ask,summary,workspace,registry,state,index}.ts} (nuevo); handyman/src/{toolbox_llm,toolbox_ask,toolbox_summary,toolbox_draft,core/workspace}.ts -> shims re-export; handyman/src/toolbox.ts (registry importado del paquete + re-exports); handyman/src/toolbox_state.ts (nuevo, buildState); handyman/src/toolbox_serve.ts (consume paquete; -359 lineas); handyman/{package.json (dep workspace, exports ./state, build tsc -b),tsconfig.json (reference)}; pnpm-workspace.yaml (packages/*); apps/web/{package.json (deps workspace),next.config.ts (serverExternalPackages),lib/toolboxCore.ts (smoke)}; .github/workflows/ci.yml (npm ci -> pnpm install frozen); handyman/package-lock.json eliminado; tests/test_toolbox_state.js (nuevo, 17 casos) + run_tests.sh (wiring); docs/architecture.md (capa del paquete). Evidencia en backlog/impl_toolbox_core_package.md y backlog/review_toolbox_core_package.md.
+- **Tools:** ninguna skill de diseno (refactor de capas)
+- **Verification:** verifier exit 0 (VERIFIER: all gates passed); test_toolbox_serve.sh 48/48 sin editar aserciones; test_toolbox_llm.js 25/25 y test_toolbox_draft.js 24/24 sin editar; test_toolbox_state.js 17/17; pnpm install --frozen-lockfile verde; pnpm --filter @handyman/web typecheck verde; biome 0 errores en archivos tocados.
+- **Review:** APPROVED -> backlog/review_toolbox_core_package.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 43: toolbox_next_runtime_events
+- **Agent:** leader -> implementer -> reviewer (una sola sesion)
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** proceso unico en Next: runtime singleton (globalThis + instrumentation.ts) con loadDotEnv + buildProviders + SummaryCache + watchers fs.watch recursive (debounce 250ms, re-arm al cambiar registry), robo de GET /events (ReadableStream force-dynamic con framing identico a serve) y GET /api/state (mismos headers y JSON), y paginas /fleet + /harness/[name] leyendo estado por llamada directa a buildState con Live components same-origin.
+- **Changes:** apps/web/lib/{changeHub.ts (hub puro deps-inyectadas),runtime.ts (singleton),toolboxState.ts (loader runtime de handyman/dist/toolbox_state.js: los bundlers de Next bundlean paquetes workspace symlinkeados ignorando serverExternalPackages y el CLI no es bundleable por import.meta.url; import nativo via new Function + walk-up de raiz + TOOLBOX_REPO_ROOT)}; apps/web/instrumentation.ts; apps/web/app/{events/route.ts,api/state/route.ts}; proxy.ts (+/api/state,+/events); paginas y Live components a same-origin (mdUrl relativo sigue proxeado hasta la 44); next.config.ts (comentario honesto de serverExternalPackages); lib/toolboxCore.ts eliminado; tests/test_web_{fleet,harness}.sh actualizados (TWF6/TWH7 same-origin deliberado) + test_web_runtime.sh nuevo (7 casos) + run_tests.sh; docs/verification.md (seccion corrida dual). Evidencia en backlog/impl_+review_toolbox_next_runtime_events.md.
+- **Tools:** ninguna skill de diseno (infra/runtime)
+- **Verification:** verifier exit 0 (21 suites OK); oraculo default Node 48/48 sin editar aserciones; corrida dual real: /api/state de Next IDENTICO al Node (normalizado generated_at, skill_version 2.1.1 incluido) con los 4 headers exactos; /events nativo emite retry 2000 + {"type":"change"} ante append real (fs.watch + debounce); oraculo TOOLBOX_BASE_URL->Next 42/48 con los 6 fallos exactamente el carve-out documentado de GET / (landing).
+- **Review:** APPROVED -> backlog/review_toolbox_next_runtime_events.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 44: toolbox_next_read_api
+- **Agent:** leader -> implementer -> reviewer (una sola sesion)
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** robar a Next los seis GET de lectura como route handlers delgados: /api/corpus, /api/md (allowlist), /api/files, /api/providers (runtime singleton), /graph/[...slug] y /vendor/[...slug] (catch-all con los 404 JSON genericos del observer), extrayendo la logica vendor/graph a un modulo compartido que el server Node reusa sin cambio de comportamiento.
+- **Changes:** handyman/src/toolbox_assets.ts (nuevo: vendorText/packageRoot/graphFile extraidos verbatim de toolbox_serve.ts; resolucion createRequire relativa al paquete); toolbox_serve.ts (consume assets compartidos, -70 lineas); toolbox_state.ts (re-export para el loader runtime); apps/web/lib/{respond.ts (send/sendJson 4 headers byte-identicos),toolboxState.ts (getToolboxEntry generalizado)}; 6 route handlers force-dynamic; proxy.ts (+4 pathnames, +prefijos /graph/ y /vendor/); tests/test_web_readapi.sh (6 casos) + run_tests.sh (22 suites); docs/verification.md. Evidencia en backlog/impl_+review_toolbox_next_read_api.md.
+- **Tools:** ninguna skill de diseno (API/strangler)
+- **Verification:** verifier exit 0 (22 suites OK); oraculo default Node 48/48 sin editar aserciones; corrida dual TOOLBOX_BASE_URL->Next 42/48 (mismos 6 fallos = carve-out GET /) con md/corpus/providers/files/graph/vendor servidos NATIVAMENTE y /api/state parity IDENTICAL re-verificada; typecheck + next build + biome verdes.
+- **Review:** APPROVED -> backlog/review_toolbox_next_read_api.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 45: toolbox_next_llm_relays
+- **Agent:** leader -> implementer -> reviewer (una sola sesion)
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** robar a Next los tres relays SSE-over-POST (/api/draft, /api/summarize, /api/ask) como route handlers que leen el body con cap 256KB, validan con los 400 byte-identicos del observer ANTES de tocar el LLM, y traducen relayDraft/relaySummary/relayAsk al framing event: delta|result|error con los headers exactos; SummaryCache del runtime singleton; resolveSummaryModel movida al core y compartida.
+- **Changes:** packages/toolbox-core/src/summary.ts (+resolveSummaryModel movida verbatim); toolbox_serve.ts (la importa via shim, -22 lineas); apps/web/lib/relay.ts (readJsonObject cap 256KB + relayResponse SSE byte-estable); app/api/{draft,summarize,ask}/route.ts (POST force-dynamic); lib/toolboxState.ts (+getHandymanAssetsDir); proxy.ts (+3 paths); tests/test_web_relays.sh (6 casos) + run_tests.sh (23 suites); docs/verification.md. Evidencia en backlog/impl_+review_toolbox_next_llm_relays.md.
+- **Tools:** ninguna skill de diseno (relays/strangler)
+- **Verification:** verifier exit 0 (23 suites OK); oraculo default Node 48/48 sin editar aserciones; corrida dual TOOLBOX_BASE_URL->Next 42/48 (mismos 6 fallos = carve-out GET /) con summarize delta+result y CACHE-HIT calls==1 contra la SummaryCache del runtime de Next, ask con cita [fuente: backlog:impl_alpha.md] + fragments, y 400s de draft servidos nativamente; typecheck + next build + biome verdes. Con la 45, Next sirve nativamente TODA la lectura + relays; quedan proxeados solo POST /api/intake (46) y el panel GET / (49).
+- **Review:** APPROVED -> backlog/review_toolbox_next_llm_relays.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 46: toolbox_next_intake_action
+- **Agent:** leader -> implementer -> reviewer (sesion nueva desde docs/current/handoff-2026-07-18.md)
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** unificar la UNICA escritura del sistema: extraer writeIntake (orden de validacion identico + footer capado) e intakeHttp (mapeo 400/422/500/200 byte-identico) a @handyman/toolbox-core, refactorizar el observer Node para delegarles, robar POST /api/intake a Next (route handler force-dynamic con cap 256KB) y crear el server action submitIntake ("use server") sobre la MISMA funcion core - el unico lugar donde entran server actions (la superficie publica sigue en route handlers para el oraculo black-box).
+- **Changes:** packages/toolbox-core/src/intake.ts (nuevo) + barrel + subpath ./intake; toolbox_serve.ts (handleIntakeRequest delega; writeFileSync eliminado); apps/web/app/api/intake/route.ts; apps/web/actions/intake.ts; proxy.ts (+/api/intake); tests/test_toolbox_state.js (T7, 20/20) + tests/test_web_intake.sh (5 casos) + run_tests.sh (24 suites); docs/verification.md. Evidencia en backlog/impl_+review_toolbox_next_intake_action.md.
+- **Tools:** ninguna skill de diseno (core/strangler/action)
+- **Verification:** verifier exit 0 (24 suites OK); oraculo default Node 48/48 sin editar aserciones; corrida dual TOOLBOX_BASE_URL->Next 42/48 (solo el carve-out GET /) con los 4 casos de intake NATIVOS incluida la escritura real de feature-request.md; typecheck + next build verdes. Queda proxeado al Node unicamente el panel UMD de GET /.
+- **Review:** APPROVED -> backlog/review_toolbox_next_intake_action.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 49: toolbox_panel_retirement
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_toolbox_panel_retirement.md
+- **Closure:** done
+
+## 2026-07-18 - Feature 50: toolbox_serve_decommission
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_toolbox_serve_decommission.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 32: toolbox_backlog_triage
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_toolbox_backlog_triage.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 34: toolbox_review_notes
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_toolbox_review_notes.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 33: toolbox_acceptance_from_diff
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_toolbox_acceptance_from_diff.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 35: toolbox_retro_lessons
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_toolbox_retro_lessons.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 51: harness_unblock_verbs
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_harness_unblock_verbs.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 52: harness_evidence_debt_advisory
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_harness_evidence_debt_advisory.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 53: toolbox_cli_review_notes
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_toolbox_cli_review_notes.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 54: harness_roles_toolbox_pointer
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_harness_roles_toolbox_pointer.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 55: harness_report_actor
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_harness_report_actor.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 56: harness_done_reads_review
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** Read, Edit, Write, Bash
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_harness_done_reads_review.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 57: harness_verb_write_contract
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** Read, Edit, Write, Bash
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_harness_verb_write_contract.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 58: backlog_review_reissue
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** Read, Edit, Write, Bash
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_backlog_review_reissue.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 59: init_runs_validate_harness
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** Read, Edit, Write, Bash
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_init_runs_validate_harness.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 60: panel_idea_to_feature
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** Read, Edit, Write, Bash
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_panel_idea_to_feature.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 61: validator_legacy_frontmatter_alias
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_validator_legacy_frontmatter_alias.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 62: license_mit_coherente
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_license_mit_coherente.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 63: repo_publico_sin_contenido_ajeno
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_repo_publico_sin_contenido_ajeno.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 66: panel_visible_en_readme
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** NO REVIEW FILE -> backlog/review_panel_visible_en_readme.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 67: okf_memoria_alignment
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** cambio minimo conformante OKF v0.1 segun backlog/explore_okf_memoria.md, con la ontologia decidida por el humano: cierres = logs (impl_* -> Implementation Log, review_* -> Review Log), investigacion = conocimiento (explore_* -> Explore Report); solo semantica en frontmatter, sin mover archivos (el contrato de rutas backlog/ queda intacto).
+- **Changes:** `type:` como primera clave en las plantillas assets (backlog impl/review/explore, sprint, progress current/history, docs x4 + feature-request con frontmatter minimo `type: Doc`); `SESSION_TEMPLATE` de feature.ts emite `type: Session Log`; index_md.ts genera index.md sin frontmatter y con links markdown relativos (archivo reservado OKF); index.template.md alineado; one-shot sobre el workspace vivo: 331 .md con `type:` insertado + 14 huerfanos con frontmatter minimo = 345/345 conformantes; tests test_backlog/test_feature/test_sprint/test_index/test_docs actualizados. Mejoras futuras nombradas (no construidas): okf_lint, wikilinks de cuerpo, proyeccion de feature_list.json, timestamp ISO, log.md raiz.
+- **Tools:** skills: handyman, ponytail; agents: leader->implementer (agente local), reviewer subagent independiente; fuentes: OKF SPEC.md v0.1 (GoogleCloudPlatform/knowledge-catalog)
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_okf_memoria_alignment.md
 - **Closure:** done

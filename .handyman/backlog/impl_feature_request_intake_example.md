@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: feature_request_intake_example
 status: implemented
 role: implementer

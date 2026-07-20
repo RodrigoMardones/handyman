@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: documentation_update_sprint_clousure
 status: implemented
 role: implementer

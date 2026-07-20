@@ -107,6 +107,30 @@ run_test() {
   return $?
 }
 
+# 7. Harness contract. Run this repo's own validator against its own workspace,
+#    so a blocking structural gap fails the gate. Before this, validate_harness
+#    reached the operator only through check_preflight, which is advisory and
+#    swallows the exit code (`|| true`, and preflight itself always exits 0):
+#    the features that taught the validator to report evidence debt (#52) and
+#    actor collisions (#55) were verified against fixtures, never against the
+#    live repo.
+#
+#    Silent on success, on purpose. check_preflight already runs
+#    validate_harness and prints its whole output, NOTEs included; echoing it
+#    here too would duplicate every advisory line. This phase owns the exit
+#    code, preflight owns the advisory text. Runs after `build` so dist/ is
+#    fresh, and skips (0) when dist/ or node is absent, like check_preflight.
+run_validate_harness() {
+  validator="$PROJECT_ROOT/handyman/dist/validate_harness.js"
+  [ -f "$validator" ] || return 0
+  command -v node >/dev/null 2>&1 || return 0
+  if out="$(node "$validator" --root "$PROJECT_ROOT" 2>&1)"; then
+    return 0
+  fi
+  printf '%s\n' "$out" >&2
+  return 1
+}
+
 # --- Advisory checks (non-blocking) -----------------------------------------
 # Report status without ever changing EXIT_CODE.
 
@@ -145,6 +169,7 @@ if [ "$EXIT_CODE" -eq 0 ]; then
   run_phase "state" check_feature_state
   run_phase "lint"  run_lint
   run_phase "build" run_build
+  run_phase "harness" run_validate_harness
   run_phase "test"  run_test
 fi
 

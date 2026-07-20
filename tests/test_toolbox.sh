@@ -506,4 +506,32 @@ else
 fi
 rm -rf "$T"
 
+# --- source hygiene: no raw NUL bytes in TypeScript sources ------------------
+# handyman/src/toolbox.ts used to embed 4 RAW NUL bytes as a dedup-key
+# separator. grep classifies such a file as binary and SKIPS IT SILENTLY, so
+# every suite that greps it was failing open - passing because it matched
+# nothing, not because the code was right. The escape `\0` builds the identical
+# runtime string (verified: same charCode) while keeping the file greppable.
+# This guard exists so the class cannot come back unnoticed.
+start_case "no TypeScript source embeds a raw NUL byte (keeps files greppable)"
+# Detection: strip NULs and compare. A shell string cannot HOLD a NUL, so
+# grepping for one is not portable ($'\x00' collapses to an empty pattern and
+# matches every file); tr/cmp sidesteps that entirely.
+NULFILES=""
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  if ! tr -d '\000' < "$f" | cmp -s - "$f"; then
+    NULFILES="$NULFILES $f"
+  fi
+done <<EOF
+$(find "$SUITE_DIR/../handyman/src" "$SUITE_DIR/../packages/toolbox-core/src" \
+  "$SUITE_DIR/../apps/web/app" "$SUITE_DIR/../apps/web/lib" \
+  -name '*.ts' -o -name '*.tsx' 2>/dev/null)
+EOF
+if [ -z "$NULFILES" ]; then
+  pass
+else
+  fail "raw NUL bytes (grep will skip these files silently):$NULFILES"
+fi
+
 summary

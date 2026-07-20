@@ -1,4 +1,5 @@
 ---
+type: Doc
 tags: [handyman/topic/migration, handyman/sprint/2026-SP1, handyman/sprint/2026-SP2]
 updated: 2026-07-16
 ---

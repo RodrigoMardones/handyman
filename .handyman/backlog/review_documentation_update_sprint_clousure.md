@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: documentation_update_sprint_clousure
 status: approved
 role: reviewer

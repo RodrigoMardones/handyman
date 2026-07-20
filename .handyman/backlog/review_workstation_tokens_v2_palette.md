@@ -1,4 +1,5 @@
 ---
+type: Review Log
 tags: [handyman/backlog/review]
 feature: workstation_tokens_v2_palette
 feature_id: 86

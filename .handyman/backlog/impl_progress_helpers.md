@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: progress_helpers
 status: implemented
 role: implementer

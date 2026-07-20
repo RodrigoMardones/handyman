@@ -75,7 +75,7 @@ Resolution order for a role's model:
 1. The `model` value in the role frontmatter.
 2. A `models` map in `harness.config.json` keyed by role.
 3. A model already configured in the host editor or agent platform.
-4. The Handyman default for that role (cheap roles fall back to `Claude Sonnet 4.6`).
+4. The Handyman default for that role (cheap roles fall back to `GLM-5.2`).
 
 See [models.md](./models.md) for defaults, per-platform syntax, and what to document per project.
 

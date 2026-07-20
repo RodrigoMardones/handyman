@@ -1,3 +1,7 @@
+---
+type: Doc
+---
+
 # Feature Request - Handyman
 
 Reusable intake form for asking the harness to run **one new feature** end to end:

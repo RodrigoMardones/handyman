@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: workstation_stale_panel_warning
 status: approved
 role: reviewer

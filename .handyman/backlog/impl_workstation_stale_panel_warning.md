@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workstation_stale_panel_warning
 status: implemented
 role: implementer

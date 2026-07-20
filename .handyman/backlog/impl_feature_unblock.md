@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: feature_unblock
 status: implemented
 role: implementer

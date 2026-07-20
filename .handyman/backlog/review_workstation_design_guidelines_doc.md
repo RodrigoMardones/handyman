@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: workstation_design_guidelines_doc
 status: approved
 role: reviewer

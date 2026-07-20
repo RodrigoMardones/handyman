@@ -1,4 +1,5 @@
 ---
+type: Review Log
 tags: [handyman/backlog/review]
 feature: toolbox_markdown_render
 feature_id: 21

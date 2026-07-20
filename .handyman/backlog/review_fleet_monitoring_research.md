@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: fleet_monitoring_research
 status: approved
 role: reviewer

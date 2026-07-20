@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: metrics_script
 status: implemented
 role: implementer

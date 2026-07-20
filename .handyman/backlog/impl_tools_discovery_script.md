@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: tools_discovery_script
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Sprint
 sprint: <sprint_id>
 status: closed
 updated: YYYY-MM-DD

@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: unattended_loop_contract
 status: implemented
 role: implementer

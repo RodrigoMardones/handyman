@@ -1,0 +1,78 @@
+/* Shared markdown quick-view dialog (feature toolbox_next_timeline_search).
+   Every value comes from the tokens in globals.css: no raw hex, no second
+   accent (tasteskill v2 Color Consistency Lock). */
+
+.dialog {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-card);
+  background: var(--bg-elevated);
+  color: var(--text);
+  padding: 0;
+  width: min(760px, calc(100vw - 2 * var(--space-4)));
+  max-height: min(80dvh, 720px);
+  box-shadow: 0 24px 64px rgba(var(--shadow-color), 0.35);
+}
+
+.dialog::backdrop {
+  background: rgba(var(--shadow-color), 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.close {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 2px var(--space-2);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--bg-sunken);
+}
+
+.loading {
+  margin: 0;
+  padding: var(--space-3);
+  color: var(--text-muted);
+}
+
+.pre {
+  margin: 0;
+  padding: var(--space-3);
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--code-bg);
+  color: var(--code-text);
+  border-bottom-left-radius: var(--radius-card);
+  border-bottom-right-radius: var(--radius-card);
+}

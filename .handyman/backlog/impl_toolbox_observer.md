@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: toolbox_observer
 status: implemented
 role: implementer

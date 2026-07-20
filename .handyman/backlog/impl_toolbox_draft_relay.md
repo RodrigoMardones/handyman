@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: toolbox_draft_relay
 status: implemented
 role: implementer

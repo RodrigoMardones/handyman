@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: harness_versioning
 status: approved
 role: reviewer

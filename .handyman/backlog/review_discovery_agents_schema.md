@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: discovery_agents_schema
 status: approved
 role: reviewer

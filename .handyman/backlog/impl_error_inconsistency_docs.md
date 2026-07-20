@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: error_inconsistency_docs
 status: implemented
 role: implementer

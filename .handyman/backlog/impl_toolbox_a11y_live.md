@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: toolbox_a11y_live
 status: implemented
 role: implementer

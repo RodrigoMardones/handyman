@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: validate_harness
 status: done
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Sprint
 sprint: 2026-SP4
 status: closed
 updated: 2026-07-16

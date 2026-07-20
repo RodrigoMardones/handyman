@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: discovery_note_summary
 status: approved
 role: reviewer

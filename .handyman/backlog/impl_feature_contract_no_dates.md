@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: feature_contract_no_dates
 status: implemented
 role: implementer

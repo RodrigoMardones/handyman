@@ -1,6 +1,10 @@
 # Regenerable: dependencies and build output (npm install / npm run build)
 node_modules/
 handyman/dist/
+handyman/.pack-staging/
+apps/web/.next/
+apps/web/next-env.d.ts
+apps/web/tsconfig.tsbuildinfo
 
 # Python bytecode and test caches
 __pycache__/
@@ -14,11 +18,21 @@ __pycache__/
 # index.md) stays in the repo as agent context; only upgrade backups are volatile.
 .handyman/.upgrade-backups/
 
-# graphify: graph.json / graph.html / GRAPH_REPORT.md / manifest / cache stay in
-# the repo as shared context; ignore transient pipeline files and the
-# machine-specific interpreter/root pointers.
+# graphify: graph.json / graph.html / GRAPH_REPORT.md / manifest stay in the
+# repo as shared context; ignore transient pipeline files, the machine-specific
+# interpreter/root pointers, the regenerable AST cache (absolute local paths)
+# and the personal token-usage telemetry.
 graphify-out/.graphify_*
 graphify-out/.needs_update
+graphify-out/cache/
+graphify-out/cost.json
+
+# Third-party skills installed locally by the skills CLI. Only skills that ship
+# an explicit license are tracked (redistribution right); the rest stay local.
+.agents/skills/*
+!.agents/skills/brand-guidelines
+!.agents/skills/frontend-design
+!.agents/skills/ponytail
 
 # Local editor / MCP config (machine-specific, may hold endpoints or keys)
 .vscode/

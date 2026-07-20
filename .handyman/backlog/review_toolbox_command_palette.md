@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: toolbox_command_palette
 status: approved
 role: reviewer

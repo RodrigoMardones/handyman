@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: feature_request_core_optional
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: feature_request_archetype_examples
 status: implemented
 role: implementer

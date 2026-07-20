@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: pre_and_post_process_research
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: new_proposal_ux_ui_handyman_workstation
 status: approved
 role: reviewer

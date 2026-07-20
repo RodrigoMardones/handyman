@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: business_context_advisory
 status: approved
 role: reviewer

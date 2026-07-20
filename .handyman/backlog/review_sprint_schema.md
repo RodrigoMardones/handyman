@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: sprint_schema
 status: approved
 role: reviewer

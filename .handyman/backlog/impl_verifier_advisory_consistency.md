@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: verifier_advisory_consistency
 status: implemented
 role: implementer

@@ -55,7 +55,7 @@ During `bootstrap`, choose one scope; if the user did not specify it, ask `local
 - Subagents write reports to `$HARNESS_WORKSPACE/backlog/` (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`) and reply with references only, such as `done -> backlog/impl_cli_edit.md` (anti-telefono-descompuesto).
 - No feature is `done` until the verifier, normally `./init.sh`, exits 0.
 - Leader coordinates, never edits product code. Implementer writes code and tests. Reviewer validates, never edits code.
-- Model per role: strong reasoning for the leader; cheap, fast models for implementer and reviewer (editor default, else `Claude Sonnet 4.6`). See [references/models.md](./references/models.md).
+- Model per role: strong reasoning for the leader; cheap, fast models for implementer and reviewer (editor default, else `GLM-5.2`). See [references/models.md](./references/models.md).
 - Least-privilege tools per role: leader widest (`agent`, `web`, `browser`); implementer and reviewer without delegation or web; explorer read-only, no `edit`. See [references/tools.md](./references/tools.md).
 - Role files live in the platform path (`.github/agents/` or `.claude/agents/`), never inside `HARNESS_WORKSPACE`.
 - Treat the graphify graph as the context layer: query it before exploring code and keep it fresh (`/graphify --update`). See [references/graphify.md](./references/graphify.md).

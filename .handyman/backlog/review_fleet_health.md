@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: fleet_health
 status: approved
 role: reviewer

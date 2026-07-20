@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: preflight_orchestrator
 status: implemented
 role: implementer

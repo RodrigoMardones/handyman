@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workstation_design_guidelines_doc
 status: implemented
 role: implementer

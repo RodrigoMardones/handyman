@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: live_schema_validation
 status: implemented
 role: implementer

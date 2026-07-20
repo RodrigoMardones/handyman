@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: script_observation_shape
 status: approved
 role: reviewer

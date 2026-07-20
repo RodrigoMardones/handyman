@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: index_regen
 status: implemented
 role: implementer

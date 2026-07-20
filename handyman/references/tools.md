@@ -66,7 +66,7 @@ VS Code / Copilot agent file (`*.agent.md`):
 ---
 name: implementer
 description: Implements exactly one feature with tests and self-verification.
-model: Claude Sonnet 4.6
+model: GLM-5.2
 tools: [vscode, execute, read, edit, search, todo]
 ---
 ```
@@ -99,9 +99,9 @@ A `tools` map centralizes the assignment so role files can stay generic. This is
   "harness_workspace": ".handyman",
   "models": {
     "leader": "editor-default",
-    "implementer": "Claude Sonnet 4.6",
-    "reviewer": "Claude Sonnet 4.6",
-    "explorer": "Claude Sonnet 4.6"
+    "implementer": "GLM-5.2",
+    "reviewer": "GLM-5.2",
+    "explorer": "GLM-5.2"
   },
   "tools": {
     "leader": ["vscode", "execute", "read", "agent", "edit", "search", "web", "browser", "todo"],

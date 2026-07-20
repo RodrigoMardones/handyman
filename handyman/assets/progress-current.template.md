@@ -1,4 +1,5 @@
 ---
+type: Session Log
 feature: none
 status: idle
 role: leader

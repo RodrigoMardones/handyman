@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: toolbox_intake_ui
 status: approved
 role: reviewer

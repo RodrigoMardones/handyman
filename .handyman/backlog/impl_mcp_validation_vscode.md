@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: mcp_validation_vscode
 status: implemented
 role: implementer

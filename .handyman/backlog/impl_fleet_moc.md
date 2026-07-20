@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: fleet_moc
 status: implemented
 role: implementer

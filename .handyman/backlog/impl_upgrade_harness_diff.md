@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: upgrade_harness_diff
 status: implemented
 role: implementer

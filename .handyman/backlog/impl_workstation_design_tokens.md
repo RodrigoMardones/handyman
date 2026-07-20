@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workstation_design_tokens
 status: implemented
 role: implementer

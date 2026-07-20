@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: bussiness_context
 status: implemented
 role: implementer

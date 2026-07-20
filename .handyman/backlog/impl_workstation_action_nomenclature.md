@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workstation_action_nomenclature
 status: implemented
 role: implementer

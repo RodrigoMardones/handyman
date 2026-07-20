@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: json_schema
 status: done
 role: implementer

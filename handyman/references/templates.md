@@ -131,13 +131,13 @@ Template: [../assets/role-leader.template.md](../assets/role-leader.template.md)
 
 ## Role: implementer
 
-The implementer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `Claude Sonnet 4.6`. See [models.md](./models.md) and [tools.md](./tools.md).
+The implementer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `GLM-5.2`. See [models.md](./models.md) and [tools.md](./tools.md).
 
 Template: [../assets/role-implementer.template.md](../assets/role-implementer.template.md)
 
 ## Role: reviewer
 
-The reviewer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `Claude Sonnet 4.6`. See [models.md](./models.md) and [tools.md](./tools.md).
+The reviewer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `GLM-5.2`. See [models.md](./models.md) and [tools.md](./tools.md).
 
 Template: [../assets/role-reviewer.template.md](../assets/role-reviewer.template.md)
 

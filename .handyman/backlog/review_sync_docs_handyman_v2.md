@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: sync_docs_handyman_v2
 status: approved
 role: reviewer

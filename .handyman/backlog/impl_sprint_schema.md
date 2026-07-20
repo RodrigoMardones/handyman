@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: sprint_schema
 status: implemented
 role: implementer

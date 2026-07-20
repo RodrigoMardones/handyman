@@ -159,13 +159,16 @@ function testObsidianContract() {
       text += readText(path.join(assetsDir, name)) + "\n";
     }
   }
-  const requiredFrontmatter = ["feature:", "status:", "role:", "updated:", "tags:"];
+  const requiredFrontmatter = ["type:", "feature:", "status:", "role:", "updated:", "tags:"];
   for (const key of requiredFrontmatter) {
     check("assets templates document frontmatter key '" + key + "'", text.includes(key));
   }
-  for (const tag of ["handyman/session/current", "handyman/history", "handyman/moc"]) {
+  // index.template.md is OKF-reserved: no frontmatter, so no handyman/moc tag.
+  for (const tag of ["handyman/session/current", "handyman/history"]) {
     check("assets templates document tag '" + tag + "'", text.includes(tag));
   }
+  const indexTemplate = readText(path.join(assetsDir, "index.template.md"));
+  check("index.template.md carries no frontmatter (OKF reserved file)", !indexTemplate.startsWith("---"));
 }
 
 function testTokenBudgets() {
@@ -429,6 +432,44 @@ function testUnattendedLoopReference() {
   check("preflight prints the loop stop condition", preflight.includes("loop stop condition"));
 }
 
+/**
+ * Feature 55: the reviewer template points at the assistive LLM subcommand
+ * WITHOUT eroding the role's authority. Both halves are the contract: naming
+ * the tool is useless if the signature clause goes soft, and the clause alone
+ * leaves the reviewer unaware the layer exists.
+ */
+function testReviewerToolboxPointer() {
+  const template = readText(path.join(ROOT, "assets", "role-reviewer.template.md"));
+  check("reviewer template names the review-notes subcommand",
+    template.includes("toolbox.js review-notes"));
+  check("reviewer template frames it as optional/assistive",
+    template.includes("Optional:") && template.includes("never a substitute"));
+  check("reviewer template keeps the green-verifier signature clause",
+    template.includes("green verifier"));
+  check("reviewer template forbids signing on model output",
+    template.includes("never on a model's output"));
+  check("reviewer template names the real evidence the signature rests on",
+    template.includes("the verifier and the diff"));
+}
+
+/**
+ * Feature 55: both report-producing role templates document the optional
+ * `actor:` frontmatter field. Documenting it is the whole point - nobody
+ * fills in a field that is not written down, and an undocumented field makes
+ * the collision NOTE unreachable in practice.
+ */
+function testActorFieldDocumented() {
+  for (const role of ["implementer", "reviewer"]) {
+    const template = readText(path.join(ROOT, "assets", "role-" + role + ".template.md"));
+    check(role + " template documents the actor: frontmatter field",
+      template.includes("actor:"));
+    check(role + " template states actor: is optional and non-blocking",
+      template.includes("optional and never blocks"));
+    check(role + " template explains the same-actor NOTE",
+      template.includes("not independent"));
+  }
+}
+
 function testTwoStageReview() {
   const template = readText(path.join(ROOT, "assets", "backlog-review.template.md"));
   check("review template has Stage 1: Spec Compliance", template.includes("## Stage 1: Spec Compliance"));
@@ -657,6 +698,8 @@ function main() {
   testDependsOnContract();
   testUnattendedLoopReference();
   testTwoStageReview();
+  testReviewerToolboxPointer();
+  testActorFieldDocumented();
   testEvalSet();
   testUpgradeAdvisory();
   testMarkdownLinks();

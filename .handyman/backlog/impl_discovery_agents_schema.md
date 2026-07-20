@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: discovery_agents_schema
 status: implemented
 role: implementer

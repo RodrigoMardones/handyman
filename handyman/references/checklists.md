@@ -48,7 +48,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] Ensure the verifier fails on invalid feature state.
 - [ ] Ensure the verifier reads state from `HARNESS_WORKSPACE` and runs tests from `PROJECT_ROOT`.
 - [ ] Add leader, implementer, and reviewer role definitions when the platform supports them.
-- [ ] Assign a model per role: stronger for leader, cheaper for implementer and reviewer, preferring an editor-configured model and otherwise `Claude Sonnet 4.6`.
+- [ ] Assign a model per role: stronger for leader, cheaper for implementer and reviewer, preferring an editor-configured model and otherwise `GLM-5.2`.
 - [ ] Assign a tool set per role following least privilege, mapping each logical group to a tool the host platform exposes.
 - [ ] Add anti-telephone instructions to all role files.
 - [ ] Add closure instructions to `AGENTS.md`.

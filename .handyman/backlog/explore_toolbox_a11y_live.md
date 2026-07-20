@@ -1,4 +1,5 @@
 ---
+type: Explore Report
 topic: toolbox_a11y_live
 role: explorer
 updated: 2026-07-17

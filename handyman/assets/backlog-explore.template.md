@@ -1,4 +1,5 @@
 ---
+type: Explore Report
 topic: <topic>
 role: explorer
 updated: YYYY-MM-DD

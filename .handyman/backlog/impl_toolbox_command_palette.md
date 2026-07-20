@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: toolbox_command_palette
 status: implemented
 role: implementer

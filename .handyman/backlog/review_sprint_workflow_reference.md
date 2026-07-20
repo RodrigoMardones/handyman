@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: sprint_workflow_reference
 status: approved
 role: reviewer

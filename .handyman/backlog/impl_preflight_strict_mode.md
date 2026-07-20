@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: preflight_strict_mode
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: feature_state_machine
 status: implemented
 role: implementer

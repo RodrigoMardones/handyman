@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: mcp_validation_vscode
 status: approved
 role: reviewer

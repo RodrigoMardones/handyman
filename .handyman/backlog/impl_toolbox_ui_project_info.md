@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: toolbox_ui_project_info
 status: implemented
 role: implementer

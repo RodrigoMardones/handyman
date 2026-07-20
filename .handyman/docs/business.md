@@ -1,3 +1,7 @@
+---
+type: Doc
+---
+
 # Business
 
 Contexto de negocio de **Handyman**. Implementers y reviewers leen esto para
@@ -67,9 +71,18 @@ Handyman define seis modos de operacion: `analyze`, `bootstrap`, `run-feature`,
 
 ## Out Of Scope
 
-- **No es un runner.** Handyman no ejecuta el loop desatendido; solo provee el contrato
-  (`feature.py ready` como detector de trabajo, verificador como compuerta). El loop lo
-  corre un agente externo.
+- **No es un runner desatendido.** Handyman no ejecuta el loop por su cuenta; provee el
+  contrato (`feature.js ready` como detector de trabajo, verificador como compuerta). El
+  loop autonomo lo corre un agente externo.
+  - **Precision anadida por la feature 60.** El panel *si* escribe estado de un harness de
+    la flota (`POST /api/feature` registra una feature), pero siempre por una accion que
+    inicia un humano en la UI, una por vez, contra un root del registry. Eso no es el loop
+    que esta clausula excluye: no hay bucle, no hay decision autonoma, no hay
+    encadenamiento de pasos. La linea sigue siendo *desatendido*, no *toda escritura*.
+  - **Que tendria que pasar para reescribir esto de nuevo:** que aparezca un bucle real en
+    el panel — algo que elija la proxima feature y encadene stages sin que un humano
+    dispare cada paso. Ese dia esto deja de ser cierto y hay que decidirlo como cambio de
+    producto, no colarlo por debajo (`analisis-mcp-toolbox.md` §6.5).
 - **No es para tareas pequenas.** Implementaciones puntuales sin flujo formal de harness no
   necesitan Handyman.
 - **No versiona el estado operativo.** En modo local solo `.handyman/docs/` se versiona; el

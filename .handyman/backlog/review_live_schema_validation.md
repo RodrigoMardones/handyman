@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: live_schema_validation
 status: approved
 role: reviewer

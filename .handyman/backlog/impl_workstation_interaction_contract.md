@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workstation_interaction_contract
 status: implemented
 role: implementer

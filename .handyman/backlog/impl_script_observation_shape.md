@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: script_observation_shape
 status: implemented
 role: implementer

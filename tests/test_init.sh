@@ -377,4 +377,260 @@ else
 fi
 rm -rf "$T19"
 
+# --- T20: evidence-debt advisory NOTEs a done feature with no review report ---
+# The other direction of the frontmatter advisory: that one inspects the reports
+# that exist, this one crosses feature_list.json to find the ones that do not.
+start_case "validate_harness: done feature without review_<name>.md NOTEs, exit stays 0"
+T20="$(mktemp -d)"
+write_workspace_files "$T20/.handyman" 1
+mkdir -p "$T20/.handyman/backlog"
+cat > "$T20/.handyman/feature_list.json" <<'JSON'
+{
+  "project": "t",
+  "features": [
+    { "id": 1, "name": "closed_without_evidence", "status": "done" }
+  ]
+}
+JSON
+OUT="$(node "$VALIDATOR" --root "$T20" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "NOTE:" \
+  && printf '%s' "$OUT" | grep -q "review_closed_without_evidence.md"; then
+  pass
+else
+  fail "expected a non-blocking evidence-debt NOTE, exit=$CODE output: $OUT"
+fi
+rm -rf "$T20"
+
+# --- T21: evidence-debt advisory is silent when the review report exists ------
+start_case "validate_harness: evidence-debt advisory is silent when review_<name>.md exists"
+T21="$(mktemp -d)"
+write_workspace_files "$T21/.handyman" 1
+mkdir -p "$T21/.handyman/backlog"
+cat > "$T21/.handyman/feature_list.json" <<'JSON'
+{
+  "project": "t",
+  "features": [
+    { "id": 1, "name": "closed_with_evidence", "status": "done" }
+  ]
+}
+JSON
+cat > "$T21/.handyman/backlog/review_closed_with_evidence.md" <<'MD'
+---
+feature: closed_with_evidence
+id: 1
+role: reviewer
+date: 2026-01-01
+verdict: approved
+tags: [handyman/backlog/review]
+---
+
+# Review: closed_with_evidence
+MD
+OUT="$(node "$VALIDATOR" --root "$T21" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && ! printf '%s' "$OUT" | grep -q "is done but"; then
+  pass
+else
+  fail "expected silence with the review present, exit=$CODE output: $OUT"
+fi
+rm -rf "$T21"
+
+# --- actor-collision advisory (feature 55) -----------------------------------
+# Writes impl_/review_ reports for feature "alpha" into $1, with $2 as the
+# impl actor and $3 as the review actor. An empty actor omits the line, which
+# is how every historical report looks.
+write_actor_reports() {
+  ws="$1"; impl_actor="$2"; review_actor="$3"
+  mkdir -p "$ws/backlog"
+  for kind in impl review; do
+    a="$impl_actor"
+    [ "$kind" = "review" ] && a="$review_actor"
+    {
+      printf -- '---\nfeature: alpha\nstatus: ok\nrole: %s\nupdated: 2026-01-01\n' "$kind"
+      [ -n "$a" ] && printf 'actor: %s\n' "$a"
+      printf 'tags: [handyman/backlog/%s]\n---\n\n# %s alpha\n' "$kind" "$kind"
+    } > "$ws/backlog/${kind}_alpha.md"
+  done
+}
+
+# --- T22: same actor on both reports NOTEs the collision ---------------------
+start_case "validate_harness: same actor on impl+review NOTEs, exit stays 0"
+T22="$(mktemp -d)"
+write_workspace_files "$T22/.handyman" 1
+write_actor_reports "$T22/.handyman" "agent-x" "agent-x"
+OUT="$(node "$VALIDATOR" --root "$T22" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "same actor" \
+  && printf '%s' "$OUT" | grep -q "agent-x"; then
+  pass
+else
+  fail "expected a non-blocking actor-collision NOTE, exit=$CODE output: $OUT"
+fi
+rm -rf "$T22"
+
+# --- T23: different actors are silent ----------------------------------------
+start_case "validate_harness: different actors on impl+review print no collision NOTE"
+T23="$(mktemp -d)"
+write_workspace_files "$T23/.handyman" 1
+write_actor_reports "$T23/.handyman" "agent-x" "agent-y"
+OUT="$(node "$VALIDATOR" --root "$T23" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && ! printf '%s' "$OUT" | grep -q "same actor"; then
+  pass
+else
+  fail "expected silence with distinct actors, exit=$CODE output: $OUT"
+fi
+rm -rf "$T23"
+
+# --- T24: reports without actor: are silent (historical reports stay valid) --
+# The field is optional on purpose: harnesses installed before feature 55 have
+# no actor: anywhere, and must not start emitting noise.
+start_case "validate_harness: reports with no actor: field produce no collision NOTE"
+T24="$(mktemp -d)"
+write_workspace_files "$T24/.handyman" 1
+write_actor_reports "$T24/.handyman" "" ""
+OUT="$(node "$VALIDATOR" --root "$T24" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && ! printf '%s' "$OUT" | grep -q "same actor"; then
+  pass
+else
+  fail "expected silence with no actor field, exit=$CODE output: $OUT"
+fi
+rm -rf "$T24"
+
+# --- T25-T27: init.sh runs the validator as a blocking phase -----------------
+# The wiring, not the validator: T9/T20 already pin validate_harness's own exit
+# codes. What was missing is that ./init.sh acts on them -- before this, the
+# validator reached the operator only through check_preflight, which swallows
+# the exit code (`|| true`, and preflight itself always exits 0).
+#
+# The function is pulled out of the real init.sh rather than reimplemented here.
+# Sourcing the whole file would execute the verifier -- lint, build and the test
+# suite, recursively into this suite -- so `sed` lifts the one function out. The
+# assertion still lands on production code, not on a copy that could drift.
+REPO_INIT="$SUITE_DIR/../init.sh"
+REPO_DIST="$SUITE_DIR/../handyman/dist"
+eval "$(sed -n '/^run_validate_harness()/,/^}/p' "$REPO_INIT")"
+
+# Give a fixture root the handyman/ layout where init.sh resolves the validator.
+#
+# dist/ is copied, not symlinked: these CLIs guard their entry with
+# `import.meta.url === file://${process.argv[1]}`, which is false when the script
+# is reached through a symlink -- main() never runs and the process exits 0 in
+# silence, so a symlinked fixture would make every case here pass vacuously.
+#
+# assets/ is copied too: the validator loads feature_list.schema.json relative to
+# its own location. node_modules is symlinked (cheap, and Node resolves deps
+# through a symlink fine -- only the entry script may not be one), and
+# package.json comes along for its `"type": "module"`.
+copy_validator() {
+  src="$SUITE_DIR/../handyman"
+  mkdir -p "$1/handyman"
+  cp -R "$REPO_DIST" "$1/handyman/dist"
+  cp -R "$src/assets" "$1/handyman/assets"
+  cp "$src/package.json" "$1/handyman/package.json"
+  ln -sf "$src/node_modules" "$1/handyman/node_modules"
+}
+
+# A physical temp dir. On macOS `mktemp -d` hands back a /var/... path, and /var
+# is a symlink to /private/var -- enough to break the same entry guard: argv[1]
+# keeps /var while import.meta.url resolves to /private/var, so main() never runs
+# and the validator exits 0 in silence. Every case below would then pass for the
+# wrong reason.
+phys_tmp() { (cd "$(mktemp -d)" && pwd -P); }
+
+start_case "init.sh: the harness phase is wired into the blocking phase list"
+if grep -q '^  run_phase "harness" run_validate_harness$' "$REPO_INIT" \
+  && sed -n '/^# --- Execution/,/^fi$/p' "$REPO_INIT" | grep -q 'run_validate_harness'; then
+  pass
+else
+  fail "run_validate_harness is not wired as a blocking phase in init.sh"
+fi
+
+start_case "init.sh: a blocking harness gap fails the phase and reports it"
+T25="$(phys_tmp)"
+write_workspace_files "$T25/.handyman" 1
+rm "$T25/.handyman/progress/history.md"
+copy_validator "$T25"
+export PROJECT_ROOT="$T25"
+OUT="$(run_validate_harness 2>&1)"; CODE=$?
+if [ "$CODE" -ne 0 ] && printf '%s' "$OUT" | grep -q "missing harness file"; then
+  pass
+else
+  fail "expected a failing phase naming the gap: exit=$CODE output: $OUT"
+fi
+rm -rf "$T25"
+
+start_case "init.sh: evidence debt alone keeps the phase green and silent"
+T26="$(phys_tmp)"
+write_workspace_files "$T26/.handyman" 1
+mkdir -p "$T26/.handyman/backlog"
+cat > "$T26/.handyman/feature_list.json" <<'JSON'
+{
+  "project": "t",
+  "features": [
+    { "id": 1, "name": "closed_without_evidence", "status": "done" }
+  ]
+}
+JSON
+copy_validator "$T26"
+export PROJECT_ROOT="$T26"
+OUT="$(run_validate_harness 2>&1)"; CODE=$?
+# Silent by design: check_preflight already prints validate_harness's whole
+# output, NOTEs included, so echoing it here too would duplicate every advisory.
+# T20 pins that the NOTE itself still reaches the operator.
+if [ "$CODE" -eq 0 ] && [ -z "$OUT" ]; then
+  pass
+else
+  fail "expected a green, silent phase on evidence debt: exit=$CODE output: $OUT"
+fi
+rm -rf "$T26"
+
+start_case "init.sh: the harness phase skips cleanly when dist/ is absent"
+T27="$(phys_tmp)"
+write_workspace_files "$T27/.handyman" 1
+export PROJECT_ROOT="$T27"
+OUT="$(run_validate_harness 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && [ -z "$OUT" ]; then
+  pass
+else
+  fail "expected a clean skip with no built validator: exit=$CODE output: $OUT"
+fi
+rm -rf "$T27"
+
+# --- T28: the installed-harness template inherits the same phase -------------
+# Harnesses installed elsewhere get this on their next upgrade; the template
+# resolves dist/ at its own root, not under handyman/.
+start_case "init.template.sh carries the same blocking harness phase"
+TPL="$SUITE_DIR/../handyman/assets/init.template.sh"
+if grep -q '^run_validate_harness()' "$TPL" \
+  && grep -q '^  run_phase "harness" run_validate_harness$' "$TPL" \
+  && grep -q 'validator="\$PROJECT_ROOT/dist/validate_harness.js"' "$TPL"; then
+  pass
+else
+  fail "init.template.sh does not carry the harness phase with a root-relative validator"
+fi
+
+# --- T29: frontmatter advisory accepts the pre-2.1 legacy convention ---------
+# Legacy reports wrote verdict:/date:/reviewer: for status:/updated:/role:.
+# `done` reads the legacy verdict (feature.ts); the advisory must agree with it.
+start_case "validate_harness: frontmatter advisory is silent on a legacy-convention report"
+T29="$(mktemp -d)"
+write_workspace_files "$T29/.handyman" 1
+mkdir -p "$T29/.handyman/backlog"
+cat > "$T29/.handyman/backlog/review_legacy.md" <<'MD'
+---
+feature: 12
+reviewer: reviewer
+verdict: APPROVED
+date: 2026-07-18
+tags: [handyman/review]
+---
+
+# Review Report: legacy
+MD
+OUT="$(node "$VALIDATOR" --root "$T29" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && ! printf '%s' "$OUT" | grep -q "review_legacy.md"; then
+  pass
+else
+  fail "expected silence on a legacy-convention report, exit=$CODE output: $OUT"
+fi
+rm -rf "$T29"
+
 summary
