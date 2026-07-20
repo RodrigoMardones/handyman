@@ -1306,3 +1306,23 @@ Append-only. Do not edit earlier entries during normal work.
 - **Verification:** verifier exit 0
 - **Review:** APPROVED -> backlog/review_okf_memoria_alignment.md
 - **Closure:** done
+
+## 2026-07-19 - Feature 64: toolchain_npm_handyman_harness
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** bundle esbuild autocontenido (variante A del explore), bin unico `handyman <verbo>`, publish humano con OTP como gate.
+- **Changes:** scripts/pack_npm.mjs (staging + manifest publish con author), suite tests/test_npm_pack.sh (14 casos: inventario, autoria, atribuciones, smoke fuera del monorepo); publicado handyman-harness@3.0.0; verificado con install -g y npx desde el registry.
+- **Tools:** npm registry; smoke install -g + npx handyman-harness@3
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_toolchain_npm_handyman_harness.md
+- **Closure:** done
+
+## 2026-07-19 - Feature 65: skill_invoca_npx
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** separar responsabilidades: la skill (instrucciones) invoca el toolchain publicado en npm en vez de node dist/*.js (roto fuera del monorepo).
+- **Changes:** swap 101 comandos a `npx handyman-harness@3 <verbo>` en SKILL.md + references/ + 3 assets (feature-request, sprint, hints de init.template.sh); drift toolbox.md corregido en las DOS menciones del panel retirado (hallazgo del reviewer en primera pasada); tokens npx en test_docs.js; skills instaladas (~/.claude y ~/.agents) sincronizadas.
+- **Tools:** npm registry handyman-harness@3; skills: handyman, ponytail; reviewer subagent independiente
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_skill_invoca_npx.md
+- **Closure:** done

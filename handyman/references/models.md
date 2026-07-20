@@ -100,11 +100,11 @@ Model names rotate (new versions ship, old ones are retired), and a stale name i
 
 ```bash
 # Audit what each surface currently declares
-node dist/update_harness.js --root <project_root> --list
+npx handyman-harness@3 update_harness --root <project_root> --list
 
 # Preview, then apply a cheap-tier bump everywhere it is declared
-node dist/update_harness.js --root <project_root> --dry-run --model implementer="New Model"
-node dist/update_harness.js --root <project_root> \
+npx handyman-harness@3 update_harness --root <project_root> --dry-run --model implementer="New Model"
+npx handyman-harness@3 update_harness --root <project_root> \
   --model implementer="New Model" --model reviewer="New Model" --model explorer="New Model"
 ```
 

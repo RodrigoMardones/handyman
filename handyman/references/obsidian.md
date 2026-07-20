@@ -56,7 +56,7 @@ Tags are additive: a review report typically carries `#handyman/role/reviewer` p
 
 The optional `index.md` at the root of the workspace acts as a hub. It lists files that exist inside `HARNESS_WORKSPACE`: `feature_list.json`, docs, progress files, backlog reports and useful tag queries. Because the vault is `.handyman` (local) or the external HANDYMAN workspace (global), the repo-root bridge files `AGENTS.md` and `CHECKPOINTS.md` sit outside the vault; mention them as plain paths unless they are intentionally mirrored into the vault. See [templates.md](./templates.md#indexmd-obsidian-moc).
 
-Regenerate it from live state with `node dist/index_md.js` (source `src/index_md.ts`), which rebuilds the State, Docs, Progress, Features (grouped by status), Backlog, and Tags sections from the workspace and preserves a `## Notes` block for operator-authored content. It links only files that exist and uses wikilinks for vault-internal targets, so the regenerated MOC keeps the verifier's link check green.
+Regenerate it from live state with `npx handyman-harness@3 index_md` (source `src/index_md.ts`), which rebuilds the State, Docs, Progress, Features (grouped by status), Backlog, and Tags sections from the workspace and preserves a `## Notes` block for operator-authored content. It links only files that exist and uses wikilinks for vault-internal targets, so the regenerated MOC keeps the verifier's link check green.
 
 ## Wikilinks vs Markdown Links
 

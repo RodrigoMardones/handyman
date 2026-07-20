@@ -758,11 +758,11 @@
         "npx handyman-harness feature ready funciona en un directorio fuera del monorepo",
         "la version publicada distingue el estado post-split (no reusar 2.1.1)"
       ],
-      "status": "blocked",
+      "status": "done",
       "meta": {
-        "started_at": "2026-07-19T22:44:56.930Z"
-      },
-      "blocked_reason": "Implementacion lista y verificada (tarball 3.0.0, suite test_npm_pack 12/12, init.sh verde, scan de secretos limpio). Cierre gateado por accion humana: npm adduser + npm publish desde handyman/.pack-staging/ tras confirmar CI verde en GitHub Actions — decision 2026-07-19: no publicar hasta OK explicito."
+        "started_at": "2026-07-20T00:18:14.099Z",
+        "done_at": "2026-07-20T00:19:02.398Z"
+      }
     },
     {
       "id": 65,
@@ -773,10 +773,14 @@
         "cero referencias a node dist/ en SKILL.md y references/",
         "una instalacion fresca de la skill en un directorio limpio puede correr preflight y feature add siguiendo solo las instrucciones de SKILL.md"
       ],
-      "status": "pending",
+      "status": "done",
       "depends_on": [
         64
-      ]
+      ],
+      "meta": {
+        "started_at": "2026-07-20T00:19:14.349Z",
+        "done_at": "2026-07-20T00:32:16.901Z"
+      }
     },
     {
       "id": 66,
