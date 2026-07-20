@@ -50,6 +50,17 @@ function die(msg) {
 
 const manifest = JSON.parse(readFileSync(join(PKG_DIR, "package.json"), "utf8"));
 
+// Version handshake: the skill (usage manifest) and the npm toolchain share
+// one version. The tarball ships no SKILL.md, so the published CLI reports
+// package.json's version — parity here is what keeps both channels honest.
+const skillVersion = (/^\s+version:\s*(.+)$/m.exec(
+  readFileSync(join(PKG_DIR, "SKILL.md"), "utf8"),
+)?.[1] ?? "").trim();
+if (skillVersion !== manifest.version)
+  die(
+    `SKILL.md metadata.version (${skillVersion || "missing"}) != package.json version (${manifest.version})`,
+  );
+
 rmSync(STAGING, { recursive: true, force: true });
 mkdirSync(join(STAGING, "dist"), { recursive: true });
 

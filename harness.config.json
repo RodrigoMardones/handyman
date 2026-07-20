@@ -4,7 +4,7 @@
   "project_root": ".",
   "handyman_root": null,
   "harness_workspace": ".handyman",
-  "harness_version": "2.1.1",
+  "harness_version": "3.1.0",
   "models": {
     "leader": "GLM-5.2",
     "implementer": "GLM-5.2",

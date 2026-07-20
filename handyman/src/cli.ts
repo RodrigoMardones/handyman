@@ -29,7 +29,7 @@ const VERBS = [
 
 function usage(): string {
   const list = VERBS.map((v) => `  ${v}`).join("\n");
-  return `usage: handyman <verb> [args...]\n\nverbs:\n${list}\n\nEach verb accepts --help for its own options.\n`;
+  return `usage: handyman <verb> [args...]\n\nverbs:\n${list}\n\nEach verb accepts --help for its own options.\nhandyman --version prints the toolchain version.\n`;
 }
 
 const [verb, ...rest] = process.argv.slice(2);
@@ -37,6 +37,15 @@ const [verb, ...rest] = process.argv.slice(2);
 if (!verb || verb === "--help" || verb === "-h") {
   process.stdout.write(usage());
   process.exit(verb ? 0 : 2);
+}
+
+if (verb === "--version" || verb === "-v") {
+  const { readFileSync } = await import("node:fs");
+  const pkg = JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  );
+  process.stdout.write(`${pkg.version}\n`);
+  process.exit(0);
 }
 
 if (!(VERBS as readonly string[]).includes(verb)) {

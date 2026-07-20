@@ -1,6 +1,6 @@
 {
   "name": "handyman",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Handyman agent-harness toolchain (TypeScript/Node).",
   "author": "Rodrigo Mardones",
   "private": true,

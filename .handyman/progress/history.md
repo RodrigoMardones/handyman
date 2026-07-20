@@ -1326,3 +1326,13 @@ Append-only. Do not edit earlier entries during normal work.
 - **Verification:** verifier exit 0
 - **Review:** APPROVED -> backlog/review_skill_invoca_npx.md
 - **Closure:** done
+
+## 2026-07-19 - Feature 68: version_handshake_npm
+- **Agent:** leader -> implementer -> reviewer
+- **Branch:** feat/llm-toolbox-tasks
+- **Plan:** ...
+- **Changes:** ...
+- **Tools:** ...
+- **Verification:** verifier exit 0
+- **Review:** APPROVED -> backlog/review_version_handshake_npm.md
+- **Closure:** done
