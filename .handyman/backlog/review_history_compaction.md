@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: history_compaction
 status: approved
 role: reviewer

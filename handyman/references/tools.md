@@ -66,7 +66,7 @@ VS Code / Copilot agent file (`*.agent.md`):
 ---
 name: implementer
 description: Implements exactly one feature with tests and self-verification.
-model: Claude Sonnet 4.6
+model: GLM-5.2
 tools: [vscode, execute, read, edit, search, todo]
 ---
 ```
@@ -99,9 +99,9 @@ A `tools` map centralizes the assignment so role files can stay generic. This is
   "harness_workspace": ".handyman",
   "models": {
     "leader": "editor-default",
-    "implementer": "Claude Sonnet 4.6",
-    "reviewer": "Claude Sonnet 4.6",
-    "explorer": "Claude Sonnet 4.6"
+    "implementer": "GLM-5.2",
+    "reviewer": "GLM-5.2",
+    "explorer": "GLM-5.2"
   },
   "tools": {
     "leader": ["vscode", "execute", "read", "agent", "edit", "search", "web", "browser", "todo"],
@@ -117,8 +117,8 @@ A `tools` map centralizes the assignment so role files can stay generic. This is
 To change a role's tool set after bootstrap without drift between the config map and the role frontmatter, use the bundled updater (shared with [models.md](./models.md)):
 
 ```bash
-node dist/update_harness.js --root <project_root> --dry-run --tools reviewer=vscode,read,search,todo
-node dist/update_harness.js --root <project_root> --tools reviewer=vscode,read,search,todo
+npx handyman-harness@3 update_harness --root <project_root> --dry-run --tools reviewer=vscode,read,search,todo
+npx handyman-harness@3 update_harness --root <project_root> --tools reviewer=vscode,read,search,todo
 ```
 
 It rewrites the `tools` map in `harness.config.json` and the `tools:` frontmatter line in every discovered role file in the same run.

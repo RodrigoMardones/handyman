@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: config_source_of_truth
 status: implemented
 role: implementer

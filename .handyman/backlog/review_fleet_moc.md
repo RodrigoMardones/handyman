@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: fleet_moc
 status: approved
 role: reviewer

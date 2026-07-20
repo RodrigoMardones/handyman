@@ -1,0 +1,729 @@
+/* Landing page layout. Nine sections, nine distinct layout families (see the
+   Pre-Flight comment in page.tsx). All spacing, color, radius and shadow
+   values come from the tokens in globals.css: nothing here reintroduces a
+   raw hex or a second accent. */
+
+.page {
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Nav                                                                     */
+/* ---------------------------------------------------------------------- */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.navInner {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.brandMark {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navLinks a {
+  text-decoration: none;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.navLinks a:hover {
+  color: var(--text);
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+@media (max-width: 860px) {
+  .navLinks {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Buttons (shape lock: pill, one accent, tactile feedback)                */
+/* ---------------------------------------------------------------------- */
+
+.btnPrimary,
+.btnGhost {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-pill);
+  padding: 0.7rem 1.35rem;
+  font-size: 0.94rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .btnPrimary,
+  .btnGhost {
+    transition:
+      transform 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+  }
+}
+
+.btnPrimary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.btnPrimary:active {
+  transform: scale(0.98);
+}
+
+.btnGhost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.btnGhost:active {
+  transform: scale(0.98);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Hero: Asymmetric Split Hero                                             */
+/* ---------------------------------------------------------------------- */
+
+.hero {
+  padding-top: clamp(2.5rem, 6vw, 5.5rem);
+  padding-bottom: var(--space-7);
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: var(--space-6);
+  align-items: center;
+}
+
+.heroText {
+  max-width: 34rem;
+}
+
+.headline {
+  font-size: clamp(2.1rem, 4.4vw, 3.1rem);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-3);
+}
+
+.subtext {
+  font-size: 1.08rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0 0 var(--space-4);
+  max-width: 34ch;
+}
+
+.ctaRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.heroVisual {
+  position: relative;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(var(--shadow-color), 0.18);
+  aspect-ratio: 4 / 5;
+}
+
+.heroVisual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 860px) {
+  .heroGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .heroText {
+    max-width: none;
+  }
+
+  .heroVisual {
+    aspect-ratio: 16 / 10;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Section scaffolding shared by everything below the hero                 */
+/* ---------------------------------------------------------------------- */
+
+.section {
+  padding-block: var(--space-7);
+  border-top: 1px solid var(--border);
+}
+
+.sectionHead {
+  max-width: 42rem;
+  margin-bottom: var(--space-5);
+}
+
+.sectionHeadline {
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--space-2);
+}
+
+.sectionSub {
+  color: var(--text-muted);
+  font-size: 1.02rem;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 58ch;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Metrics strip: divided row, no cards                                    */
+/* ---------------------------------------------------------------------- */
+
+.metricsSection {
+  padding-block: var(--space-6);
+}
+
+.metricsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.metric {
+  padding: var(--space-2) var(--space-4);
+  border-left: 1px solid var(--border);
+}
+
+.metric:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.metricValue {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+
+.metricLabel {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+  .metricsRow {
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: var(--space-4);
+  }
+
+  .metric:nth-child(2) {
+    border-left: 1px solid var(--border);
+  }
+
+  .metric:nth-child(3) {
+    border-left: none;
+    padding-left: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Bento grid: asymmetric tiles, exact cell count for 6 capabilities        */
+/* ---------------------------------------------------------------------- */
+
+.bentoGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(3, minmax(180px, auto));
+  gap: var(--space-3);
+  grid-template-areas:
+    "fleet fleet ask summary"
+    "fleet fleet draft providers"
+    "strangler strangler strangler strangler";
+}
+
+.cell {
+  position: relative;
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.cellFleet {
+  grid-area: fleet;
+}
+
+.cellAsk {
+  grid-area: ask;
+}
+
+.cellSummary {
+  grid-area: summary;
+}
+
+.cellDraft {
+  grid-area: draft;
+}
+
+.cellProviders {
+  grid-area: providers;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 60%),
+    var(--bg-elevated);
+}
+
+.cellStrangler {
+  grid-area: strangler;
+  min-height: 200px;
+}
+
+.cellImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.cellScrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(10, 10, 10, 0) 20%, rgba(8, 6, 4, 0.82) 100%);
+}
+
+.cellFleet .cellTitle,
+.cellFleet .cellBody,
+.cellStrangler .cellTitle,
+.cellStrangler .cellBody {
+  position: relative;
+  z-index: 2;
+  color: #fdfaf6;
+}
+
+.cellTitle {
+  font-size: 1.08rem;
+  font-weight: 650;
+  margin: 0 0 0.35rem;
+}
+
+.cellBody {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.cellFleet .cellBody,
+.cellStrangler .cellBody {
+  color: rgba(253, 250, 246, 0.82);
+}
+
+@media (max-width: 860px) {
+  .bentoGrid {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-template-areas:
+      "fleet"
+      "ask"
+      "summary"
+      "draft"
+      "providers"
+      "strangler";
+  }
+
+  .cellFleet,
+  .cellStrangler {
+    min-height: 220px;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Manifesto: full-width editorial quote, no asset                         */
+/* ---------------------------------------------------------------------- */
+
+.manifesto {
+  padding-block: var(--space-8);
+  text-align: center;
+}
+
+.manifestoQuote {
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  max-width: 46rem;
+  margin: 0 auto var(--space-3);
+}
+
+.manifestoAttr {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Pipeline: connected-steps rail                                          */
+/* ---------------------------------------------------------------------- */
+
+.pipelineRail {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.pipelineRail::before {
+  content: "";
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  height: 1px;
+  background: var(--border-strong);
+}
+
+.pipelineNode {
+  position: relative;
+  padding-top: var(--space-5);
+}
+
+.nodeMarker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.nodeTitle {
+  font-size: 1.02rem;
+  font-weight: 650;
+  margin: 0 0 0.3rem;
+}
+
+.nodeBody {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .pipelineRail {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+
+  .pipelineRail::before {
+    top: 0;
+    bottom: 0;
+    left: 15px;
+    right: auto;
+    width: 1px;
+    height: auto;
+  }
+
+  .pipelineNode {
+    padding-top: 0;
+    padding-left: var(--space-5);
+  }
+
+  .nodeMarker {
+    top: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Security: featured spec tiles, 2x2 display numbers                      */
+/* ---------------------------------------------------------------------- */
+
+.specGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.specTile {
+  padding: var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+
+.specValue {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+  letter-spacing: -0.01em;
+}
+
+.specBody {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .specGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Architecture: single-column code panel                                  */
+/* ---------------------------------------------------------------------- */
+
+.archWrap {
+  max-width: 46rem;
+}
+
+.archBody {
+  font-size: 1.02rem;
+  line-height: 1.65;
+  color: var(--text-muted);
+  margin: 0 0 var(--space-4);
+}
+
+.codePanel {
+  border-radius: var(--radius-panel);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.codePanelLabel {
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+}
+
+.codePanel pre {
+  margin: 0;
+  padding: var(--space-3);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: var(--code-text);
+}
+
+.archNote {
+  margin-top: var(--space-3);
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Providers: horizontal scroll-snap cards                                 */
+/* ---------------------------------------------------------------------- */
+
+.providerScroller {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: var(--space-2);
+  list-style: none;
+  padding-inline-start: 0;
+}
+
+.providerCard {
+  scroll-snap-align: start;
+  flex: 0 0 min(78%, 300px);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  padding: var(--space-4);
+}
+
+.providerCardGhost {
+  border-style: dashed;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.providerName {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 650;
+  margin: 0 0 0.5rem;
+  color: var(--text);
+}
+
+.providerCardGhost .providerName {
+  color: var(--text-muted);
+}
+
+.providerBody {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+/* ---------------------------------------------------------------------- */
+/* CTA band: centered, terminal-style command box                          */
+/* ---------------------------------------------------------------------- */
+
+.ctaSection {
+  text-align: center;
+  background: var(--bg-sunken);
+}
+
+.ctaHeadline {
+  font-size: clamp(1.7rem, 3.4vw, 2.3rem);
+  margin: 0 0 var(--space-2);
+}
+
+.ctaSub {
+  color: var(--text-muted);
+  max-width: 46ch;
+  margin: 0 auto var(--space-4);
+}
+
+.commandBox {
+  max-width: 34rem;
+  margin: 0 auto var(--space-4);
+  text-align: left;
+  border-radius: var(--radius-panel);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  color: var(--code-text);
+  overflow-x: auto;
+}
+
+.commandLine {
+  display: block;
+  white-space: pre;
+}
+
+.commandLine + .commandLine {
+  margin-top: 0.4rem;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Footer                                                                   */
+/* ---------------------------------------------------------------------- */
+
+.footer {
+  border-top: 1px solid var(--border);
+  padding-block: var(--space-5);
+}
+
+.footerInner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.footerNav {
+  display: flex;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.footerNav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.footerNav a:hover {
+  color: var(--text);
+}
+
+.footerMeta {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}

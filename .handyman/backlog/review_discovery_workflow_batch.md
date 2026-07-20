@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: discovery_workflow_batch
 status: approved
 role: reviewer

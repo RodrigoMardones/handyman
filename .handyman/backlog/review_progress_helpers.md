@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: progress_helpers
 status: approved
 role: reviewer

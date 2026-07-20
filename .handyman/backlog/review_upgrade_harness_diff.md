@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: upgrade_harness_diff
 status: approved
 role: reviewer

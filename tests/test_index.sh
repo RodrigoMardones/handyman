@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # index.md (Obsidian MOC) regenerator tests for the Handyman skill.
-# Exercises dist/index_md.js against a fixture harness: frontmatter/title,
-# features grouped by status, backlog wikilinks, Notes preservation, and the
-# existence-gated markdown links.
+# Exercises dist/index_md.js against a fixture harness: OKF-reserved shape
+# (no frontmatter), title, features grouped by status, backlog markdown
+# links, Notes preservation, and the existence-gated markdown links.
 set -u
 
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -38,14 +38,14 @@ JSON
   : > "$root/.handyman/docs/architecture.md"
 }
 
-# --- I1: regenerates frontmatter, title, and features by status -------------
-start_case "regenerates index.md with MOC frontmatter, title, and features by status"
+# --- I1: regenerates title and features by status, without frontmatter ------
+start_case "regenerates index.md without frontmatter (OKF reserved file), title, and features by status"
 T="$(mktemp -d)"; write_harness "$T"
 "${RUN[@]}" --root "$T" >/dev/null 2>&1; CODE=$?
 IDX="$T/.handyman/index.md"
 if [ "$CODE" -eq 0 ] && [ -f "$IDX" ] \
-  && grep -q "tags: \[handyman/moc\]" "$IDX" \
-  && grep -q "# demo - Handyman Workspace" "$IDX" \
+  && [ "$(head -n 1 "$IDX")" = "# demo - Handyman Workspace" ] \
+  && ! grep -q "^---$" "$IDX" \
   && grep -q "in_progress:[*][*] beta (id 2)" "$IDX" \
   && grep -q "pending:[*][*] gamma (id 3)" "$IDX" \
   && grep -q "done:[*][*] 1 closed" "$IDX"; then
@@ -55,16 +55,17 @@ else
 fi
 rm -rf "$T"
 
-# --- I2: lists backlog reports as wikilinks ---------------------------------
-start_case "lists existing backlog reports as wikilinks"
+# --- I2: lists backlog reports as markdown links ----------------------------
+start_case "lists existing backlog reports as relative markdown links"
 T="$(mktemp -d)"; write_harness "$T"
 : > "$T/.handyman/backlog/impl_beta.md"
 "${RUN[@]}" --root "$T" >/dev/null 2>&1
 IDX="$T/.handyman/index.md"
-if grep -q "\[\[backlog/impl_beta\]\]" "$IDX"; then
+if grep -q "\[impl_beta\](backlog/impl_beta.md)" "$IDX" \
+  && ! grep -q "\[\[" "$IDX"; then
   pass
 else
-  fail "backlog wikilink missing"
+  fail "backlog markdown link missing or wikilinks still emitted"
 fi
 rm -rf "$T"
 
@@ -105,16 +106,16 @@ mkdir -p "$T/.handyman"
 if [ "$CODE" -ne 0 ]; then pass; else fail "expected non-zero exit"; fi
 rm -rf "$T"
 
-# --- I6: lists sprint and current-period docs as wikilinks ------------------
-start_case "lists docs/sprints and docs/current files as wikilinks"
+# --- I6: lists sprint and current-period docs as markdown links -------------
+start_case "lists docs/sprints and docs/current files as markdown links"
 T="$(mktemp -d)"; write_harness "$T"
 mkdir -p "$T/.handyman/docs/sprints" "$T/.handyman/docs/current"
 : > "$T/.handyman/docs/sprints/sprint.2026-SP1.md"
 : > "$T/.handyman/docs/current/draft-topic.md"
 "${RUN[@]}" --root "$T" >/dev/null 2>&1
 IDX="$T/.handyman/index.md"
-if grep -q "\[\[docs/sprints/sprint.2026-SP1\]\]" "$IDX" \
-  && grep -q "\[\[docs/current/draft-topic\]\]" "$IDX"; then
+if grep -q "\[sprint.2026-SP1\](docs/sprints/sprint.2026-SP1.md)" "$IDX" \
+  && grep -q "\[draft-topic\](docs/current/draft-topic.md)" "$IDX"; then
   pass
 else
   fail "sprint/current docs not listed: $(grep 'docs/' "$IDX")"

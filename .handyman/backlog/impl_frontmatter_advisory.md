@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: frontmatter_advisory
 status: implemented
 role: implementer

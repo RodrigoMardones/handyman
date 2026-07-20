@@ -14,6 +14,9 @@
  *   T6  providersInfo: shape {id, available, model}, copilot declared as
  *       future id, and no key material in the payload.
  *   T7  loadDotEnv: parses KEY=VALUE, respects existing env, ignores comments.
+ *   T8  PROVIDER_REGISTRY: pushing a table entry (no buildProviders edits)
+ *       registers a new provider that buildProviders instantiates and that
+ *       shows up in providersInfo.
  *
  * Exit code 0 when all pass, 1 otherwise.
  */
@@ -281,6 +284,49 @@ async function main() {
     llm.loadDotEnv(path.join(dir, "missing"), env); // no .env: must be a no-op
     check("loadDotEnv without .env is a no-op", env.EXISTING === "winner");
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+
+  // T8 — PROVIDER_REGISTRY: registering a provider via table entry alone
+  {
+    llm.PROVIDER_REGISTRY.push({
+      id: "test-provider",
+      apiKeyEnvKey: "TEST_PROVIDER_API_KEY",
+      modelEnvKey: "TEST_PROVIDER_MODEL",
+      defaultModel: "test-model-1",
+      resolveVariant: () => ({
+        adapter: "openai-compat",
+        baseUrl: "https://example.test/v1",
+      }),
+    });
+    const noKey = llm.buildProviders({});
+    check(
+      "new registry entry is skipped without its api key",
+      !noKey.some((p) => p.id === "test-provider"),
+      `got [${noKey.map((p) => p.id)}]`,
+    );
+    const withKey = llm.buildProviders({ TEST_PROVIDER_API_KEY: SECRET });
+    const testProvider = withKey.find((p) => p.id === "test-provider");
+    check(
+      "new registry entry is instantiated once its api key is set",
+      !!testProvider && testProvider.model === "test-model-1",
+      `got [${withKey.map((p) => p.id)}]`,
+    );
+    const { impl, calls } = fetchMock([() => sseResponse(["data: [DONE]"])]);
+    const withFetch = llm
+      .buildProviders({ TEST_PROVIDER_API_KEY: SECRET }, impl)
+      .find((p) => p.id === "test-provider");
+    await withFetch.draft({ prompt: "p" }, () => {});
+    check(
+      "new registry entry's variant drives the openai-compat adapter",
+      calls[0] && calls[0].url === "https://example.test/v1/chat/completions",
+      calls[0] && calls[0].url,
+    );
+    const infos = await llm.providersInfo(withKey);
+    check(
+      "new registry entry appears in providersInfo",
+      infos.some((i) => i.id === "test-provider" && i.model === "test-model-1"),
+      JSON.stringify(infos),
+    );
   }
 
   console.log(`\nSummary: ${RUN} run, ${RUN - FAILED} passed, ${FAILED} failed`);

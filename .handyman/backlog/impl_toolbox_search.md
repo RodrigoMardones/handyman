@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: toolbox_search
 status: implemented
 role: implementer

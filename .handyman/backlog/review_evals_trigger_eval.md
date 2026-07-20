@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: evals_trigger_eval
 status: approved
 role: reviewer

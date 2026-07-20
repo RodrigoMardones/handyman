@@ -28,13 +28,13 @@ Always confirm the resolved identifier matches a model that is actually availabl
 | Role | Default tier | Suggested default | Rationale |
 |------|--------------|-------------------|-----------|
 | `leader` | High-capability reasoning | Editor default reasoning model, or the strongest model available | Plans, sequences, and audits work. |
-| `implementer` | Cost-efficient coding | Editor-configured cheap model, else `Claude Sonnet 4.6` | Bounded, well-specified, runs often. |
-| `reviewer` | Cost-efficient validation | Editor-configured cheap model, else `Claude Sonnet 4.6` | Checks against fixed contracts, runs often. |
-| `explorer` | Cheapest fast | Editor-configured fast model, else `Claude Sonnet 4.6` | Read-only, narrow questions. |
+| `implementer` | Cost-efficient coding | Editor-configured cheap model, else `GLM-5.2` | Bounded, well-specified, runs often. |
+| `reviewer` | Cost-efficient validation | Editor-configured cheap model, else `GLM-5.2` | Checks against fixed contracts, runs often. |
+| `explorer` | Cheapest fast | Editor-configured fast model, else `GLM-5.2` | Read-only, narrow questions. |
 
-Default rule for cheap roles (`implementer`, `reviewer`, `explorer`): prefer a cheap model that is already configured in the editor; if none is found, default to `Claude Sonnet 4.6`.
+Default rule for cheap roles (`implementer`, `reviewer`, `explorer`): prefer a cheap model that is already configured in the editor; if none is found, default to `GLM-5.2`.
 
-> The identifier `Claude Sonnet 4.6` is a placeholder default. Replace it with the exact name or alias the host platform exposes (for example `sonnet` in Claude Code, or the display name shown in the VS Code model picker). Pick the closest available Sonnet-class model when that exact version is not listed.
+> The identifier `GLM-5.2` is a placeholder default. Replace it with the exact name or alias the host platform exposes (for example `sonnet` in Claude Code, or the display name shown in the VS Code model picker). Pick the closest available Sonnet-class model when that exact version is not listed.
 
 ## Declaring Models In Role Files
 
@@ -46,7 +46,7 @@ VS Code / Copilot agent file (`*.agent.md`):
 ---
 name: implementer
 description: Implements exactly one feature with tests and self-verification.
-model: Claude Sonnet 4.6
+model: GLM-5.2
 ---
 ```
 
@@ -75,9 +75,9 @@ A `models` map centralizes the assignment so all role files can stay generic. Th
   "harness_workspace": ".handyman",
   "models": {
     "leader": "editor-default",
-    "implementer": "Claude Sonnet 4.6",
-    "reviewer": "Claude Sonnet 4.6",
-    "explorer": "Claude Sonnet 4.6"
+    "implementer": "GLM-5.2",
+    "reviewer": "GLM-5.2",
+    "explorer": "GLM-5.2"
   }
 }
 ```
@@ -100,11 +100,11 @@ Model names rotate (new versions ship, old ones are retired), and a stale name i
 
 ```bash
 # Audit what each surface currently declares
-node dist/update_harness.js --root <project_root> --list
+npx handyman-harness@3 update_harness --root <project_root> --list
 
 # Preview, then apply a cheap-tier bump everywhere it is declared
-node dist/update_harness.js --root <project_root> --dry-run --model implementer="New Model"
-node dist/update_harness.js --root <project_root> \
+npx handyman-harness@3 update_harness --root <project_root> --dry-run --model implementer="New Model"
+npx handyman-harness@3 update_harness --root <project_root> \
   --model implementer="New Model" --model reviewer="New Model" --model explorer="New Model"
 ```
 

@@ -1,7 +1,7 @@
 ---
 name: leader
 description: Orchestrates handyman skill development: analyzes harness state, selects one pending feature, delegates to implementer and reviewer, closes only after green verifier.
-model: Claude Opus 4.8
+model: GLM-5.2
 tools: [vscode, execute, read, agent, edit, search, web, browser, todo]
 ---
 

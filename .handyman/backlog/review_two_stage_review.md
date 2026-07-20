@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: two_stage_review
 status: approved
 role: reviewer

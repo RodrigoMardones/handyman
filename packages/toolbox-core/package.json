@@ -1,0 +1,38 @@
+{
+  "name": "@handyman/toolbox-core",
+  "version": "0.1.0",
+  "description": "Handyman toolBox core: HTTP-agnostic data layer and LLM relays shared by the Node observer and apps/web.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./llm": "./dist/llm.js",
+    "./draft": "./dist/draft.js",
+    "./ask": "./dist/ask.js",
+    "./intake": "./dist/intake.js",
+    "./summary": "./dist/summary.js",
+    "./triage": "./dist/triage.js",
+    "./review-notes": "./dist/reviewNotes.js",
+    "./acceptance": "./dist/acceptance.js",
+    "./retro": "./dist/retro.js",
+    "./state": "./dist/state.js",
+    "./workspace": "./dist/workspace.js",
+    "./registry": "./dist/registry.js",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "minisearch": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2"
+  }
+}

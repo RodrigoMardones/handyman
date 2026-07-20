@@ -1,0 +1,183 @@
+/* Cross-view chrome (feature toolbox_next_timeline_search): palette hint,
+   theme toggle, command palette + help dialogs and the visually hidden live
+   regions. Every value comes from the tokens in globals.css: no raw hex, no
+   second accent (tasteskill v2 Color Consistency Lock). */
+
+.shell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+/* Visually hidden live regions (still readable by assistive tech). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.paletteHint {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  padding: 2px var(--space-2);
+  cursor: pointer;
+}
+
+.paletteHint:hover {
+  color: var(--text);
+  background: var(--bg-sunken);
+}
+
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.themeToggle {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.themeButton {
+  border: 0;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  padding: 3px var(--space-2);
+  cursor: pointer;
+}
+
+.themeButton + .themeButton {
+  border-left: 1px solid var(--border);
+}
+
+.themeButton:hover {
+  color: var(--text);
+  background: var(--bg-sunken);
+}
+
+.themeButton[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* --- command palette ------------------------------------------------------ */
+.palette {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-card);
+  background: var(--bg-elevated);
+  color: var(--text);
+  padding: var(--space-2);
+  width: min(560px, calc(100vw - 2 * var(--space-4)));
+  box-shadow: 0 24px 64px rgba(var(--shadow-color), 0.35);
+}
+
+.palette::backdrop,
+.help::backdrop {
+  background: rgba(var(--shadow-color), 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.paletteInput {
+  width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-panel);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: var(--space-1) var(--space-2);
+}
+
+.paletteList {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.paletteRow,
+.paletteRowSelected {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-panel);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.paletteRow:hover {
+  background: var(--bg-sunken);
+}
+
+.paletteRowSelected {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.paletteEmpty {
+  padding: var(--space-1) var(--space-2);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* --- help dialog ---------------------------------------------------------- */
+.help {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-card);
+  background: var(--bg-elevated);
+  color: var(--text);
+  padding: var(--space-3);
+  width: min(480px, calc(100vw - 2 * var(--space-4)));
+  box-shadow: 0 24px 64px rgba(var(--shadow-color), 0.35);
+}
+
+.helpHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.helpClose {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.8rem;
+  padding: 2px var(--space-2);
+  cursor: pointer;
+}
+
+.helpClose:hover {
+  background: var(--bg-sunken);
+}
+
+.helpTable {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+.helpTable td {
+  padding: var(--space-1) var(--space-2);
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.helpTable td:first-child {
+  white-space: nowrap;
+  color: var(--text-muted);
+}

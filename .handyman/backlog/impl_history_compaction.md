@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: history_compaction
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: error_inconsistency_docs
 status: approved
 role: reviewer

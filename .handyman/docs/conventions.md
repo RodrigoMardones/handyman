@@ -1,3 +1,7 @@
+---
+type: Doc
+---
+
 # Code Conventions
 
 > El repo esta en migracion **Python + Bash -> TypeScript + Bun/Node**. Esta seccion

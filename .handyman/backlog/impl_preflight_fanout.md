@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: preflight_fanout
 status: implemented
 role: implementer

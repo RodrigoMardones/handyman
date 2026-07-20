@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: index_regen
 status: approved
 role: reviewer

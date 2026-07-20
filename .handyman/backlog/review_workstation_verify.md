@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: workstation_verify
 status: approved
 role: reviewer

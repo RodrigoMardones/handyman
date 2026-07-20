@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: business_context_advisory
 status: implemented
 role: implementer

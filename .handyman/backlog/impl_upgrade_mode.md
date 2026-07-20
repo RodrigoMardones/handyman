@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: upgrade_mode
 status: done
 role: implementer

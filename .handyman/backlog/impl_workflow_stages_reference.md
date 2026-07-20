@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: workflow_stages_reference
 status: implemented
 role: implementer

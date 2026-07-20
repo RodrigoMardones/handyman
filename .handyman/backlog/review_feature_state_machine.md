@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: feature_state_machine
 status: approved
 role: reviewer

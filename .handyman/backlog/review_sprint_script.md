@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: sprint_script
 status: approved
 role: reviewer

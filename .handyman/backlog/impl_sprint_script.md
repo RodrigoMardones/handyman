@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: sprint_script
 status: implemented
 role: implementer

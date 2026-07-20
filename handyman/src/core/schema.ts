@@ -18,13 +18,22 @@ export interface ValidationResult {
 }
 
 /**
- * Resolve a bundled schema by filename. Both `src/core/` (vitest) and
- * `dist/core/` (built) sit two levels below the package root, so
- * `../../assets/schemas/<name>` is correct in either location.
+ * Resolve a bundled schema by filename. `src/core/` (vitest) and `dist/core/`
+ * (built) sit two levels below the package root (`../../assets`), but the
+ * esbuild npm bundle flattens this module into `dist/<verb>.js`, one level
+ * deep (`../assets`) — probe both before giving up.
  */
 function readSchema(name: string): object {
-  const url = new URL(`../../assets/schemas/${name}`, import.meta.url);
-  return JSON.parse(readFileSync(fileURLToPath(url), "utf-8"));
+  const candidates = [`../../assets/schemas/${name}`, `../assets/schemas/${name}`];
+  for (const rel of candidates) {
+    const path = fileURLToPath(new URL(rel, import.meta.url));
+    try {
+      return JSON.parse(readFileSync(path, "utf-8"));
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    }
+  }
+  throw new Error(`schema not found relative to ${import.meta.url}: ${name}`);
 }
 
 // Single Ajv instance; `allErrors` collects every violation, not just the first.

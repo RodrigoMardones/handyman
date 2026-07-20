@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: fleet_health
 status: implemented
 role: implementer

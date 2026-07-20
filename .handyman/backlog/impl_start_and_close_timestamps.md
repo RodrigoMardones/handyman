@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: start_and_close_timestamps
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: preflight_advisory
 status: implemented
 role: implementer

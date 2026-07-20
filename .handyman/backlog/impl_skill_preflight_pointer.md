@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: skill_preflight_pointer
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: workstation_detail_declutter
 status: approved
 role: reviewer

@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: workstation_action_nomenclature
 status: approved
 role: reviewer

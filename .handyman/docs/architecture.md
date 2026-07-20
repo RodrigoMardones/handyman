@@ -1,3 +1,7 @@
+---
+type: Doc
+---
+
 # Architecture
 
 Define que es "buen trabajo" en este repo. Los reviewers evaluan el codigo contra esto.
@@ -20,15 +24,64 @@ Define que es "buen trabajo" en este repo. Los reviewers evaluan el codigo contr
      IO byte-identica, `unifiedDiff` equivalente a `difflib`, frontmatter). Es
      importado por todos los CLIs; la ubicacion de los role files vive en
      `core/workspace.ts` (`PLATFORM_ROLE_DIRS`).
+   - **Paquete toolbox-core:** `packages/toolbox-core/` (workspace pnpm,
+     `@handyman/toolbox-core`) contiene la capa HTTP-agnostica del toolBox
+     movida desde handyman en la feature 42: proveedores LLM + relays
+     (`llm/draft/ask/summary`), registry (`handymanRoot/loadRegistry/...`),
+     `resolveWorkspace` y el data layer allowlisted del observador
+     (`state.ts`: guards, corpus, md, tags, CSP). handyman lo consume via
+     `workspace:*` y deja shims re-export en `src/` para que los entrypoints
+     `dist/` historicos (tests, serve) no cambien; `buildState` vive en
+     `handyman/src/toolbox_state.ts` (necesita snapshots/metrics del CLI) y
+     se expone a `apps/web` con el export `"./state"` del package.json. El
+     build es `tsc -b` con project reference (el paquete compila primero);
+     CI instala el workspace con pnpm.
    - **Datos/plantillas:** `handyman/assets/` (templates + `schemas/*.json`) son datos,
      no codigo. Los JSON Schema son la fuente de verdad del contrato de estado.
-   - **Observador (toolBox):** `handyman/src/toolbox*.ts` + `assets/toolbox_panel.js`
-     exponen un panel web local read-only sobre el registro de harnesses
-     (`node dist/toolbox.js serve`); los writes siguen en los CLIs de rol.
+   - **Observador (toolBox):** `node dist/toolbox.js serve` levanta un solo
+     proceso read-only sobre el registro de harnesses: el Next standalone de
+     `apps/web`. `handyman/src/toolbox*.ts` aportan el CLI y el armado de estado
+     (`toolbox_state.ts` / `buildState`); la UI y todas las rutas HTTP viven en
+     `apps/web`. El panel UMD legacy (`assets/toolbox_panel.js`) se retiro en la
+     feature `toolbox_panel_retirement` y el server Node (`toolbox_serve.ts`) en
+     la feature 50, asi que `GET /` ya no es un placeholder: sirve la landing
+     unificada. Los writes siguen en los CLIs de rol (la unica ruta que escribe
+     disco es `POST /api/intake`).
 2. **Politica de dependencias.** Minimalismo agresivo: solo stdlib de Node +
-   `ajv` (validacion de los mismos JSON Schema) + las deps de UI del observador
-   (`marked`, `dompurify`, `minisearch`, `vis-network` servidas como UMD desde
-   `node_modules`). Toda dep nueva requiere justificacion explicita.
+   `ajv` (validacion de los mismos JSON Schema) + `vis-network` (renderer de
+   graphify, servido como UMD desde `node_modules` en `/vendor/vis-network.js`).
+   Las deps de UI del antiguo panel UMD (marked/dompurify/minisearch/react/htm)
+   se retiraron de `handyman/package.json` con el panel y viven ahora en
+   `apps/web` (ESM) y `packages/toolbox-core` (minisearch Node-side). Toda dep
+   nueva requiere justificacion explicita.
+   - **`minisearch` en `apps/web`** (feature 47, CHECKPOINTS C3): la vista
+     `/search` de la app Next construye el indice BM25 client-side sobre
+     `GET /api/corpus` y responde por tecla sin red, exactamente el mismo
+     motor y opciones (`title`+`text`, boost x2, prefix, fuzzy 0.1) que el
+     panel UMD legado ya carga como vendor; es la misma version que handyman
+     ya trae en el monorepo, importada como ESM en vez de UMD. No hay
+     equivalente en la plataforma (el ranking BM25 con prefix/fuzzy no se
+     replica razonablemente a mano) y desaparece del lado Node al retirar el
+     panel (feature 49). Las vistas nuevas mantienen el patron cero-deps en
+     todo lo demas (D1 de backlog/explore_toolbox_next_unification.md): CSS
+     nativo + tokens + renderers de strings; la command palette usa un
+     ranker propio determinista, sin dependencia.
+   - **`marked` + `dompurify` en `apps/web`** (feature 48, CHECKPOINTS C3,
+     decision D2 de `backlog/explore_toolbox_next_unification.md`): las
+     vistas `/intake`, `/ask` y el resumen de `/fleet` renderizan salida LLM
+     como markdown sanitizado, el mismo par `marked`+`DOMPurify` (con la
+     politica `FORBID_TAGS`/`FORBID_ATTR` del panel UMD legado) que el panel
+     ya cargaba como vendor. Son las mismas versiones que handyman ya trae
+     en el monorepo (`marked@^12`, `dompurify@^3.2`), importadas como ESM en
+     vez de UMD; la politica vive una sola vez en `apps/web/lib/md.ts`
+     (`FORBID_TAGS`/`FORBID_ATTR` + `DOMPURIFY_OPTIONS`), puerto byte-exacto
+     del `renderMd` del panel, y `renderSanitized` toma las libs como
+     parametros inyectables para que la suite transpilada
+     (`tests/test_web_intake_ask.sh`) las ejerza contra fakes deterministicos
+     sin red. No hay equivalente en la plataforma (reescribir marked + un
+     sanitizer a mano no se replica razonablemente) y desaparecen del lado
+     Node al retirar el panel (feature 49); dompurify 3.x ademas empaqueta
+     sus propios tipos, asi que `@types/dompurify` queda como devDep nominal.
 3. **Errores explicitos.** Cada CLI expone un contrato de exit code estable
    (convencion: `0` ok, `1` error, `2` usage, `3` sin trabajo listo en `ready`). Los
    mensajes van a stderr; la salida machine-readable va a stdout con forma estable
@@ -71,6 +124,48 @@ exit code. Toda mutacion de estado pasa por un CLI (`feature.js`, `sprint.js`,
 - **Timestamps.** `feature.js start` sella `meta.started_at` (ISO 8601) y
   `feature.js done` sella `meta.done_at`; el cierre de sprint registra `closed_at`.
   Estos timestamps enriquecen las metricas del observador (throughput, verdicts).
+- **`toolbox_serve.ts` ya no existe.** Era el observador Node (`node:http`) que
+  la migracion strangler reemplazo; se borro en la feature 50 y hoy
+  `toolbox.js serve` levanta **un solo proceso**: el Next standalone de
+  `apps/web`. Los comentarios en `apps/web/**` que dicen "byte-parity con
+  `toolbox_serve.ts`" son **procedencia historica**, no referencias vivas:
+  documentan de donde salio el contrato que esa ruta preserva. `apps/web/proxy.ts`
+  quedo solo con el guard anti-DNS-rebinding (Host no-loopback -> 403, fijado en
+  `tests/test_toolbox_serve.sh`); no hay manifiesto de rutas ni upstream: cada
+  ruta tiene su propio `app/**/page.tsx` o `route.ts` y las suites `test_web_*.sh`
+  asertan esos archivos.
+
+### Decision D-B: por que los relays LLM no comparten un contrato unico
+
+Antes de sumar el cuarto relay (features 32-35) se releyeron los tres existentes
+(`/api/draft`, `/api/summarize`, `/api/ask`). **La coreografia compartida ya
+esta extraida**: `apps/web/lib/relay.ts` es dueño del body capado a 256 KB
+(`readJsonObject`) y del framing SSE con sus headers (`relayResponse`),
+`lib/respond.ts` de los 400, y `packages/toolbox-core` de la orquestacion
+`delta|result|error` (`relayAsk` / `relayDraft` / `relaySummary`). Lo que queda
+en cada `route.ts` (~70 lineas) **no es ceremonia duplicada sino la declaracion
+de en que difiere ese relay**, y difieren de verdad:
+
+| | root | provider | modelo | contexto |
+|---|---|---|---|---|
+| `draft` | requerido | **requerido** (sin default) | el del provider | tag files + duplicados |
+| `summarize` | **ninguno** (es de flota) | default `zai` | `resolveSummaryModel` | digest + cache por hash |
+| `ask` | requerido | default `zai` | `resolveSummaryModel` | corpus BM25 top-k |
+
+Un contrato unico para los tres necesitaria flags (`requiresRoot`,
+`requiresProvider`, `defaultProvider`, `resolvesModel`) mas un string de error
+propio por ruta: un objeto de configuracion tan largo como el codigo que
+reemplaza. Ademas **los cuerpos de esos 400 son contrato fijado byte a byte**
+por `tests/test_web_relays.sh` (caso TWL2) y por el oraculo; refactorizarlos no
+compra nada y arriesga la paridad.
+
+**Regla adoptada:** los tres relays existentes **se quedan como estan**. Los
+cuatro nuevos (32-35) si comparten forma entre si — todos son
+`POST {root, provider?, model?}` -> leer el workspace via el registry -> prompt
+-> SSE -> sin escribir disco — asi que comparten el prelude de resolucion
+(root registrado + provider + modelo barato) y siguen usando `lib/relay.ts`
+para el resto. Si un quinto relay no encaja en ese prelude, se deja aparte y se
+anota aqui en vez de doblar el helper.
 
 ## What Not To Do
 

@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: feature_request_templates_doc
 status: approved
 role: reviewer

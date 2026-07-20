@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: feature_cli
 status: approved
 role: reviewer

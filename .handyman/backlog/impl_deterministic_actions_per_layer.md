@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: deterministic_actions_per_layer
 status: implemented
 role: implementer

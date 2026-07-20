@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: discovery_config_schema
 status: implemented
 role: implementer

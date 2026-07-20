@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: workflow_stability_steps
 status: approved
 role: reviewer

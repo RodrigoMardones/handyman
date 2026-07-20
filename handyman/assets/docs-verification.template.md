@@ -1,3 +1,7 @@
+---
+type: Doc
+---
+
 # Verification
 
 The agent does not claim it works; it demonstrates it.

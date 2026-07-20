@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: feature_cli
 status: done
 role: implementer

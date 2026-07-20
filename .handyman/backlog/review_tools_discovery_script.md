@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: tools_discovery_script
 status: approved
 role: reviewer

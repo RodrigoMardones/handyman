@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: business_interview_contract
 status: approved
 role: reviewer

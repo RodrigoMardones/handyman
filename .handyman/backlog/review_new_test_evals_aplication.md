@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: new_test_evals_aplication
 status: approved
 role: reviewer

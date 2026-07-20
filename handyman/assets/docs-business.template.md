@@ -1,3 +1,7 @@
+---
+type: Doc
+---
+
 # Business
 
 Describe the business domain and the use cases this project serves.

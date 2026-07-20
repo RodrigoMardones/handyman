@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: harness_ecosystem_research
 status: approved
 role: reviewer

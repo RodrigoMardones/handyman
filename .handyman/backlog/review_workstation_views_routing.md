@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: workstation_views_routing
 status: approved
 role: reviewer

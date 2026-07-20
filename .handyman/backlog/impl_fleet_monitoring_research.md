@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: fleet_monitoring_research
 status: implemented
 role: implementer

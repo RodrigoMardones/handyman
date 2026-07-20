@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: feature_request_format_contracts
 status: approved
 role: reviewer

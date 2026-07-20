@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: sync_docs_handyman_v2
 status: implemented
 role: implementer

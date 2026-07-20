@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: new_test_evals_revision
 status: implemented
 role: implementer

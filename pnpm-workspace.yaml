@@ -1,0 +1,12 @@
+packages:
+  - "apps/*"
+  - "handyman"
+  - "packages/*"
+allowBuilds:
+  # sharp is next/image's optional native optimizer; unused (zero pages,
+  # no next/image in this scaffold) so its postinstall build is declined.
+  sharp: false
+  # esbuild's postinstall validates the platform binary that arrives via
+  # optionalDependencies; approved so the npm-pack staging build (feature 64)
+  # runs the same locally and in CI.
+  esbuild: true

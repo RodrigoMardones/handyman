@@ -30,11 +30,11 @@ Template: [../assets/feature_list.template.json](../assets/feature_list.template
 
 Optional intake form the user fills to frame one new feature before it becomes a `feature_list.json` entry. Scaffolded into the `HARNESS_WORKSPACE` root; the leader offers it during `run-feature` and turns the filled form into the feature. It is a convenience, not a verifier gate.
 
-The form encodes two format contracts. First, only `name`, `title`, `description`, and `acceptance` become the `feature_list.json` entry (via `node dist/feature.js add`); the `Verification`, `Considerations`, `Tools`, and `Post-feature` sections are process guidance for the leader and the human, not stored keys. Second, the green gate (`./init.sh` or `bash tests/run_tests.sh`) is always the last Acceptance bullet, mirroring how every closed feature ends its acceptance.
+The form encodes two format contracts. First, only `name`, `title`, `description`, and `acceptance` become the `feature_list.json` entry (via `npx handyman-harness@3 feature add`); the `Verification`, `Considerations`, `Tools`, and `Post-feature` sections are process guidance for the leader and the human, not stored keys. Second, the green gate (`./init.sh` or `bash tests/run_tests.sh`) is always the last Acceptance bullet, mirroring how every closed feature ends its acceptance.
 
 The template is organized as a **CORE** block (filled every time: Feature, Context, Scope > Includes, Acceptance, Verification, Tools > skills) and an **OPTIONAL** block (filled only when it applies, otherwise deleted: Scope extensions, Functional check, Considerations, Post-feature, sub-agents, Questions). It carries two worked examples, one per request archetype: a **Research** request (investigate and leave a plan under `docs/`) and an **Implementation** request (change code plus tests). The heavy guidance lives here and in the template; `SKILL.md` keeps only a short pointer that offers the `feature-request.md` form.
 
-The `Tools > skills` line ties a request to the harness's declared skill set: list skills the harness records under `discovery.skills` in `harness.config.json`, and confirm they are installed with `node dist/tools_discovery.js check` before relying on them. See [discovery.md](./discovery.md).
+The `Tools > skills` line ties a request to the harness's declared skill set: list skills the harness records under `discovery.skills` in `harness.config.json`, and confirm they are installed with `npx handyman-harness@3 tools_discovery check` before relying on them. See [discovery.md](./discovery.md).
 
 Template: [../assets/feature-request.template.md](../assets/feature-request.template.md)
 
@@ -44,7 +44,7 @@ Create this bridge file in the project root. In local mode it records the `.hand
 
 Use `"editor-default"` (or omit a key) to follow the model configured in the host editor. Omit the `tools` map (or a role key) to fall back to the Handyman per-role tool defaults.
 
-The optional `discovery` block declares the skills and MCP servers the harness relies on (see [discovery.md](./discovery.md)). The optional `post_run` list declares shell commands that run automatically after a feature closes via `node dist/feature.js done` (for example regenerating `index.md` or refreshing a context graph); each step runs with exit 0, so a failing custom step only WARNs and never reverts a verified close.
+The optional `discovery` block declares the skills and MCP servers the harness relies on (see [discovery.md](./discovery.md)). The optional `post_run` list declares shell commands that run automatically after a feature closes via `npx handyman-harness@3 feature done` (for example regenerating `index.md` or refreshing a context graph); each step runs with exit 0, so a failing custom step only WARNs and never reverts a verified close.
 
 - Local install: [../assets/harness.config.local.template.json](../assets/harness.config.local.template.json)
 - Global install: [../assets/harness.config.global.template.json](../assets/harness.config.global.template.json)
@@ -63,7 +63,7 @@ Template: [../assets/progress-history.template.md](../assets/progress-history.te
 
 ## backlog/impl_<feature>.md
 
-Backlog reports are created with the bundled generator `src/backlog.ts` (run `node dist/backlog.js`; `impl` / `review` / `explore`), which stamps the per-type frontmatter and never overwrites an existing entry; fill the body afterward. The templates below document the shape it produces.
+Backlog reports are created with the bundled generator `src/backlog.ts` (run `npx handyman-harness@3 backlog`; `impl` / `review` / `explore`), which stamps the per-type frontmatter and never overwrites an existing entry; fill the body afterward. The templates below document the shape it produces.
 
 Implementer report. Lives in `HARNESS_WORKSPACE/backlog/`.
 
@@ -131,13 +131,13 @@ Template: [../assets/role-leader.template.md](../assets/role-leader.template.md)
 
 ## Role: implementer
 
-The implementer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `Claude Sonnet 4.6`. See [models.md](./models.md) and [tools.md](./tools.md).
+The implementer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `GLM-5.2`. See [models.md](./models.md) and [tools.md](./tools.md).
 
 Template: [../assets/role-implementer.template.md](../assets/role-implementer.template.md)
 
 ## Role: reviewer
 
-The reviewer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `Claude Sonnet 4.6`. See [models.md](./models.md) and [tools.md](./tools.md).
+The reviewer defaults to a cheaper, faster model. Prefer a cheap model already configured in the editor; otherwise use `GLM-5.2`. See [models.md](./models.md) and [tools.md](./tools.md).
 
 Template: [../assets/role-reviewer.template.md](../assets/role-reviewer.template.md)
 

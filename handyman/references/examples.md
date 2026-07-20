@@ -97,12 +97,12 @@ notes-cli/
 
 **Form-first intake (optional).** When the user has not framed the request, offer the
 `feature-request.md` form. The user fills the **CORE** (and any **OPTIONAL** sections that
-apply); the leader then turns the filled form into a feature entry with `node dist/feature.js add`,
+apply); the leader then turns the filled form into a feature entry with `npx handyman-harness@3 feature add`,
 which writes only the contract keys (`name`, `title`, `description`, `acceptance`) — never the
 process-guidance sections (`Verification`, `Considerations`, `Tools`, `Post-feature`):
 
 ```text
-$ node dist/feature.js add --name cli_recent \
+$ npx handyman-harness@3 feature add --name cli_recent \
     --title "Recent notes command" \
     --description "Add a recent subcommand listing the latest notes." \
     --acceptance "recent lists the latest N notes (default 10)" \
@@ -114,7 +114,7 @@ added feature 7 'cli_recent' (pending)
 This seeds the `cli_recent` feature used below. If the feature is already in `feature_list.json`,
 skip straight to running it. The `Tools > skills` a request lists should come from the skills the
 harness declares under `discovery.skills`; the leader confirms they are installed with
-`node dist/tools_discovery.js check` (see `discovery.md`).
+`npx handyman-harness@3 tools_discovery check` (see `discovery.md`).
 
 **When the feature edits the skill's `description`.** A request that touches the
 `description` (a skill-authoring harness) carries a trigger-measurement step in its
@@ -122,9 +122,9 @@ harness declares under `discovery.skills`; the leader confirms they are installe
 the eval set deterministically, then measure with a runner and refresh the marker:
 
 ```text
-$ node dist/evals.js validate                       # offline contract; safe in CI
+$ npx handyman-harness@3 evals validate                       # offline contract; safe in CI
 validate: OK
-$ node dist/evals.js measure --runner "<cmd>" --runs 3     # online; needs a model
+$ npx handyman-harness@3 evals measure --runner "<cmd>" --runs 3     # online; needs a model
 confusion: TP=9 FP=1 TN=10 FN=0
 $ touch evals/.last-measured                        # clears the check_evals advisory
 ```

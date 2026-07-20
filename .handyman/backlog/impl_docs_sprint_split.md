@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: docs_sprint_split
 status: implemented
 role: implementer

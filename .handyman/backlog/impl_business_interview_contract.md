@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: business_interview_contract
 status: implemented
 role: implementer

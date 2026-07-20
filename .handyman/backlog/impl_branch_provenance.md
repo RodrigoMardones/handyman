@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: branch_provenance
 status: implemented
 role: implementer

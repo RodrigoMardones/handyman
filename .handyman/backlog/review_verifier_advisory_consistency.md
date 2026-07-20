@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: verifier_advisory_consistency
 status: approved
 role: reviewer

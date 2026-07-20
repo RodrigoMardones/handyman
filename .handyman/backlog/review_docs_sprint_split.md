@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: docs_sprint_split
 status: approved
 role: reviewer

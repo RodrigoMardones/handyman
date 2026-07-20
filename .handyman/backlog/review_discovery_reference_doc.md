@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: discovery_reference_doc
 status: approved
 role: reviewer

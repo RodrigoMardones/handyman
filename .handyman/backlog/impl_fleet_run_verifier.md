@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: fleet_run_verifier
 status: implemented
 role: implementer

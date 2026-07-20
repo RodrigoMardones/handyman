@@ -1,0 +1,601 @@
+/* /harness/[name] page styles (feature toolbox_next_harness_view). Every value
+   below comes from the tokens in globals.css: no raw hex, no second accent,
+   same terracotta-on-slate palette locked across the whole apps/web app
+   (tasteskill v2 Color Consistency Lock). The generated HTML from
+   renderHarnessHtml uses plain class names, so the rules under .harness use
+   :global() to target them without losing the scoping this module gives the
+   page shell. The nav shell is the same language as /fleet (one accent pill
+   for the active route, muted links for the rest). */
+
+.page {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* --- Nav (reuses the landing's pill + radius language) --------------------- */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand,
+.nav {
+  max-width: var(--max-width);
+  margin-inline: auto;
+}
+
+.nav {
+  padding-inline: var(--space-4);
+  height: 68px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.brandMark {
+  color: var(--accent);
+}
+
+.brandName {
+  letter-spacing: 0.01em;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navLinks a {
+  text-decoration: none;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.navLinks a:hover {
+  color: var(--text);
+  background: var(--bg-sunken);
+}
+
+.navLinks a[aria-current="page"] {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .nav {
+    height: 60px;
+  }
+  .navLinks {
+    gap: var(--space-2);
+  }
+}
+
+/* --- Upstream-unreachable banner ------------------------------------------ */
+.down {
+  max-width: var(--max-width);
+  margin: var(--space-4) auto 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-card);
+  background: var(--bg-elevated);
+}
+
+.down code {
+  font-family: var(--font-mono);
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* --- Live region container ------------------------------------------------ */
+.harness {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding: var(--space-5) var(--space-4) var(--space-7);
+}
+
+/* The rules below target the HTML emitted by renderHarnessHtml (plain class
+   names). They are scoped to .harness via :global() so this module still owns
+   the page shell while the generated markup stays readable and stable across
+   server and client renders. */
+
+.harness :global(.harness-live) {
+  display: block;
+}
+
+.harness :global(.harness-live__status) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-3);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.harness :global(.harness-live__dot) {
+  width: 9px;
+  height: 9px;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.harness :global(.harness-live__status[data-live="live"] .harness-live__dot) {
+  background: var(--accent);
+}
+
+.harness :global(.harness-live__status[data-live="connecting"] .harness-live__dot) {
+  background: var(--text-muted);
+}
+
+.harness :global(.harness-live__status[data-live="stale"] .harness-live__dot) {
+  background: var(--border-strong);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .harness :global(.harness-live__status[data-live="live"] .harness-live__dot) {
+    animation: harness-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes harness-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+/* --- Harness header ------------------------------------------------------- */
+.harness :global(.harness-header) {
+  margin-bottom: var(--space-4);
+}
+
+.harness :global(.harness-header__eyebrow) {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.harness :global(.harness-header__title) {
+  margin: var(--space-1) 0;
+  font-size: clamp(1.75rem, 1.2rem + 2vw, 2.6rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.harness :global(.harness-header__meta) {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.harness :global(.harness-header__ts) {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Meta list (root / version / session / last closure) ----------------- */
+.harness :global(.meta-list) {
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-2) var(--space-4);
+}
+
+.harness :global(.meta-list li) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  min-width: 0;
+}
+
+.harness :global(.meta-list__key) {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.harness :global(.meta-list__val) {
+  font-size: 0.95rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* --- KPI strip ----------------------------------------------------------- */
+.harness :global(.kpis) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+}
+
+@media (max-width: 760px) {
+  .harness :global(.kpis) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.harness :global(.kpi) {
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.harness :global(.kpi__value) {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.harness :global(.kpi__label) {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.harness :global(.kpi--spark) {
+  gap: var(--space-2);
+}
+
+.harness :global(.spark) {
+  width: 100%;
+  height: 32px;
+  display: block;
+}
+
+.harness :global(.spark__bar) {
+  fill: var(--accent);
+}
+
+.harness :global(.kpi-note) {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-panel);
+  color: var(--text-muted);
+}
+
+/* --- Signals row --------------------------------------------------------- */
+.harness :global(.signals) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+}
+
+.harness :global(.pill) {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35em;
+  padding: 0.25em 0.75em;
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  background: var(--bg-sunken);
+  color: var(--text);
+}
+
+.harness :global(.pill--ok) {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-elevated));
+  color: var(--text);
+}
+
+.harness :global(.pill--warn) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.harness :global(.pill__tag) {
+  font-weight: 700;
+}
+
+/* --- Markdown quick-view buttons + sections ------------------------------ */
+.harness :global(.section-title) {
+  margin: 0 0 var(--space-2);
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.harness :global(.md-links),
+.harness :global(.docs) {
+  margin: 0 0 var(--space-4);
+}
+
+.harness :global(.md-links__row) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.harness :global(.md-btn) {
+  font-family: inherit;
+  font-size: 0.88rem;
+  padding: 0.3em 0.9em;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background-color 120ms ease;
+}
+
+.harness :global(.md-btn:hover) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.harness :global(.md-btn:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- Queue / Kanban ------------------------------------------------------ */
+.harness :global(.kanban) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+@media (max-width: 900px) {
+  .harness :global(.kanban) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 540px) {
+  .harness :global(.kanban) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.harness :global(.kanban__column) {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 80px;
+}
+
+.harness :global(.kanban__column-head) {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.harness :global(.kanban__column-label) {
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.harness :global(.kanban__column-count) {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.harness :global(.kanban__column-body) {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.harness :global(.card) {
+  padding: var(--space-2);
+  border-radius: var(--radius-panel);
+  background: var(--bg-sunken);
+  border-left: 3px solid var(--border-strong);
+}
+
+.harness :global(.card--in_progress) {
+  border-left-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-elevated));
+}
+
+.harness :global(.card--blocked) {
+  border-left-color: color-mix(in srgb, var(--accent) 60%, var(--border-strong));
+}
+
+.harness :global(.card__title) {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.harness :global(.card__id) {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-right: 0.4em;
+}
+
+.harness :global(.card__name) {
+  margin: 0.2em 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.harness :global(.card__sprint),
+.harness :global(.card__blocked) {
+  display: inline-block;
+  margin-top: 0.4em;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.harness :global(.card__blocked) {
+  color: var(--accent);
+}
+
+/* --- Graphify iframe ----------------------------------------------------- */
+.harness :global(.graph) {
+  margin-top: var(--space-2);
+}
+
+.harness :global(.graph__frame) {
+  width: 100%;
+  height: 70vh;
+  min-height: 420px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-elevated);
+}
+
+/* --- Empty / error states ------------------------------------------------ */
+.harness :global(.empty) {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-panel);
+  color: var(--text-muted);
+}
+
+.harness :global(.empty code) {
+  font-family: var(--font-mono);
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.harness :global(.error) {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-panel);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+
+/* --- Markdown dialog (client-only) --------------------------------------- */
+.harness :global(.harness-live__dialog) {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: color-mix(in srgb, #000 55%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+}
+
+.harness :global(.harness-live__dialog-body) {
+  width: min(900px, 100%);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.harness :global(.harness-live__dialog-head) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+}
+
+.harness :global(.harness-live__dialog-head h3) {
+  margin: 0;
+  font-size: 0.95rem;
+  font-family: var(--font-mono);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.harness :global(.harness-live__dialog-close) {
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.25em 0.85em;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.harness :global(.harness-live__dialog-close:hover) {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.harness :global(.harness-live__dialog-loading) {
+  margin: var(--space-4);
+  color: var(--text-muted);
+}
+
+.harness :global(.harness-live__dialog-pre) {
+  margin: 0;
+  padding: var(--space-4);
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--code-bg);
+}

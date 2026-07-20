@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: business_intake_prompts
 status: implemented
 role: implementer

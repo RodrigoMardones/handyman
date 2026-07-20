@@ -1,3 +1,7 @@
+---
+type: Doc
+---
+
 # Code Conventions
 
 ## Language And Runtime

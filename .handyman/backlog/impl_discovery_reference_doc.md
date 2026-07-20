@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: discovery_reference_doc
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: business_intake_prompts
 status: approved
 role: reviewer

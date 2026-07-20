@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: research_workflow_project_handyman
 status: implemented
 role: implementer

@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: discovery_note_summary
 status: implemented
 role: implementer

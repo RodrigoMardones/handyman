@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: evals_passk_report
 status: approved
 role: reviewer

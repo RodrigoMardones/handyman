@@ -1,4 +1,5 @@
 ---
+type: Review Log
 tags: [handyman/backlog/review]
 feature: workstation_theme_toggle
 feature_id: 87

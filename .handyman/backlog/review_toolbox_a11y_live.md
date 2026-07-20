@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: toolbox_a11y_live
 status: approved
 role: reviewer

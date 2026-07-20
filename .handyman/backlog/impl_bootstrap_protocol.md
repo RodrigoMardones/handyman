@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: bootstrap_protocol
 status: implemented
 role: implementer

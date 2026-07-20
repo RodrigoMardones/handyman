@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: bootstrap_protocol
 status: approved
 role: reviewer

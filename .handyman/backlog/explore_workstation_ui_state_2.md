@@ -1,4 +1,5 @@
 ---
+type: Explore Report
 tags: [handyman/backlog/explore]
 ---
 

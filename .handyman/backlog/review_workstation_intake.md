@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: workstation_intake
 status: approved
 role: reviewer

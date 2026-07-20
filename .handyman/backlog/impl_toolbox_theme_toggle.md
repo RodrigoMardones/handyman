@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: toolbox_theme_toggle
 status: implemented
 role: implementer

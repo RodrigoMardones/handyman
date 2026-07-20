@@ -1,4 +1,5 @@
 ---
+type: Implementation Log
 feature: toolbox_graph_view
 status: implemented
 role: implementer

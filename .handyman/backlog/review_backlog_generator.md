@@ -1,4 +1,5 @@
 ---
+type: Review Log
 feature: backlog_generator
 status: approved
 role: reviewer

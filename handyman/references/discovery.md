@@ -62,22 +62,22 @@ on, as an optional block beside `models` and `tools`:
 - `scripts/scaffold.sh` ships the empty sentinel `{ "skills": [], "mcp": [], "agents": [] }`;
   fill it during bootstrap with the skills/MCPs/agents the harness actually uses.
 
-## Querying deterministically: `node dist/tools_discovery.js`
+## Querying deterministically: `npx handyman-harness@3 tools_discovery`
 
 The CLI is the reproducible counterpart of the host's semantic discovery. It
 reuses the same `HARNESS_WORKSPACE` resolution as the other tools.
 
 ```bash
 # List every installed skill (name + description), or as JSON.
-node dist/tools_discovery.js list
-node dist/tools_discovery.js list --json
+npx handyman-harness@3 tools_discovery list
+npx handyman-harness@3 tools_discovery list --json
 
 # Find installed skills by keyword (deterministic substring, case-insensitive) —
 # the reproducible counterpart of a semantic tool_search.
-node dist/tools_discovery.js find mcp
+npx handyman-harness@3 tools_discovery find mcp
 
 # Check the declared discovery block against what is actually on disk.
-node dist/tools_discovery.js check
+npx handyman-harness@3 tools_discovery check
 ```
 
 - **Skill roots** are scanned **local first, then global**: the project-local roots
@@ -104,7 +104,7 @@ Besides skills and MCP servers, a harness relies on **consultation agents** — 
 capability that enables delegation). These role files live in the platform role
 directories `.github/agents` (VS Code / Copilot) and `.claude/agents` (Claude Code)
 — never inside `HARNESS_WORKSPACE`. Both `tools_discovery` (`src/tools_discovery.ts`, run
-`node dist/tools_discovery.js`) and the validator import `PLATFORM_ROLE_DIRS` from the shared core,
+`npx handyman-harness@3 tools_discovery`) and the validator import `PLATFORM_ROLE_DIRS` from the shared core,
 so the location is defined once.
 
 Declaring them under `discovery.agents` turns a prose expectation ("delegate this to
@@ -129,7 +129,7 @@ the platform's semantic discovery, but about wrapping it in a declared, verifiab
 contract:
 
 - **Deterministic (what Handyman adds):** the `discovery` block (declaration), the
-  two schemas (contract), and `node dist/tools_discovery.js list/find/check`
+  two schemas (contract), and `npx handyman-harness@3 tools_discovery list/find/check`
   (reproducible query plus existence verification).
 - **Semantic (what stays with the platform):** the actual **trigger** of a skill by
   its `description` and the `tool_search` similarity for MCP tools. The harness can
@@ -148,14 +148,14 @@ the *reference* to a tool belongs:
   repo and mean the same thing on every machine and in both install scopes.
 - **The query resolves paths.** A skill root and a role file resolve to different
   absolute paths per user, per machine, and per local-vs-global scope, so a path is
-  **machine-specific**. `node dist/tools_discovery.js` computes it at query time and
+  **machine-specific**. `npx handyman-harness@3 tools_discovery` computes it at query time and
   `check` prints it as a direct reference (`ok -> <path>`), but it is **never
   persisted** in the declaration.
 
 So the answer to "should the reference live in the config?" is: deliver the path, do
 not store it. A stored absolute path would break portability the moment the repo
 moved; a resolved path is always correct for the environment that asked. The path of
-each skill is also available as JSON via `node dist/tools_discovery.js list --json`.
+each skill is also available as JSON via `npx handyman-harness@3 tools_discovery list --json`.
 
 ## Limitations
 
