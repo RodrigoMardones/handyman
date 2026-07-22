@@ -1,6 +1,6 @@
 /**
  * Backlog triage + evidence debt (feature 32, item 2.3 of
- * docs/analisis-tareas-llm-toolbox.md).
+ * docs/archive/analisis-tareas-llm-toolbox.md).
  *
  * Two halves with deliberately different trust levels:
  *

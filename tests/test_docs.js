@@ -112,7 +112,7 @@ function testMarkdownLinks() {
     const parts = dirpath.split(path.sep);
     if (parts.includes(".git") || parts.includes("assets")
         || parts.includes("node_modules") || parts.includes("dist")
-        || parts.includes("coverage")) {
+        || parts.includes(".next") || parts.includes("coverage")) {
       continue;
     }
     let entries;
@@ -374,7 +374,9 @@ function testSprintConfig() {
   check("sprint stays optional in the feature contract", !(featureDef.required || []).includes("sprint"));
   check("feature definition still rejects unknown keys", featureDef.additionalProperties === false);
   const sprintProp = (featureDef.properties || {}).sprint || {};
-  check("sprint carries a partition-label pattern", String(sprintProp.pattern || "").includes("SP"));
+  // Branch-as-unit rework: the label is any filesystem-safe slug (branch slugs
+  // like feat-rework-tools or calendar ids like 2026-SP1), never a slash.
+  check("sprint carries a partition-label pattern", String(sprintProp.pattern || "").startsWith("^[A-Za-z0-9]"));
   const configProps = (((flSchema.definitions || {}).config || {}).properties || {});
   check("feature_list config schema declares current_sprint", Object.keys(configProps).includes("current_sprint"));
   const cfgSchema = readJSON(path.join(schemasDir, "harness.config.schema.json"));
@@ -392,7 +394,7 @@ function testSprintConfig() {
   good.features[0].sprint = "2026-SP1";
   check("a labeled feature and open sprint validate", schemaErrors(flSchema, good).length === 0);
   const bad = JSON.parse(JSON.stringify(flTemplate));
-  bad.features[0].sprint = "sprint-one";
+  bad.features[0].sprint = "feat/bad";
   check("a malformed sprint label is rejected", schemaErrors(flSchema, bad).length > 0);
 }
 

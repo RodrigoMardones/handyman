@@ -7,6 +7,7 @@
  */
 export {
   PLATFORM_ROLE_DIRS,
+  resolveDocsDir,
   resolveWorkspace,
   VALID_STATUS,
 } from "@handyman/toolbox-core/workspace";

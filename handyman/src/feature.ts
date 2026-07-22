@@ -60,6 +60,7 @@ import { addFeature } from "./core/featureWrite.js";
 import { parseFrontmatter } from "./core/frontmatter.js";
 import {
   loadFeatureList,
+  readCurrentSprint,
   resolveWorkspace,
   saveFeatureList,
   validateFeatureList,
@@ -656,6 +657,7 @@ function cmdAdd(
     dependsOn: number[] | null;
   },
   workspace: string,
+  root: string,
 ): number {
   // The append itself lives in core/featureWrite.ts (feature 60), so this verb
   // and the panel's POST route are two presentations of ONE write instead of
@@ -667,6 +669,7 @@ function cmdAdd(
     title: args.title,
     description: args.description,
     dependsOn: args.dependsOn,
+    sprint: readCurrentSprint(root, workspace),
   });
   if (result.status === "duplicate_name") {
     return err(`feature '${args.name}' already exists`);
@@ -747,6 +750,15 @@ function cmdStart(
   }
   feature.status = "in_progress";
   delete feature.blocked_reason;
+  // Adopt the open period when the feature predates it: `sprint open` stamped
+  // what existed, `add` stamps what is born later, and this covers the feature
+  // that existed unlabeled before the period opened. Never overwrites a label.
+  if (!("sprint" in feature)) {
+    const sid = readCurrentSprint(root, workspace);
+    if (sid) {
+      feature.sprint = sid;
+    }
+  }
   stampMeta(feature, "started_at", nowIso());
   const rcStart = saveValidated(path, data);
   if (rcStart !== 0) {
@@ -939,16 +951,17 @@ function cmdDone(
   if (isFile(history)) {
     const tools = args.tools && args.tools.trim() !== "" ? args.tools.trim() : "...";
     const branch = sessionBranch(workspace) ?? gitBranch(root) ?? "...";
+    // Compact entry: what closed, where the evidence lives, and the gate.
+    // The old 8-field form auto-degraded to "Plan: ..." placeholders because
+    // nothing filled it; the narrative belongs to backlog/impl_<name>.md.
+    // `Branch` and `Tools` stay: sprint.js renderDoc aggregates both.
     const entry =
       `\n## ${today} - Feature ${feature.id ?? ""}: ${args.name}\n` +
-      `- **Agent:** leader -> implementer -> reviewer\n` +
       `- **Branch:** ${branch}\n` +
-      `- **Plan:** ...\n` +
-      `- **Changes:** ...\n` +
       `- **Tools:** ${tools}\n` +
-      `- **Verification:** verifier exit 0\n` +
-      `- **Review:** ${reviewVerdict(workspace, args.name)} -> backlog/review_${args.name}.md\n` +
-      `- **Closure:** done\n`;
+      `- **Evidence:** backlog/impl_${args.name}.md · review: ` +
+      `${reviewVerdict(workspace, args.name)} -> backlog/review_${args.name}.md\n` +
+      `- **Verification:** verifier exit 0 · closure done\n`;
     appendFileSync(history, entry);
   }
   writeCurrent(workspace, {
@@ -1581,6 +1594,7 @@ function dispatch(args: ParsedArgs, workspace: string, root: string): number {
             dependsOn: args.dependsOn ?? null,
           },
           workspace,
+          root,
         );
       case "start":
         return cmdStart(

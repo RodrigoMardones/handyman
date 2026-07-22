@@ -1,6 +1,6 @@
 /**
  * Retro / lessons from closed features (feature 35, item 2.6 of
- * docs/analisis-tareas-llm-toolbox.md).
+ * docs/archive/analisis-tareas-llm-toolbox.md).
  *
  * Mines progress/history.md plus the backlog docs of features that are already
  * `done`, and proposes recurring patterns and anti-patterns as SUGGESTIONS for

@@ -4,20 +4,20 @@ description: 'Install, analyze, bootstrap, run, review, or migrate a Handyman ag
 argument-hint: 'analyze | bootstrap local|global | run-feature | review | migrate-global | upgrade'
 user-invocable: true
 metadata:
-  version: 3.1.0
+  version: 3.5.0
 ---
 
 # Handyman
 
-Install, analyze, create, migrate, or operate a Handyman harness: an operating layer around a repo where agents work through explicit roles, disk state, one feature at a time, and executable verification. The pattern: `AGENTS.md`, `feature_list.json`, `progress/`, `docs/`, `CHECKPOINTS.md`, `init.sh`, and role files.
+Install, analyze, create, migrate, or operate a Handyman harness: an operating layer around a repo where agents work through explicit roles, disk state, one feature at a time, and executable verification. The pattern: `AGENTS.md`, `feature_list.json`, `progress/`, `memory/`, `CHECKPOINTS.md`, `init.sh`, and role files.
 
-Handyman supersedes `harness-subagents` (Foreman); prefer it when both match, but not for ordinary feature work.
+Handyman supersedes `harness-subagents` (Foreman).
 
 ## Quick Start
 
-1. Pick a mode: `analyze`, `bootstrap`, `run-feature`, `review`, `migrate-global`, or `upgrade`. If unclear, start with `analyze`.
+1. Pick a mode: `analyze`, `bootstrap`, `run-feature`, `review`, `migrate-global`, or `upgrade`.
 2. Resolve `HARNESS_WORKSPACE`: `harness.config.json`, then `feature_list.json` config, then `PROJECT_ROOT/.handyman/`, then the legacy `PROJECT_ROOT` fallback.
-3. To create a harness, run `bootstrap`: scaffold, then fill the copied templates.
+3. To create a harness, run `bootstrap`.
 4. To work, run one feature: lowest-id `pending`, mark `in_progress`, delegate implement then review, close only after a green verifier.
 5. Reports live in `$HARNESS_WORKSPACE/backlog/`; the chat carries only short file references.
 
@@ -43,8 +43,8 @@ During `bootstrap`, if the user did not specify a scope, ask `local` or `global`
 | `local` | Bridge files: `AGENTS.md`, `CHECKPOINTS.md`, `init.sh`, `harness.config.json`, role files | `PROJECT_ROOT/.handyman` |
 | `global` | Same files, absolute paths | `$HOME/HANDYMAN/<project_name>` |
 
-- Mutable state always lives in the harness workspace: `feature_list.json`, `progress/`, `backlog/`, `docs/`, optional `index.md`.
-- Local: gitignore `.handyman/*` except `.handyman/docs/`. Legacy harnesses without `.handyman/` keep resolving to `PROJECT_ROOT`.
+- Mutable state always lives in the harness workspace: `feature_list.json`, `progress/`, `backlog/`, `memory/` (legacy `docs/`), optional `index.md`.
+- Local: gitignore `.handyman/*` except `.handyman/memory/`. Legacy harnesses without `.handyman/` keep resolving to `PROJECT_ROOT`.
 - Global: set `HANDYMAN_ROOT=$HOME/HANDYMAN`; derive `project_name` from the repo basename. `init.sh` runs from the project root but validates state from `HARNESS_WORKSPACE`. Ask before reusing another `project_root`'s workspace. A config-less harness defaults to `local`.
 
 ## Core Rules
@@ -55,32 +55,36 @@ During `bootstrap`, if the user did not specify a scope, ask `local` or `global`
 - Subagents write reports to `$HARNESS_WORKSPACE/backlog/` (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`) and reply with references only (anti-telefono-descompuesto).
 - No feature is `done` until the verifier, normally `./init.sh`, exits 0.
 - Leader coordinates, never edits product code. Implementer writes code and tests. Reviewer validates, never edits code.
-- Model per role: strong reasoning for the leader; cheap, fast models for implementer and reviewer (editor default, else `GLM-5.2`). See [references/models.md](./references/models.md).
-- Least-privilege tools per role: leader widest (`agent`, `web`, `browser`); implementer and reviewer without delegation or web; explorer read-only, no `edit`. See [references/tools.md](./references/tools.md).
+- Model per role: strong reasoning for the leader; cheap models for the rest (editor default, else `GLM-5.2`). See [references/models.md](./references/models.md).
+- Least-privilege tools per role: leader widest; implementer and reviewer without delegation or web; explorer read-only. See [references/tools.md](./references/tools.md).
 - Role files live in the platform path (`.github/agents/` or `.claude/agents/`), never inside `HARNESS_WORKSPACE`.
 - Query the graphify graph before exploring code and keep it fresh (`/graphify --update`). See [references/graphify.md](./references/graphify.md).
 - The workspace doubles as an Obsidian vault: frontmatter, `index.md` MOC, `#handyman/...` tags. See [references/obsidian.md](./references/obsidian.md).
 - If a required file, command, or path is missing, document the gap before inventing a workaround.
 
+## Mechanics: MCP First
+
+When the `handyman` MCP server is connected, prefer its tools — `harness_list`, `preflight`, `feature_next`, `feature_close` (a red verifier refuses the close), `report_write`, `verify` — and its `handyman://{project}/...` resources over hand-run commands; otherwise the same verbs are the `npx handyman-harness@3` CLIs. Setup and surface: [references/mcp.md](./references/mcp.md).
+
 ## Workflow
 
 Role protocols: [references/workflow.md](./references/workflow.md).
 
-**Analyze.** Read `AGENTS.md`; resolve `HARNESS_WORKSPACE`; inspect `feature_list.json`, `progress/`, `backlog/`, `docs/`, `CHECKPOINTS.md`, verifier, and role files (`model`/`tools`); run the verifier if safe; report scope, structure, lifecycle, state, gaps, risks. Use [anatomy](./references/anatomy.md) and [checklists](./references/checklists.md).
+**Analyze.** Read `AGENTS.md`; resolve `HARNESS_WORKSPACE`; inspect `feature_list.json`, `progress/`, `backlog/`, `memory/`, `CHECKPOINTS.md`, verifier, and role files (`model`/`tools`); run the verifier if safe; report scope, structure, lifecycle, state, gaps, risks. Use [anatomy](./references/anatomy.md) and [checklists](./references/checklists.md).
 
-**Bootstrap.** Confirm target repo, scope, and whether existing files may change. Scaffold with `scripts/scaffold.sh <local|global> <project_root>` (never overwrites), then fill only missing or approved files. Assign per-role models and tools, place role files in the platform path, keep `backlog/` for reports, add an executable verifier (required files, state from `HARNESS_WORKSPACE`, tests from the project root). Use [templates](./references/templates.md).
+**Bootstrap.** Confirm target repo, scope, and whether existing files may change. Scaffold with `scripts/scaffold.sh <local|global> <project_root>` (never overwrites), then fill only missing or approved files. Assign per-role models and tools, place role files in the platform path, keep `backlog/` for reports, add an executable verifier. Use [templates](./references/templates.md).
 
-**Run one feature.** First run a read-only stability check, `npx handyman-harness@3 preflight` (see [workflow.md](./references/workflow.md)); then verifier green, offer the `feature-request.md` form, pick the lowest-id `pending` feature, mark one `in_progress`, update `progress/current.md`, delegate implementation (or follow the implementer protocol), require tests proving acceptance, verifier green, delegate review (or use `CHECKPOINTS.md`); after approval mark `done`, append to `progress/history.md`, reset `progress/current.md`, run any declared `post_run` hooks.
+**Run one feature.** First run a read-only stability check, `preflight` (see [workflow.md](./references/workflow.md)); then verifier green, offer the `feature-request.md` form, pick the lowest-id claimable feature (`feature_next`), mark one `in_progress`, update `progress/current.md`, delegate implementation (or follow the implementer protocol), require tests proving acceptance, verifier green, delegate review (or use `CHECKPOINTS.md`); close with `feature_close` — the verifier gate marks `done`, appends `progress/history.md`, resets `progress/current.md`, and runs declared `post_run` hooks.
 
-**Review.** Read the implementation report in `backlog/`; compare changed files against `docs/business.md`, `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md`, `CHECKPOINTS.md`; run the verifier; write `backlog/review_<feature>.md`; return only `APPROVED -> <file>` or `CHANGES_REQUESTED -> <file>`.
+**Review.** Read the implementation report in `backlog/`; compare changed files against `memory/business.md`, `memory/architecture.md`, `memory/conventions.md`, `memory/verification.md`, `CHECKPOINTS.md`; run the verifier; write `backlog/review_<feature>.md`; return only `APPROVED -> <file>` or `CHANGES_REQUESTED -> <file>`.
 
-**Migrate local to global.** Never migrate an active session without approval. Create `$HOME/HANDYMAN/<project_name>`; move `feature_list.json`, `progress/`, `backlog/`, operational `docs/`; write `harness.config.json`; repoint `AGENTS.md`, `CHECKPOINTS.md`, role files, `init.sh`; run the verifier and document drift.
+**Migrate local to global.** Never migrate an active session without approval. Create `$HOME/HANDYMAN/<project_name>`; move `feature_list.json`, `progress/`, `backlog/`, operational `memory/`; write `harness.config.json`; repoint `AGENTS.md`, `CHECKPOINTS.md`, role files, `init.sh`; run the verifier and document drift.
 
-**Upgrade.** Run `npx handyman-harness@3 upgrade_harness --check` to report version drift; run it (`--dry-run` previews) to apply idempotent migrations and re-seal after a backup. Never upgrade an active session without approval.
+**Upgrade.** Run `npx handyman-harness@3 upgrade_harness --check` to report version drift; run it (`--dry-run` previews) to apply migrations and re-seal. Never upgrade an active session without approval.
 
 ## Versioning
 
-The skill is the usage manifest; the deterministic tools are the npm package [`handyman-harness`](https://www.npmjs.com/package/handyman-harness). They share one version: `metadata.version` equals the published `package.json`, enforced at pack time. The pinned major (`@3`) delivers minors without skill edits; `npx handyman-harness@3 --version` reports the resolved toolchain.
+The skill and the npm package [`handyman-harness`](https://www.npmjs.com/package/handyman-harness) share one version: `metadata.version` equals the published `package.json`, enforced at pack time. The pinned major (`@3`) delivers minors without skill edits.
 
 ## Output Style
 
@@ -88,7 +92,7 @@ Analysis returns sections `Structure`, `Lifecycle`, `Current State`, `Risks`, `R
 
 ## References
 
-[Anatomy](./references/anatomy.md) · [Workflow](./references/workflow.md) · [Templates](./references/templates.md) · [Examples](./references/examples.md) · [Checklists](./references/checklists.md) · [Models](./references/models.md) · [Tools](./references/tools.md) · [Obsidian](./references/obsidian.md) · [Graphify](./references/graphify.md) · [Security](./references/security.md)
+[Anatomy](./references/anatomy.md) · [Workflow](./references/workflow.md) · [MCP](./references/mcp.md) · [Templates](./references/templates.md) · [Examples](./references/examples.md) · [Checklists](./references/checklists.md) · [Models](./references/models.md) · [Tools](./references/tools.md) · [Obsidian](./references/obsidian.md) · [Graphify](./references/graphify.md) · [Security](./references/security.md)
 
 ## License & Attribution
 

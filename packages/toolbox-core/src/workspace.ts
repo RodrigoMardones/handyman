@@ -88,3 +88,29 @@ export function resolveWorkspace(root: string): string {
 
   return root;
 }
+
+/**
+ * Resolve the workspace knowledge directory. New layout: `memory/`; legacy
+ * harnesses keep `docs/`. Preference: an existing `memory/` wins, an existing
+ * `docs/` is honored, and a fresh workspace gets `memory/`. Surfaces keep the
+ * name "docs" (MCP URIs, observer endpoints); only the disk layout moved.
+ */
+export function resolveDocsDir(workspace: string): string {
+  const memory = join(workspace, "memory");
+  const docs = join(workspace, "docs");
+  try {
+    if (statSync(memory).isDirectory()) {
+      return memory;
+    }
+  } catch {
+    /* fall through */
+  }
+  try {
+    if (statSync(docs).isDirectory()) {
+      return docs;
+    }
+  } catch {
+    /* fall through */
+  }
+  return memory;
+}

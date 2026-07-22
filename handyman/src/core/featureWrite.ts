@@ -44,6 +44,10 @@ export interface AddFeatureOptions {
   title?: string | null;
   description?: string | null;
   dependsOn?: readonly number[] | null;
+  /** Open period label to stamp at birth. `sprint open` only labels features
+   *  that already exist, so without this a feature born inside an open period
+   *  is never archived by `close`. */
+  sprint?: string | null;
 }
 
 interface FeatureRecord {
@@ -115,6 +119,9 @@ export function addFeature(workspace: string, opts: AddFeatureOptions): AddFeatu
     acceptance: [...opts.acceptance],
     status: "pending",
   };
+  if (opts.sprint) {
+    feature.sprint = opts.sprint;
+  }
   if (opts.dependsOn && opts.dependsOn.length > 0) {
     feature.depends_on = [...new Set(opts.dependsOn)].sort((a, b) => a - b);
   }

@@ -6,7 +6,7 @@
  * its bundled template with the exact, per-type YAML frontmatter the contract
  * requires, so agents stop hand-stamping
  * `feature`/`status`/`role`/`updated`/`tags` (the drift risk documented in
- * docs/analisis-acciones-deterministas-por-capa.md and enforced nowhere else).
+ * docs/archive/analisis-acciones-deterministas-por-capa.md and enforced nowhere else).
  *
  * Operations:
  *   impl     Create backlog/impl_<feature>.md    (role: implementer).
@@ -221,7 +221,7 @@ Handyman backlog-entry generator. Instantiates a backlog report from its
 bundled template with the exact, per-type YAML frontmatter the contract
 requires, so agents stop hand-stamping
 \`feature\`/\`status\`/\`role\`/\`updated\`/\`tags\` (the drift risk documented in
-docs/analisis-acciones-deterministas-por-capa.md and enforced nowhere else).
+docs/archive/analisis-acciones-deterministas-por-capa.md and enforced nowhere else).
 Operations: impl Create backlog/impl_<feature>.md (role: implementer). review
 Create backlog/review_<feature>.md (role: reviewer; --status). explore Create
 backlog/explore_<topic>.md (role: explorer). Usage: node dist/backlog.js

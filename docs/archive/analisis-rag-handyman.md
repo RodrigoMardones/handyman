@@ -1,7 +1,7 @@
 # Análisis: RAG en handyman — estado del arte y opciones de uso (2026)
 
 > Investigación en fuentes de internet (julio 2026) sobre cómo ocupar RAG (Retrieval-Augmented
-> Generation) dentro de handyman. Complementa [mapa-entidades-negocio.md](mapa-entidades-negocio.md),
+> Generation) dentro de handyman. Complementa [mapa-entidades-negocio.md](../mapa-entidades-negocio.md),
 > cuya sección 5 mapea las entidades del harness a fuentes de recuperación.
 
 ## 1. Resumen ejecutivo

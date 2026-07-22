@@ -4,7 +4,7 @@
  *
  * Faithful port of `scripts/upgrade_harness.py`. Two operations over a target
  * harness, built on the Phase 0 `harness_version` seal (see
- * docs/analisis-actualizacion-harness.md):
+ * docs/archive/analisis-actualizacion-harness.md):
  *
  *   --check    Read-only. Resolve the workspace, read the installed
  *              `harness_version`, compare it to the version of the skill that
@@ -72,7 +72,7 @@ interface Migration {
  * Ordered, idempotent migration registry. Each entry upgrades a harness *to*
  * its version. `ensures` are managed scaffolding files copied only when
  * missing; `advisories` are project-owned content changes a human must apply.
- * Source: docs/analisis-actualizacion-harness.md (drift surface).
+ * Source: docs/archive/analisis-actualizacion-harness.md (drift surface).
  */
 const MIGRATIONS: readonly Migration[] = [
   {

@@ -2,6 +2,11 @@
 
 This workflow keeps agent work resumable and auditable.
 
+The `npx handyman-harness@3` commands below are the portable surface. When the
+`handyman` MCP server is connected, the same guardians are tools — `preflight`,
+`feature_next`, `feature_close` (stage 6), `report_write`, `verify` — with the
+verifier gate enforced in code. See [mcp.md](./mcp.md).
+
 ## Stages at a Glance
 
 A feature moves through seven stages (0-6), and a work period closes with one more (7). Each stage has a deterministic guardian and leaves a dated artifact on disk; the measures in the last column are **derived** from those artifacts, never declared in the feature contract (`feature_list.json` stays a four-state machine: `pending`, `in_progress`, `done`, `blocked`). The rule: **a stage without its artifact did not happen.**
@@ -148,7 +153,7 @@ A sprint is a work period: a declared partition label on features, opened and cl
 3. **Close** — `npx handyman-harness@3 sprint close` (preview with `--dry-run`): derives `docs/sprints/sprint.<id>.md` from `feature_list.json`, `progress/history.md`, and `backlog/` frontmatter (features table, period, throughput, review verdicts, tools and branch provenance, carry-over); archives the sprint's `done` features to `archive/feature_archive.json` and removes them from `feature_list.json`; compacts the archived features' `history.md` entries to one-line stubs (the dated heading stays, so throughput remains derivable; the narrative lives on in the sprint document); strips the label from carry-over features; clears `current_sprint`. It refuses to close while a labeled feature is `in_progress`.
 4. **Manual pass** — the generated document leaves two sections for the operator: achievements and lessons. Fill them from the period's history entries, then empty `docs/current/` by compressing what mattered into the sprint document.
 
-The derived sections are regenerated, never hand-maintained; a hand-kept copy of state the artifacts already carry is the drift the harness exists to avoid. See the research and data-shape rationale in `docs/analisis-sprints-cierre-periodo.md` at the skill repo root.
+The derived sections are regenerated, never hand-maintained; a hand-kept copy of state the artifacts already carry is the drift the harness exists to avoid. See the research and data-shape rationale in `docs/archive/analisis-sprints-cierre-periodo.md` at the skill repo root.
 
 ## Description Trigger Gate
 

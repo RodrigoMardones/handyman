@@ -42,14 +42,23 @@ import {
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseFrontmatter } from "./core/frontmatter.js";
-import { loadFeatureList, resolveWorkspace, saveFeatureList } from "./core/index.js";
+import {
+  loadFeatureList,
+  readCurrentSprint,
+  resolveDocsDir,
+  resolveWorkspace,
+  saveFeatureList,
+} from "./core/index.js";
 
 /** Bundled templates directory. `src/` (vitest) and `dist/` (built) both sit
  *  one level below the package root, so `../assets` is correct in either
  *  location (mirrors Python `Path(__file__).resolve().parent.parent / "assets"`). */
 const ASSETS_DIR = fileURLToPath(new URL("../assets", import.meta.url));
 
-const SPRINT_ID = /^\d{4}-SP\d+$/;
+// Any filesystem-safe slug: the id becomes `docs/sprints/sprint.<ID>.md`, so
+// no slashes or spaces. Branch-as-unit labels slugify `/` to `-`
+// (feat/rework-tools -> feat-rework-tools); calendar ids stay valid.
+const SPRINT_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const HISTORY_HEADING = /^## \d{4}-\d{2}-\d{2} - Feature \d+: (.+)$/;
 // Inlined from the retired scripts/metrics.py (ported to src/metrics.ts).
 // Written by `feature done`: "## 2026-06-18 - Feature 5: harness_versioning".
@@ -128,39 +137,6 @@ function dumpJson(data: unknown): string {
 /** Write a JSON state file with the exact bytes Python writes. */
 function writeJson(path: string, data: unknown): void {
   writeFileSync(path, dumpJson(data), { encoding: "utf-8" });
-}
-
-/** The open sprint id, preferring harness.config.json over the feature_list
- *  config mirror (same precedence as post_run). */
-function readCurrentSprint(root: string, workspace: string): string | null {
-  const cfg = join(root, "harness.config.json");
-  if (existsSync(cfg)) {
-    try {
-      const data = readJson(cfg) as Record<string, unknown>;
-      const value = data.current_sprint;
-      if (typeof value === "string" && value) {
-        return value;
-      }
-      if (value === null && "current_sprint" in data) {
-        return null;
-      }
-    } catch {
-      // fall through to the feature_list mirror
-    }
-  }
-  const fl = join(workspace, "feature_list.json");
-  if (existsSync(fl)) {
-    try {
-      const data = readJson(fl) as { config?: Record<string, unknown> };
-      const value = data.config?.current_sprint;
-      if (typeof value === "string" && value) {
-        return value;
-      }
-    } catch {
-      // ignore
-    }
-  }
-  return null;
 }
 
 /** Record the open sprint in harness.config.json and mirror it to the
@@ -410,7 +386,7 @@ function compactHistory(
   } catch {
     return 0;
   }
-  const stub = `- archived to sprint ${sid}; narrative in docs/sprints/sprint.${sid}.md`;
+  const stub = `- archived to sprint ${sid}; narrative in ${basename(resolveDocsDir(workspace))}/sprints/sprint.${sid}.md`;
   const lines = text.split("\n");
   const out: string[] = [];
   let compacted = 0;
@@ -674,7 +650,9 @@ function parseArgs(argv: string[], prog: string): ParsedArgs {
 function cmdOpen(args: ParsedArgs, workspace: string, root: string): number {
   const sid = args.sprintId as string;
   if (!SPRINT_ID.test(sid)) {
-    return err(`malformed sprint id '${sid}' (expected e.g. 2026-SP1)`);
+    return err(
+      `malformed sprint id '${sid}' (expected a filesystem-safe slug, e.g. 2026-SP1 or feat-rework-tools)`,
+    );
   }
   const current = readCurrentSprint(root, workspace);
   if (current) {
@@ -738,7 +716,7 @@ function cmdClose(args: ParsedArgs, workspace: string, root: string): number {
   }
   const done = labeled.filter((f) => f.status === "done");
   const carry = labeled.filter((f) => f.status !== "done");
-  const docPath = join(workspace, "docs", "sprints", `sprint.${sid}.md`);
+  const docPath = join(resolveDocsDir(workspace), "sprints", `sprint.${sid}.md`);
   if (existsSync(docPath)) {
     return err(`sprint document already exists: ${docPath}`);
   }
@@ -759,7 +737,7 @@ function cmdClose(args: ParsedArgs, workspace: string, root: string): number {
     return 0;
   }
 
-  mkdirSync(join(workspace, "docs", "sprints"), { recursive: true });
+  mkdirSync(join(resolveDocsDir(workspace), "sprints"), { recursive: true });
   writeFileSync(docPath, content, { encoding: "utf-8" });
   const archivePath = archive(workspace, sid, done);
   // Compact AFTER the sprint document is rendered and written: the stub points

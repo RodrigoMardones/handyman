@@ -1,6 +1,6 @@
 /**
  * Review-notes seed (feature 34, item 2.5 of
- * docs/analisis-tareas-llm-toolbox.md).
+ * docs/archive/analisis-tareas-llm-toolbox.md).
  *
  * Given backlog/impl_<feature>.md plus the working diff, produce a CHECKLIST
  * the reviewer uses as a starting point: critical points, invariants at risk,

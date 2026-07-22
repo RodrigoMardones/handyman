@@ -4,6 +4,7 @@ Progressive-loading references for the `handyman` skill. Read only the file need
 
 - `anatomy.md` - structure, file responsibilities, Obsidian frontmatter conventions.
 - `workflow.md` - leader, implementer, reviewer, and closure protocols.
+- `mcp.md` - handyman-mcp-server: the harness verbs as MCP tools (verifier-gated close, multi-repo hub, resources).
 - `templates.md` - starter files for bootstrap (including Obsidian MOC and `.gitignore`).
 - `examples.md` - end-to-end bootstrap and run-feature walkthroughs.
 - `checklists.md` - analysis, bootstrap, run, review, Obsidian, and risk checks.

@@ -3,6 +3,7 @@
 # index.md, Obsidian cache) but VERSION the conceptual docs layer
 # (business, architecture, conventions, verification) and everything in it.
 .handyman/*
+!.handyman/memory/
 !.handyman/docs/
 
 # Obsidian local cache (vault metadata), in the repo root or a global

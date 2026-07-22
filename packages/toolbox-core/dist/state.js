@@ -13,7 +13,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { loadRegistry } from "./registry.js";
-import { resolveWorkspace } from "./workspace.js";
+import { resolveDocsDir, resolveWorkspace } from "./workspace.js";
 const MD_NAME_RE = /^[\w.-]+\.md$/;
 export const DEBOUNCE_MS = 250;
 const CORPUS_TEXT_CAP = 4000;
@@ -235,12 +235,13 @@ export function resolveMd(hroot, root, file) {
     }
     const [kind, name] = file.split(":", 2);
     if ((kind === "backlog" || kind === "docs") && name && MD_NAME_RE.test(name)) {
-        return join(workspace, kind, name);
+        const dir = kind === "docs" ? resolveDocsDir(workspace) : join(workspace, kind);
+        return join(dir, name);
     }
     return null;
 }
 function mdDocs(project, root, workspace, kind) {
-    const dir = join(workspace, kind);
+    const dir = kind === "docs" ? resolveDocsDir(workspace) : join(workspace, kind);
     let names;
     try {
         names = readdirSync(dir);

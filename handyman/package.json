@@ -1,9 +1,8 @@
 {
-  "name": "handyman",
-  "version": "3.1.0",
+  "name": "handyman-harness",
+  "version": "3.5.0",
   "description": "Handyman agent-harness toolchain (TypeScript/Node).",
   "author": "Rodrigo Mardones",
-  "private": true,
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -13,6 +12,7 @@
     ".": "./dist/toolbox.js",
     "./state": "./dist/toolbox_state.js",
     "./toolbox": "./dist/toolbox.js",
+    "./mcp": "./dist/mcp.js",
     "./assets/*": "./assets/*",
     "./package.json": "./package.json"
   },
@@ -27,8 +27,10 @@
   },
   "dependencies": {
     "@handyman/toolbox-core": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "ajv": "^8.20.0",
-    "vis-network": "^9.1.9"
+    "vis-network": "^9.1.9",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",

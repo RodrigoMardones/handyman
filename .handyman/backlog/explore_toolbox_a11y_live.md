@@ -12,7 +12,7 @@ tags: [handyman/backlog/explore]
 
 ¿Se justifica la feature 22 (`toolbox_a11y_live`, Plan D del análisis de UI)?
 ¿Cómo mejorarla? ¿Converge con
-[analisis-peticiones-llm-toolbox.md](../../docs/analisis-peticiones-llm-toolbox.md)?
+[analisis-peticiones-llm-toolbox.md](../../docs/archive/analisis-peticiones-llm-toolbox.md)?
 
 ## Veredicto: sí se necesita, con 3 ajustes de especificación
 

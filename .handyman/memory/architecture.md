@@ -167,6 +167,34 @@ cuatro nuevos (32-35) si comparten forma entre si — todos son
 para el resto. Si un quinto relay no encaja en ese prelude, se deja aparte y se
 anota aqui en vez de doblar el helper.
 
+## Frontera del MCP
+
+`handyman/src/mcp.ts` es el servidor MCP (stdio) — un cuarto consumidor de
+`@handyman/toolbox-core`, igual que `apps/web` y los CLIs de rol. La frontera:
+
+- **Imports del MCP:** `@handyman/toolbox-core/registry` (`handymanRoot`,
+  `loadRegistry`), `@handyman/toolbox-core/workspace` (`resolveWorkspace`,
+  `resolveDocsDir`), el SDK MCP, `zod`. **Cero imports de la skill** (no lee
+  `SKILL.md`, no toca `assets/`, no consulta `metadata.version`). La unica
+  dependencia con el paquete `handyman-harness` es por ubicacion
+  (`mcp.ts` vive en `handyman/src/`) y por build (`tsc -b` lo compila a
+  `handyman/dist/mcp.js`); el contrato funcional es shellear los mismos
+  `dist/*.js` que los roles ya corren (cero segunda fuente de verdad).
+- **Contrato "shellear el CLI":** cada tool MCP envuelve un CLI hermano
+  (`feature.js`, `preflight.js`, `sprint.js`, `upgrade_harness.js`) via
+  subprocess. El paquete MCP **nunca** importa `cmdStart`/`cmdLog` como modulo
+  de `feature.ts`; depende de `handyman-harness` como dep npm y sigue
+  shellear `dist/feature.js`. Esto preserva el invariant "verifier-gated close
+  refused by the subprocess, not by convention".
+- **Descentralizacion postergada (Camino B):** mover `mcp.ts` a su propio
+  paquete `packages/handyman-mcp/` es arquitectonicamente correcto pero
+  prematuro mientras el unico consumidor sea este repo. La migracion ya es
+  barata: el acoplamiento restante es solo por ubicacion, y los imports ya
+  apuntan a `toolbox-core` (no a `./core/index.js`). Cuando aparezca un
+  consumidor externo que solo quiere el servidor, mover `mcp.ts` y cambiar
+  los `runCli("feature.js")` para resolver el binario desde
+  `node_modules/handyman-harness/dist/` es trivial.
+
 ## What Not To Do
 
 - Cambiar el contrato de un CLI (subcomandos, flags, exit codes, forma de stdout) sin

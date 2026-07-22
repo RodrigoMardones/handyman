@@ -4,23 +4,29 @@
 
 ## Cambios
 
-- **Panel Next.js (`apps/web`)**: migración completa del observer a Next 16 — 14 rutas API nativas con paridad byte a byte con el observer Node retirado (`/api/state`, `/events` SSE vía singleton de runtime, API de lectura, 7 relays LLM con SSE estable), vistas `fleet`, `harness/[name]`, `intake`, `ask`, `search` y `timeline` con refresco en vivo por `fs.watch → SSE`, y primera acción de escritura del panel: `POST /api/feature` registra una feature en un harness del registry sin spawnear procesos (features 41, 43-45, 47-48, 60).
-- **Paquete `@handyman/toolbox-core`**: extracción de la capa de datos y relays LLM compartida por CLI y panel, con shims dist-estables en `handyman/` para no romper rutas (feature 42).
-- **Contrato de verbos del harness honesto**: `done` escribe el veredicto real leído de `backlog/review_<name>.md` (distingue `NO REVIEW FILE` de `NO VERDICT`); un solo camino de escritura a `feature_list.json` (`saveValidated`); `acceptance` sobre una feature `done` se niega salvo `--force` auditado; `backlog.js review --force` re-emite veredictos conservando el cuerpo; `./init.sh` corre `validate_harness` como fase bloqueante; unificación del intake en una función core (features 46, 51-59).
-- **Advisories sin ruido heredado**: `validate_harness` acepta la convención legacy de frontmatter (`verdict:`/`date:`/`reviewer:` como alias de `status:`/`updated:`/`role:`), espejando el fallback que `done` ya usaba — los NOTEs de frontmatter sobre el backlog real bajan de 32 a 1, y el que queda es deuda real (feature 61).
-- **Preparación open source** (decisiones de negocio 2026-07-19): licencia unificada — los cuatro `package.json` del workspace declaran MIT, cerrando la contradicción con los dos que decían Apache-2.0 (feature 62); untrackeadas 14 skills de terceros sin licencia de `.agents/skills/` (quedan las 3 con licencia: brand-guidelines, frontend-design, ponytail), el cache regenerable de graphify con rutas absolutas locales, `cost.json` y los punteros machine-specific — nada se borra del disco (feature 63).
-- **Camino npm registrado**: features 64-66 pendientes documentan la decisión de publicar el toolchain como `handyman-harness` en npm, migrar SKILL.md a `npx` y dar visibilidad al panel en los README (registradas, no implementadas).
-- **Estado del harness**: sprints 2026-SP5/SP6, handoffs 2026-07-18 y 2026-07-19, reportes impl/review por feature y suites nuevas (`test_web_*`, casos T15-T29 del verificador).
+- **Rework de capas — rama como período (features 69–71)**
+  - Cierre del período varado SP6: 39 features done archivadas (`feature_list.json` 73 KB → 5.7 KB), history compactado y backlog con retención — 318 reportes movidos a `archive/backlog/`.
+  - La rama reemplaza al sprint calendario como unidad: `sprint.js open <rama-slug>` al abrir, `close` en el merge (checkpoint C6 nuevo); `add`/`start` estampan el período abierto; `core/period.ts` comparte `readCurrentSprint`.
+  - Preflight gana el bloque `context` (frescura del grafo graphify, advisory puro) y las NOTEs de discovery solo señalan skills locales del repo no declaradas (13 accionables vs ~30 de ruido global).
+- **handyman-mcp-server (feature 72)**
+  - `handyman/src/mcp.ts`: wrapper MCP stdio delgado sobre los mismos `dist/*.js` de la CLI — cero segunda fuente de verdad. 6 tools (`harness_list`, `preflight`, `feature_next`, `feature_close`, `report_write`, `verify`) + resources `handyman://{project}/current` y `handyman://{project}/docs/{doc}`.
+  - El contrato pasa de prosa a código: `feature_close` delega en `feature.js done`, así un verifier rojo rechaza el cierre por precondición de subprocess; no existe flag de forzado.
+  - Hub multi-repo: toda tool acepta `project` (nombre del registry, root absoluto o cwd) resuelto contra `$HANDYMAN_ROOT/registry.json`.
+  - Registrado en `discovery.mcp` y `.vscode/mcp.json`; SKILL.md con sección "Mechanics: MCP First" y `references/mcp.md` nuevo (inglés); dependencias `@modelcontextprotocol/sdk` + `zod`.
+- **Workspace memory layout (feature 73)**
+  - El directorio de conocimiento del workspace se renombra `docs/` → `memory/` mediante un resolver único `resolveDocsDir(workspace)` en `toolbox-core` con fallback legacy — los harnesses registrados que siguen en `docs/` funcionan sin migrar (caso T18b).
+  - Los handoffs de `docs/current/` se fusionan en `progress/` (links relativos reescritos) y la carpeta desaparece; `index.md` regenerado con el layout nuevo.
+  - Superficies estables a propósito: URIs MCP `handyman://.../docs/*` y tokens `docs:` del observer no cambian; solo se movió el layout en disco (`apps/web` necesitó cero cambios).
+  - Scaffold y plantillas (AGENTS/CHECKPOINTS/init/gitignore/index/feature-request), SKILL.md y references emiten `memory/`.
 
 ## Tarea o asunto asociado
 
-- feat/llm-toolbox-tasks / features 41-63 (+ registro de 64-66)
-- Reviews de las features 51-63 auto-firmadas y declaradas (`actor: … (single-agent session)` en cada reporte); aceptadas así por decisión del 2026-07-19, con la deuda visible en el gate.
+- feat/rework-tools · features 69–73 (`period_close_branch_unit`, `graphify_freshness_gate`, `discovery_declared_paths`, `handyman_mcp_server`, `workspace_memory_layout`)
 
 ## Evidencia del cambio
 
-- `./init.sh` exit 0 en las 7 fases (format, build, harness, test, drift, sync, discovery); corrido además por cada `feature.js done` (61, 62, 63).
-- `bash tests/run_tests.sh` — ALL SUITES PASSED.
-- `tests/test_init.sh` 28/28, incluido T29 (convención legacy silenciada) con T15 como caso negativo vigente.
-- NOTEs de `frontmatter is missing` en el backlog real: 32 → 1 (solo `explore_workstation_ui_state_2.md`, incompleto en ambas convenciones).
-- `git ls-files .agents` → solo las 3 skills con licencia; `git ls-files graphify-out` → solo `GRAPH_REPORT.md`, `graph.html`, `graph.json`, `manifest.json`.
+- `./init.sh` exit 0 en el cierre de cada feature (`feature done` gateado por verifier): shellcheck OK, `tsc -b` OK, `validate_harness` OK, `tests/run_tests.sh` con todas las suites verdes.
+- Suite nueva `tests/test_mcp.js` 8/8 sobre JSON-RPC real: las 6 tools y los 2 resource templates expuestos; verifier rojo rechaza `feature_close` con el estado intacto, verde cierra y agrega history.
+- Suites tocadas por el rename: `test_init` 29/29 (scaffold memory + fallback legacy `docs/`), `test_sprint` 13/13, `test_index` 6/6, `test_docs` 220/220, `test_web_intake_ask` 19/19, `test_web_timeline_search` 18/18.
+- `tools_discovery check`: `mcp handyman: ok (configured in vscode)`.
+- Dogfooding: los reportes `impl_`/`review_` de las features 72 y 73 se escribieron con la tool `report_write` del propio server.

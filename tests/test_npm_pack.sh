@@ -37,9 +37,9 @@ LISTING="$(tar -tzf "$TARBALL")"
 start_case "tarball leaks no .env"
 if printf '%s\n' "$LISTING" | grep -q "\.env"; then fail "found .env entry"; else pass; fi
 
-start_case "tarball ships the 12 verbs plus the cli dispatcher"
+start_case "tarball ships the 13 verbs plus the cli dispatcher"
 MISSING=""
-for v in cli backlog evals feature index_md metrics preflight sprint toolbox \
+for v in cli backlog evals feature index_md mcp metrics preflight sprint toolbox \
          tools_discovery update_harness upgrade_harness validate_harness; do
   printf '%s\n' "$LISTING" | grep -qx "package/dist/$v.js" || MISSING="$MISSING $v"
 done

@@ -181,4 +181,41 @@ else
 fi
 rm -rf "$T"
 
+# --- T12: context NOTEs a graph older than the last commit -------------------
+# Advisory only: exit stays 0 and --strict must NOT fail on a stale graph.
+start_case "context: NOTEs a graphify graph older than the last commit"
+T="$(mktemp -d)"; write_fixture "$T"
+NO_GRAPH_OUT="$(node "$PF" --root "$T" 2>&1)"
+git -C "$T" init -q
+git -C "$T" -c user.email=t@t -c user.name=t commit -q --allow-empty -m x
+mkdir -p "$T/graphify-out"
+: > "$T/graphify-out/graph.json"
+touch -t 202001010000 "$T/graphify-out/graph.json"
+OUT="$(node "$PF" --root "$T" 2>&1)"; CODE=$?
+node "$PF" --root "$T" --strict >/dev/null 2>&1; STRICT_CODE=$?
+if [ "$CODE" -eq 0 ] && [ "$STRICT_CODE" -eq 0 ] \
+  && printf '%s' "$OUT" | grep -q "context: NOTE" \
+  && printf '%s' "$OUT" | grep -q "graphify-out/graph.json is older" \
+  && ! printf '%s' "$NO_GRAPH_OUT" | grep -q "context:"; then
+  pass
+else
+  fail "exit=$CODE strict=$STRICT_CODE out=$OUT"
+fi
+rm -rf "$T"
+
+# --- T13: context reports OK when the graph is fresh -------------------------
+start_case "context: reports OK when the graph is newer than the last commit"
+T="$(mktemp -d)"; write_fixture "$T"
+git -C "$T" init -q
+git -C "$T" -c user.email=t@t -c user.name=t commit -q --allow-empty -m x
+mkdir -p "$T/graphify-out"
+: > "$T/graphify-out/graph.json"
+OUT="$(node "$PF" --root "$T" 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "context: OK"; then
+  pass
+else
+  fail "exit=$CODE out=$OUT"
+fi
+rm -rf "$T"
+
 summary

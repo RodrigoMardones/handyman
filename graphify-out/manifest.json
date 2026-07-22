@@ -34,11 +34,6 @@
     "ast_hash": "8efd222e052cd89aef8c5224090b4eb0",
     "semantic_hash": ""
   },
-  "docs/analisis-iteraciones.md": {
-    "mtime": 1781756751.098907,
-    "ast_hash": "c64d71382efdf46f933a8bf5a6359fb8",
-    "semantic_hash": "c64d71382efdf46f933a8bf5a6359fb8"
-  },
   "handyman/assets/feature_list.template.json": {
     "mtime": 1784159545.0539572,
     "ast_hash": "264099b971de99ad1e17caa5a9d68962",
@@ -117,51 +112,6 @@
   ".github/workflows/ci.yml": {
     "mtime": 1784311822.7376447,
     "ast_hash": "8c6f3b186ac54027327f0e929e799326",
-    "semantic_hash": ""
-  },
-  "docs/analisis-acciones-deterministas-por-capa.md": {
-    "mtime": 1782437050.5277796,
-    "ast_hash": "639f40178aafcc9b19a309f88e719a12",
-    "semantic_hash": ""
-  },
-  "docs/analisis-actualizacion-harness.md": {
-    "mtime": 1781761242.383765,
-    "ast_hash": "01d8489fbb672fb13a1947ef120ee963",
-    "semantic_hash": ""
-  },
-  "docs/analisis-business-context-bootstrap.md": {
-    "mtime": 1782437050.5280738,
-    "ast_hash": "c5c5d9fc6a6abe50cb82220103fae39c",
-    "semantic_hash": ""
-  },
-  "docs/analisis-feature-request-md.md": {
-    "mtime": 1782437050.5284045,
-    "ast_hash": "07a69505ca4fa9621a16991c27378927",
-    "semantic_hash": ""
-  },
-  "docs/analisis-inconsistencia-bootstrap.md": {
-    "mtime": 1782437050.5286107,
-    "ast_hash": "974466eee183ca108b3457e91bd013de",
-    "semantic_hash": ""
-  },
-  "docs/analisis-pre-post-process.md": {
-    "mtime": 1782939394.786504,
-    "ast_hash": "626bcfd0a2acb2566b4a8cbde9c648f8",
-    "semantic_hash": ""
-  },
-  "docs/analisis-snyk-w011.md": {
-    "mtime": 1782487213.5972018,
-    "ast_hash": "e5c32480574690b6a06ed26d8a8f6c4c",
-    "semantic_hash": ""
-  },
-  "docs/analisis-tests-evaluaciones-modelo.md": {
-    "mtime": 1782883266.1980588,
-    "ast_hash": "b2e16c297800240f6d8bf8df2f48a43c",
-    "semantic_hash": ""
-  },
-  "docs/analisis-tool-discovery.md": {
-    "mtime": 1782883266.1983867,
-    "ast_hash": "5ddb13e17ccc7b41ef6ab2b4e04aac7e",
     "semantic_hash": ""
   },
   "docs/pull_request_template.md": {
@@ -334,11 +284,6 @@
     "ast_hash": "57a0a5b2125f9b59d17447cc799faa87",
     "semantic_hash": ""
   },
-  "handyman/assets/toolbox_panel.js": {
-    "mtime": 1784317775.8831468,
-    "ast_hash": "5a4fd79d40e9d9e99e8ac7e87940e6e6",
-    "semantic_hash": ""
-  },
   "handyman/biome.json": {
     "mtime": 1784224142.216829,
     "ast_hash": "8ec581e91be75c9a6d5cd5df1e4af9b7",
@@ -409,16 +354,6 @@
     "ast_hash": "6ee53b8b7b8d61acd048c950f9ae1b32",
     "semantic_hash": ""
   },
-  "handyman/src/core/version.test.ts": {
-    "mtime": 1784224142.219709,
-    "ast_hash": "7c3a524bb3e2a7aa8eabdf362743c248",
-    "semantic_hash": ""
-  },
-  "handyman/src/core/version.ts": {
-    "mtime": 1784224142.2198102,
-    "ast_hash": "1454b94c76999c56fc7faf063cbeed07",
-    "semantic_hash": ""
-  },
   "handyman/src/core/workspace.test.ts": {
     "mtime": 1784224142.2198827,
     "ast_hash": "0d011966fd7634f1d1aa2da73cc753b4",
@@ -462,11 +397,6 @@
   "handyman/src/toolbox.ts": {
     "mtime": 1784317131.4769971,
     "ast_hash": "3e664aac91de7a3d6034e90630a99b40",
-    "semantic_hash": ""
-  },
-  "handyman/src/toolbox_serve.ts": {
-    "mtime": 1784317833.9422174,
-    "ast_hash": "0f50ec7222f8f47cb5551b11839da931",
     "semantic_hash": ""
   },
   "handyman/src/tools_discovery.ts": {
@@ -544,41 +474,6 @@
     "ast_hash": "47e4e46b4721ff547652eb36ca06e28f",
     "semantic_hash": ""
   },
-  "docs/analisis-harnesses-ecosistema.md": {
-    "mtime": 1784159545.0529985,
-    "ast_hash": "6fc71a1ccdc1bbbd36794c660f47e6f4",
-    "semantic_hash": ""
-  },
-  "docs/analisis-observador-fleet-web.md": {
-    "mtime": 1784315854.6750371,
-    "ast_hash": "05ab764601ff65d486ca8e567d0bfb56",
-    "semantic_hash": ""
-  },
-  "docs/analisis-rag-handyman.md": {
-    "mtime": 1784314380.9218645,
-    "ast_hash": "26ca5a632fb41569b853e009dbd50563",
-    "semantic_hash": ""
-  },
-  "docs/analisis-sprints-cierre-periodo.md": {
-    "mtime": 1784159545.0531995,
-    "ast_hash": "b7c4caffe132a049780b81d770c8756d",
-    "semantic_hash": ""
-  },
-  "docs/analisis-tool-discovery-referencias.md": {
-    "mtime": 1782939394.786794,
-    "ast_hash": "01673afc3d31b71c496cd0888773d388",
-    "semantic_hash": ""
-  },
-  "docs/analisis-workflow-etapas.md": {
-    "mtime": 1782944321.2133255,
-    "ast_hash": "e67362578e6cc15e63a51aa1869328db",
-    "semantic_hash": ""
-  },
-  "docs/estado-migracion-ts.md": {
-    "mtime": 1784318166.2520194,
-    "ast_hash": "0a1b792243113cae4a36b84fefa688f8",
-    "semantic_hash": ""
-  },
   "docs/mapa-entidades-negocio.md": {
     "mtime": 1784314177.7189925,
     "ast_hash": "2998ef6cc47cb063ff52597876c30fc8",
@@ -600,32 +495,32 @@
     "semantic_hash": "264099b971de99ad1e17caa5a9d68962"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/harness.config.global.template.json": {
-    "mtime": 1784159545.0541258,
-    "ast_hash": "48f6321f9c6125f6024c66213879baf6",
-    "semantic_hash": "48f6321f9c6125f6024c66213879baf6"
+    "mtime": 1784519559.6770253,
+    "ast_hash": "a918b0de58e71aa2ae940131c9a82a06",
+    "semantic_hash": "a918b0de58e71aa2ae940131c9a82a06"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/harness.config.local.template.json": {
-    "mtime": 1784159545.0542758,
-    "ast_hash": "109639e7879afada70a72e0830977b84",
-    "semantic_hash": "109639e7879afada70a72e0830977b84"
+    "mtime": 1784519559.67725,
+    "ast_hash": "0662cfe037351c97621ae4bd833420fc",
+    "semantic_hash": "0662cfe037351c97621ae4bd833420fc"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/init.template.sh": {
-    "mtime": 1784245563.7592254,
-    "ast_hash": "1ea6e3084aba4ccdbcaedf20af6c821e",
-    "semantic_hash": "1ea6e3084aba4ccdbcaedf20af6c821e"
+    "mtime": 1784519559.677571,
+    "ast_hash": "d40d0d5ea4a58f4c8205cbb07cce23ec",
+    "semantic_hash": "d40d0d5ea4a58f4c8205cbb07cce23ec"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/schemas/feature_list.schema.json": {
-    "mtime": 1784159545.0544462,
-    "ast_hash": "3224d2988714a953b0051aa9d851c196",
-    "semantic_hash": "3224d2988714a953b0051aa9d851c196"
+    "mtime": 1784670008.9882684,
+    "ast_hash": "a9c93432e871555589ebd3a994bf271c",
+    "semantic_hash": "a9c93432e871555589ebd3a994bf271c"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/schemas/harness.config.schema.json": {
-    "mtime": 1784159545.054597,
-    "ast_hash": "a7a22d5c5385e97df75e14cc1ce8264e",
-    "semantic_hash": "a7a22d5c5385e97df75e14cc1ce8264e"
+    "mtime": 1784670008.9888792,
+    "ast_hash": "e4bea12010fec30c7c4ce38d432c8326",
+    "semantic_hash": "e4bea12010fec30c7c4ce38d432c8326"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/schemas/registry.schema.json": {
-    "mtime": 1784316595.3716884,
+    "mtime": 1784349834.060043,
     "ast_hash": "57a0a5b2125f9b59d17447cc799faa87",
     "semantic_hash": "57a0a5b2125f9b59d17447cc799faa87"
   },
@@ -634,13 +529,8 @@
     "ast_hash": "2507f26b22114575d9ba400c153e942e",
     "semantic_hash": "2507f26b22114575d9ba400c153e942e"
   },
-  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/toolbox_panel.js": {
-    "mtime": 1784335891.303571,
-    "ast_hash": "fc2782b100b4353dd86326d8f4799186",
-    "semantic_hash": "fc2782b100b4353dd86326d8f4799186"
-  },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/biome.json": {
-    "mtime": 1784224142.216829,
+    "mtime": 1784349834.0603828,
     "ast_hash": "8ec581e91be75c9a6d5cd5df1e4af9b7",
     "semantic_hash": "8ec581e91be75c9a6d5cd5df1e4af9b7"
   },
@@ -650,9 +540,9 @@
     "semantic_hash": "cf56d06e4a4256bbae3a3f3766bf2167"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/package.json": {
-    "mtime": 1784335099.4268095,
-    "ast_hash": "08cb97b4ee0cb05535123167fecd59e0",
-    "semantic_hash": "08cb97b4ee0cb05535123167fecd59e0"
+    "mtime": 1784519559.6786978,
+    "ast_hash": "50f309820db2a6f3255420d79f7fb557",
+    "semantic_hash": "50f309820db2a6f3255420d79f7fb557"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/scripts/scaffold.sh": {
     "mtime": 1784159545.056539,
@@ -660,154 +550,139 @@
     "semantic_hash": "4d2db0aba23fa72ff822596c40210f5b"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/backlog.ts": {
-    "mtime": 1784224142.2186255,
-    "ast_hash": "22e472ccd16248b3a5dc7c28d7c5352c",
-    "semantic_hash": "22e472ccd16248b3a5dc7c28d7c5352c"
+    "mtime": 1784670601.743565,
+    "ast_hash": "e7674ebf12fe8badd8bc80db6b1fa26b",
+    "semantic_hash": "e7674ebf12fe8badd8bc80db6b1fa26b"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/diff.test.ts": {
-    "mtime": 1784224142.2187576,
+    "mtime": 1784349834.0622225,
     "ast_hash": "1dc0a311275467d678204fa6b6b60919",
     "semantic_hash": "1dc0a311275467d678204fa6b6b60919"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/diff.ts": {
-    "mtime": 1784224142.2188501,
+    "mtime": 1784349834.0623052,
     "ast_hash": "5a75068c0d25eab20928c7625db088e7",
     "semantic_hash": "5a75068c0d25eab20928c7625db088e7"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/featureList.test.ts": {
-    "mtime": 1784224142.2189474,
+    "mtime": 1784349834.0623732,
     "ast_hash": "07cb6f63e255348b2c015d753c6d890b",
     "semantic_hash": "07cb6f63e255348b2c015d753c6d890b"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/featureList.ts": {
-    "mtime": 1784224142.219025,
+    "mtime": 1784349834.0624423,
     "ast_hash": "d6262bb34a6e7978c993ab0109a44bd5",
     "semantic_hash": "d6262bb34a6e7978c993ab0109a44bd5"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/frontmatter.test.ts": {
-    "mtime": 1784224142.219118,
+    "mtime": 1784349834.0625367,
     "ast_hash": "87c03e3e2c4f5b982c3ee9097c4168fc",
     "semantic_hash": "87c03e3e2c4f5b982c3ee9097c4168fc"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/frontmatter.ts": {
-    "mtime": 1784224142.2191947,
+    "mtime": 1784349834.0626106,
     "ast_hash": "0b6d250f10e6c4537f89479e1ebdeb63",
     "semantic_hash": "0b6d250f10e6c4537f89479e1ebdeb63"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/index.ts": {
-    "mtime": 1784238936.2888455,
-    "ast_hash": "268362a45818d6280a0023335d041d46",
-    "semantic_hash": "268362a45818d6280a0023335d041d46"
+    "mtime": 1784669963.5096447,
+    "ast_hash": "fc631217afd9084b2eddb2ded098d692",
+    "semantic_hash": "fc631217afd9084b2eddb2ded098d692"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/rounding.test.ts": {
-    "mtime": 1784224142.219357,
+    "mtime": 1784349834.0627346,
     "ast_hash": "8f733624360cb257d8ae0a9bc85a8271",
     "semantic_hash": "8f733624360cb257d8ae0a9bc85a8271"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/rounding.ts": {
-    "mtime": 1784224142.2194655,
+    "mtime": 1784349834.062803,
     "ast_hash": "ed79a1c0466ed18cf2d5612142ef3541",
     "semantic_hash": "ed79a1c0466ed18cf2d5612142ef3541"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/schema.test.ts": {
-    "mtime": 1784224142.2195463,
-    "ast_hash": "c14b19f2ecc1802251cd26cb5999c9bb",
-    "semantic_hash": "c14b19f2ecc1802251cd26cb5999c9bb"
+    "mtime": 1784349834.062863,
+    "ast_hash": "3160d9d25cfc42ea56ef2fad99861b23",
+    "semantic_hash": "3160d9d25cfc42ea56ef2fad99861b23"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/schema.ts": {
-    "mtime": 1784224142.2196221,
-    "ast_hash": "6ee53b8b7b8d61acd048c950f9ae1b32",
-    "semantic_hash": "6ee53b8b7b8d61acd048c950f9ae1b32"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/version.test.ts": {
-    "mtime": 1784224142.219709,
-    "ast_hash": "7c3a524bb3e2a7aa8eabdf362743c248",
-    "semantic_hash": "7c3a524bb3e2a7aa8eabdf362743c248"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/version.ts": {
-    "mtime": 1784224142.2198102,
-    "ast_hash": "1454b94c76999c56fc7faf063cbeed07",
-    "semantic_hash": "1454b94c76999c56fc7faf063cbeed07"
+    "mtime": 1784519559.6816726,
+    "ast_hash": "d04367c0a6840357d0e50a0533589abd",
+    "semantic_hash": "d04367c0a6840357d0e50a0533589abd"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/workspace.test.ts": {
-    "mtime": 1784224142.2198827,
+    "mtime": 1784349834.0631177,
     "ast_hash": "0d011966fd7634f1d1aa2da73cc753b4",
     "semantic_hash": "0d011966fd7634f1d1aa2da73cc753b4"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/workspace.ts": {
-    "mtime": 1784238936.289122,
-    "ast_hash": "4ef18488fe22ca9b75aec2a139894274",
-    "semantic_hash": "4ef18488fe22ca9b75aec2a139894274"
+    "mtime": 1784519559.6818113,
+    "ast_hash": "1e05626dd3a51573d60241ba133d58e4",
+    "semantic_hash": "1e05626dd3a51573d60241ba133d58e4"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/evals.ts": {
-    "mtime": 1784235024.2604346,
+    "mtime": 1784349834.0632644,
     "ast_hash": "8124dc84e41ba57d1e2576c0c8dee61b",
     "semantic_hash": "8124dc84e41ba57d1e2576c0c8dee61b"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/feature.ts": {
-    "mtime": 1784245563.7612727,
-    "ast_hash": "5364a3b1c417ab5fa91966f1db315ee6",
-    "semantic_hash": "5364a3b1c417ab5fa91966f1db315ee6"
+    "mtime": 1784670557.6318882,
+    "ast_hash": "45d5d5c774a4e1020c1a74dbac10b544",
+    "semantic_hash": "45d5d5c774a4e1020c1a74dbac10b544"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/index_md.ts": {
-    "mtime": 1784316378.9538856,
-    "ast_hash": "df11670488f53ba60a49cc5bdf5b7a44",
-    "semantic_hash": "df11670488f53ba60a49cc5bdf5b7a44"
+    "mtime": 1784519559.6822124,
+    "ast_hash": "404886daef84fdba4b0fb5ef7c5018ed",
+    "semantic_hash": "404886daef84fdba4b0fb5ef7c5018ed"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/metrics.ts": {
-    "mtime": 1784316378.9512434,
+    "mtime": 1784349834.0635586,
     "ast_hash": "3ac316102b62b0bea452a98e1560ffe5",
     "semantic_hash": "3ac316102b62b0bea452a98e1560ffe5"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/preflight.ts": {
-    "mtime": 1784309013.9465256,
-    "ast_hash": "ff993d29c6142e617f06e2c8a045211a",
-    "semantic_hash": "ff993d29c6142e617f06e2c8a045211a"
+    "mtime": 1784670551.3235726,
+    "ast_hash": "3c1557558fa1e799323950e7b4e81e03",
+    "semantic_hash": "3c1557558fa1e799323950e7b4e81e03"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/sprint.ts": {
-    "mtime": 1784231973.2042925,
-    "ast_hash": "940673a9c0200e773b91e10e8e4ef48b",
-    "semantic_hash": "940673a9c0200e773b91e10e8e4ef48b"
+    "mtime": 1784669983.0893447,
+    "ast_hash": "a573f0a2f7864331c539386568cd2ad8",
+    "semantic_hash": "a573f0a2f7864331c539386568cd2ad8"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/toolbox.ts": {
-    "mtime": 1784317131.4769971,
-    "ast_hash": "3e664aac91de7a3d6034e90630a99b40",
-    "semantic_hash": "3e664aac91de7a3d6034e90630a99b40"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/toolbox_serve.ts": {
-    "mtime": 1784335898.3745153,
-    "ast_hash": "aed505cfa5c2a6d82d4ebafdce7f6f1d",
-    "semantic_hash": "aed505cfa5c2a6d82d4ebafdce7f6f1d"
+    "mtime": 1784670601.7448683,
+    "ast_hash": "12d2f7a41dde485701f6a2267684cc3c",
+    "semantic_hash": "12d2f7a41dde485701f6a2267684cc3c"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/tools_discovery.ts": {
-    "mtime": 1784308594.7747035,
-    "ast_hash": "0b1ae507aa53f14bd56e3ec5aaa39caa",
-    "semantic_hash": "0b1ae507aa53f14bd56e3ec5aaa39caa"
+    "mtime": 1784670601.7464285,
+    "ast_hash": "a261fc01ddde55b0e0d1f621d05102ec",
+    "semantic_hash": "a261fc01ddde55b0e0d1f621d05102ec"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/update_harness.ts": {
-    "mtime": 1784242891.9620786,
+    "mtime": 1784349834.0645611,
     "ast_hash": "a47ac9954b37c2825dc47983b5a9cb4e",
     "semantic_hash": "a47ac9954b37c2825dc47983b5a9cb4e"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/upgrade_harness.ts": {
-    "mtime": 1784316378.9563494,
-    "ast_hash": "f32e013381a2bca0ab966e99c5d8d274",
-    "semantic_hash": "f32e013381a2bca0ab966e99c5d8d274"
+    "mtime": 1784670601.7455583,
+    "ast_hash": "e33d2f08ae18c3d159082fcbfb7f7384",
+    "semantic_hash": "e33d2f08ae18c3d159082fcbfb7f7384"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/validate_harness.ts": {
-    "mtime": 1784238936.2892485,
-    "ast_hash": "dad8c03ee54d0ddeffc3a77b866c8513",
-    "semantic_hash": "dad8c03ee54d0ddeffc3a77b866c8513"
+    "mtime": 1784519559.6839287,
+    "ast_hash": "1bef4e9715b7d59fa2e2a92bc8222024",
+    "semantic_hash": "1bef4e9715b7d59fa2e2a92bc8222024"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/tsconfig.json": {
-    "mtime": 1784224142.220208,
-    "ast_hash": "82ce437fe5c72bbefc6579d2cf193b55",
-    "semantic_hash": "82ce437fe5c72bbefc6579d2cf193b55"
+    "mtime": 1784519559.6841388,
+    "ast_hash": "fc7f4cc854716de41e87a2c6c01c7994",
+    "semantic_hash": "fc7f4cc854716de41e87a2c6c01c7994"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/init.sh": {
-    "mtime": 1784245563.761957,
-    "ast_hash": "97b885970b33e435b5f6032be4578e5b",
-    "semantic_hash": "97b885970b33e435b5f6032be4578e5b"
+    "mtime": 1784519559.6844957,
+    "ast_hash": "9a6dc654fa7cc0a9b85c0acf75465aed",
+    "semantic_hash": "9a6dc654fa7cc0a9b85c0acf75465aed"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/skills-lock.json": {
     "mtime": 1784159545.0572767,
@@ -815,99 +690,99 @@
     "semantic_hash": "c48c2a72af8439dfe80381836a0ad969"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/fixtures/init.reference.sh": {
-    "mtime": 1784311456.9389303,
+    "mtime": 1784349834.0651135,
     "ast_hash": "dbf041624ceb077e73e9bfa4c4dcdb9d",
     "semantic_hash": "dbf041624ceb077e73e9bfa4c4dcdb9d"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/lib/assert.sh": {
-    "mtime": 1784311457.731227,
+    "mtime": 1784349834.065226,
     "ast_hash": "a179a8df01c6d2b85bd5411b38b3f5f9",
     "semantic_hash": "a179a8df01c6d2b85bd5411b38b3f5f9"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/lib/jsonget.js": {
-    "mtime": 1784311010.816809,
+    "mtime": 1784349834.0653045,
     "ast_hash": "89b291b437b4217577dcf8f6076cbf03",
     "semantic_hash": "89b291b437b4217577dcf8f6076cbf03"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/run_tests.sh": {
-    "mtime": 1784317312.2822871,
-    "ast_hash": "31fbc3fb8b55a997c63a04b12bd8cf46",
-    "semantic_hash": "31fbc3fb8b55a997c63a04b12bd8cf46"
+    "mtime": 1784664928.7337594,
+    "ast_hash": "37fc05e9f6ae81ce3e81a6be3409711a",
+    "semantic_hash": "37fc05e9f6ae81ce3e81a6be3409711a"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_backlog.sh": {
-    "mtime": 1784312177.3022747,
-    "ast_hash": "f8955410efd9ae6f24da00997a05550e",
-    "semantic_hash": "f8955410efd9ae6f24da00997a05550e"
+    "mtime": 1784519559.6922464,
+    "ast_hash": "24e8f76959e8dba6e182b610117e1417",
+    "semantic_hash": "24e8f76959e8dba6e182b610117e1417"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_docs.js": {
-    "mtime": 1784311639.459773,
-    "ast_hash": "094fe4089941136edcfbdebe39273618",
-    "semantic_hash": "094fe4089941136edcfbdebe39273618"
+    "mtime": 1784670341.7704058,
+    "ast_hash": "77dc0aa691bd8f8b30dbc787ad74f5ab",
+    "semantic_hash": "77dc0aa691bd8f8b30dbc787ad74f5ab"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_evals.sh": {
-    "mtime": 1784312178.162503,
+    "mtime": 1784349834.0657754,
     "ast_hash": "e2f96ef24aa503cc92e134d65c455d53",
     "semantic_hash": "e2f96ef24aa503cc92e134d65c455d53"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_feature.sh": {
-    "mtime": 1784312178.676367,
-    "ast_hash": "0a348a1275da7fc1df764157973dfdbb",
-    "semantic_hash": "0a348a1275da7fc1df764157973dfdbb"
+    "mtime": 1784670689.2996378,
+    "ast_hash": "0c95d7288250552c6562d95041a7c226",
+    "semantic_hash": "0c95d7288250552c6562d95041a7c226"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_index.sh": {
-    "mtime": 1784312180.2063,
-    "ast_hash": "39253d7d52634d56bf9e27eecfa16669",
-    "semantic_hash": "39253d7d52634d56bf9e27eecfa16669"
+    "mtime": 1784519559.692825,
+    "ast_hash": "6f3bff980899ec5b8b0f2d57d3e0900c",
+    "semantic_hash": "6f3bff980899ec5b8b0f2d57d3e0900c"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_init.sh": {
-    "mtime": 1784311285.9257753,
-    "ast_hash": "f00ae3ab2f1a50047a5dd5b5787a034f",
-    "semantic_hash": "f00ae3ab2f1a50047a5dd5b5787a034f"
+    "mtime": 1784519559.692991,
+    "ast_hash": "63233fc5af8e458a8fc23ab720fa5df1",
+    "semantic_hash": "63233fc5af8e458a8fc23ab720fa5df1"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_metrics.sh": {
-    "mtime": 1784312180.5292158,
+    "mtime": 1784349834.0663006,
     "ast_hash": "08bbe0b6a4d896281ddcdc8eb6afb829",
     "semantic_hash": "08bbe0b6a4d896281ddcdc8eb6afb829"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_preflight.sh": {
-    "mtime": 1784312179.7242842,
-    "ast_hash": "a560cfa25972c0796dfd77d7916012da",
-    "semantic_hash": "a560cfa25972c0796dfd77d7916012da"
+    "mtime": 1784670596.8936956,
+    "ast_hash": "2429ec2610e624418fa38a449b33a4eb",
+    "semantic_hash": "2429ec2610e624418fa38a449b33a4eb"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_sprint.sh": {
-    "mtime": 1784312179.202825,
-    "ast_hash": "b7b02ba8b291efd41d0db6f11fcdcd15",
-    "semantic_hash": "b7b02ba8b291efd41d0db6f11fcdcd15"
+    "mtime": 1784670022.189589,
+    "ast_hash": "02489d1b4aa07c01e6ed1485a643cee7",
+    "semantic_hash": "02489d1b4aa07c01e6ed1485a643cee7"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_toolbox.sh": {
-    "mtime": 1784316695.3671274,
-    "ast_hash": "af5df8e860531a63003671f49d3af698",
-    "semantic_hash": "af5df8e860531a63003671f49d3af698"
+    "mtime": 1784519559.693408,
+    "ast_hash": "f5646ff75478878138f3060e1b60a10f",
+    "semantic_hash": "f5646ff75478878138f3060e1b60a10f"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_toolbox_serve.sh": {
-    "mtime": 1784335919.0453951,
-    "ast_hash": "f068374bd1e281e59645712a23f9c774",
-    "semantic_hash": "f068374bd1e281e59645712a23f9c774"
+    "mtime": 1784664928.7341275,
+    "ast_hash": "6a0ed593c8e0f9a8b167fafbf12c4150",
+    "semantic_hash": "6a0ed593c8e0f9a8b167fafbf12c4150"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_tools_discovery.sh": {
-    "mtime": 1784311233.781568,
+    "mtime": 1784349834.067,
     "ast_hash": "dcf9edc83f84b1e033c1a098d5364256",
     "semantic_hash": "dcf9edc83f84b1e033c1a098d5364256"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_update.sh": {
-    "mtime": 1784311079.0905907,
+    "mtime": 1784349834.067133,
     "ast_hash": "8efd222e052cd89aef8c5224090b4eb0",
     "semantic_hash": "8efd222e052cd89aef8c5224090b4eb0"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_upgrade.sh": {
-    "mtime": 1784244164.2685337,
+    "mtime": 1784349834.0672488,
     "ast_hash": "129f65f5777ecf35b9b8494cae62cb55",
     "semantic_hash": "129f65f5777ecf35b9b8494cae62cb55"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/.github/workflows/ci.yml": {
-    "mtime": 1784311822.7376447,
-    "ast_hash": "8c6f3b186ac54027327f0e929e799326",
-    "semantic_hash": "8c6f3b186ac54027327f0e929e799326"
+    "mtime": 1784519559.6117494,
+    "ast_hash": "fbc023d985479028c00457337373f66e",
+    "semantic_hash": "fbc023d985479028c00457337373f66e"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/AGENTS.md": {
     "mtime": 1784226613.9588838,
@@ -920,114 +795,19 @@
     "semantic_hash": "47e4e46b4721ff547652eb36ca06e28f"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/README.md": {
-    "mtime": 1782441645.9302719,
-    "ast_hash": "5c3836b9396e430ba61cda7306b6cb7a",
-    "semantic_hash": "5c3836b9396e430ba61cda7306b6cb7a"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-acciones-deterministas-por-capa.md": {
-    "mtime": 1782437050.5277796,
-    "ast_hash": "639f40178aafcc9b19a309f88e719a12",
-    "semantic_hash": "639f40178aafcc9b19a309f88e719a12"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-actualizacion-harness.md": {
-    "mtime": 1781761242.383765,
-    "ast_hash": "01d8489fbb672fb13a1947ef120ee963",
-    "semantic_hash": "01d8489fbb672fb13a1947ef120ee963"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-business-context-bootstrap.md": {
-    "mtime": 1782437050.5280738,
-    "ast_hash": "c5c5d9fc6a6abe50cb82220103fae39c",
-    "semantic_hash": "c5c5d9fc6a6abe50cb82220103fae39c"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-feature-request-md.md": {
-    "mtime": 1782437050.5284045,
-    "ast_hash": "07a69505ca4fa9621a16991c27378927",
-    "semantic_hash": "07a69505ca4fa9621a16991c27378927"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-harnesses-ecosistema.md": {
-    "mtime": 1784159545.0529985,
-    "ast_hash": "6fc71a1ccdc1bbbd36794c660f47e6f4",
-    "semantic_hash": "6fc71a1ccdc1bbbd36794c660f47e6f4"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-inconsistencia-bootstrap.md": {
-    "mtime": 1782437050.5286107,
-    "ast_hash": "974466eee183ca108b3457e91bd013de",
-    "semantic_hash": "974466eee183ca108b3457e91bd013de"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-iteraciones.md": {
-    "mtime": 1781756751.098907,
-    "ast_hash": "c64d71382efdf46f933a8bf5a6359fb8",
-    "semantic_hash": "c64d71382efdf46f933a8bf5a6359fb8"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-observador-fleet-web.md": {
-    "mtime": 1784315854.6750371,
-    "ast_hash": "05ab764601ff65d486ca8e567d0bfb56",
-    "semantic_hash": "05ab764601ff65d486ca8e567d0bfb56"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-peticiones-llm-toolbox.md": {
-    "mtime": 1784318881.0551424,
-    "ast_hash": "0d7d98c5b1d18ba0dbe149a11fe05588",
-    "semantic_hash": "0d7d98c5b1d18ba0dbe149a11fe05588"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-pre-post-process.md": {
-    "mtime": 1782939394.786504,
-    "ast_hash": "626bcfd0a2acb2566b4a8cbde9c648f8",
-    "semantic_hash": "626bcfd0a2acb2566b4a8cbde9c648f8"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-rag-handyman.md": {
-    "mtime": 1784314380.9218645,
-    "ast_hash": "26ca5a632fb41569b853e009dbd50563",
-    "semantic_hash": "26ca5a632fb41569b853e009dbd50563"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-snyk-w011.md": {
-    "mtime": 1782487213.5972018,
-    "ast_hash": "e5c32480574690b6a06ed26d8a8f6c4c",
-    "semantic_hash": "e5c32480574690b6a06ed26d8a8f6c4c"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-sprints-cierre-periodo.md": {
-    "mtime": 1784159545.0531995,
-    "ast_hash": "b7c4caffe132a049780b81d770c8756d",
-    "semantic_hash": "b7c4caffe132a049780b81d770c8756d"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-tests-evaluaciones-modelo.md": {
-    "mtime": 1782883266.1980588,
-    "ast_hash": "b2e16c297800240f6d8bf8df2f48a43c",
-    "semantic_hash": "b2e16c297800240f6d8bf8df2f48a43c"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-tool-discovery-referencias.md": {
-    "mtime": 1782939394.786794,
-    "ast_hash": "01673afc3d31b71c496cd0888773d388",
-    "semantic_hash": "01673afc3d31b71c496cd0888773d388"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-tool-discovery.md": {
-    "mtime": 1782883266.1983867,
-    "ast_hash": "5ddb13e17ccc7b41ef6ab2b4e04aac7e",
-    "semantic_hash": "5ddb13e17ccc7b41ef6ab2b4e04aac7e"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-ui-observador-toolbox.md": {
-    "mtime": 1784318835.965664,
-    "ast_hash": "a2ee1bb89df4c382ba71f1a34391e8df",
-    "semantic_hash": "a2ee1bb89df4c382ba71f1a34391e8df"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/analisis-workflow-etapas.md": {
-    "mtime": 1782944321.2133255,
-    "ast_hash": "e67362578e6cc15e63a51aa1869328db",
-    "semantic_hash": "e67362578e6cc15e63a51aa1869328db"
-  },
-  "/Users/rodrigomardones/proyectos/programing/handyman/docs/estado-migracion-ts.md": {
-    "mtime": 1784318166.2520194,
-    "ast_hash": "0a1b792243113cae4a36b84fefa688f8",
-    "semantic_hash": "0a1b792243113cae4a36b84fefa688f8"
+    "mtime": 1784519559.665218,
+    "ast_hash": "df419a88ad61c6d543a0f2d57fa7159f",
+    "semantic_hash": "df419a88ad61c6d543a0f2d57fa7159f"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/docs/mapa-entidades-negocio.md": {
-    "mtime": 1784314177.7189925,
+    "mtime": 1784349834.0338016,
     "ast_hash": "2998ef6cc47cb063ff52597876c30fc8",
     "semantic_hash": "2998ef6cc47cb063ff52597876c30fc8"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/docs/pull_request_detail.md": {
-    "mtime": 1784159545.0534165,
-    "ast_hash": "0e3b8cf083d183e801a9757ddc61703f",
-    "semantic_hash": "0e3b8cf083d183e801a9757ddc61703f"
+    "mtime": 1784519559.6753252,
+    "ast_hash": "0dc946ada171dfe01549ba0bc277cc4a",
+    "semantic_hash": "0dc946ada171dfe01549ba0bc277cc4a"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/docs/pull_request_template.md": {
     "mtime": 1782487213.5974731,
@@ -1035,9 +815,9 @@
     "semantic_hash": "b3ce023ddbb649b511a4ded0b101a775"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/SKILL.md": {
-    "mtime": 1784335104.5604236,
-    "ast_hash": "c0f73163115356d95b70fed542d4e8d6",
-    "semantic_hash": "c0f73163115356d95b70fed542d4e8d6"
+    "mtime": 1784519559.675644,
+    "ast_hash": "71a4be159361ed91f6d282f61dc67d79",
+    "semantic_hash": "71a4be159361ed91f6d282f61dc67d79"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/AGENTS.template.md": {
     "mtime": 1782441645.9309072,
@@ -1050,69 +830,69 @@
     "semantic_hash": "47e4e46b4721ff547652eb36ca06e28f"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/backlog-explore.template.md": {
-    "mtime": 1782441645.9311495,
-    "ast_hash": "16c0c83d9bad84d67e055de501f4711e",
-    "semantic_hash": "16c0c83d9bad84d67e055de501f4711e"
+    "mtime": 1784519559.675799,
+    "ast_hash": "ae8f7fbdaa7a3617d8fbe604696b9275",
+    "semantic_hash": "ae8f7fbdaa7a3617d8fbe604696b9275"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/backlog-impl.template.md": {
-    "mtime": 1782441645.9312665,
-    "ast_hash": "1eda2ea8faf7a701fc1aa9bd0c1599ee",
-    "semantic_hash": "1eda2ea8faf7a701fc1aa9bd0c1599ee"
+    "mtime": 1784519559.6759498,
+    "ast_hash": "178b29a5aababc99187f012419bd4760",
+    "semantic_hash": "178b29a5aababc99187f012419bd4760"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/backlog-review.template.md": {
-    "mtime": 1784159545.0538044,
-    "ast_hash": "121f18ea50003b20d60520d8f0a1e155",
-    "semantic_hash": "121f18ea50003b20d60520d8f0a1e155"
+    "mtime": 1784519559.6760817,
+    "ast_hash": "e01e872007b71546ae3906bf90e261e6",
+    "semantic_hash": "e01e872007b71546ae3906bf90e261e6"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/docs-architecture.template.md": {
-    "mtime": 1782441645.931519,
-    "ast_hash": "a053c71005e8cbdbf025263eb7e0aa1e",
-    "semantic_hash": "a053c71005e8cbdbf025263eb7e0aa1e"
+    "mtime": 1784519559.6762483,
+    "ast_hash": "a4f084937c3a970a23287e864f0ac83a",
+    "semantic_hash": "a4f084937c3a970a23287e864f0ac83a"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/docs-business.template.md": {
-    "mtime": 1782441645.9316616,
-    "ast_hash": "aa40be111dd6028d345ce600a75a4d81",
-    "semantic_hash": "aa40be111dd6028d345ce600a75a4d81"
+    "mtime": 1784519559.676395,
+    "ast_hash": "5dc5ab5aacd6c652b3b67b7232db1938",
+    "semantic_hash": "5dc5ab5aacd6c652b3b67b7232db1938"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/docs-conventions.template.md": {
-    "mtime": 1782441645.9317994,
-    "ast_hash": "b2e50b1b8f70d7fb04c31dd63046640c",
-    "semantic_hash": "b2e50b1b8f70d7fb04c31dd63046640c"
+    "mtime": 1784519559.6765602,
+    "ast_hash": "0d8b1f67d1fb20088216f4230792d3df",
+    "semantic_hash": "0d8b1f67d1fb20088216f4230792d3df"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/docs-verification.template.md": {
-    "mtime": 1782441645.9319317,
-    "ast_hash": "da5c95e17fe6c2f938efe0dd563e9c72",
-    "semantic_hash": "da5c95e17fe6c2f938efe0dd563e9c72"
+    "mtime": 1784519559.6767101,
+    "ast_hash": "4f03153536e614fe2cc1aa8cd5c925d0",
+    "semantic_hash": "4f03153536e614fe2cc1aa8cd5c925d0"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/feature-request.template.md": {
-    "mtime": 1784308772.8273947,
-    "ast_hash": "9913d27e25fcd70456033825456619ce",
-    "semantic_hash": "9913d27e25fcd70456033825456619ce"
+    "mtime": 1784519559.676868,
+    "ast_hash": "e8b7e95b24ff74e10debbc90b482b08c",
+    "semantic_hash": "e8b7e95b24ff74e10debbc90b482b08c"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/index.template.md": {
-    "mtime": 1782441645.9328315,
-    "ast_hash": "bbf500066c80731208713ed6483b48fa",
-    "semantic_hash": "bbf500066c80731208713ed6483b48fa"
+    "mtime": 1784519559.677384,
+    "ast_hash": "9f52d6bcbbb422563e5386caecb40f16",
+    "semantic_hash": "9f52d6bcbbb422563e5386caecb40f16"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/progress-current.template.md": {
-    "mtime": 1782441645.933166,
-    "ast_hash": "ea21700c58ac7138b2f7dbc3cbc50502",
-    "semantic_hash": "ea21700c58ac7138b2f7dbc3cbc50502"
+    "mtime": 1784519559.677731,
+    "ast_hash": "c32ac38af93f3ee0b6808ff7d53c9a91",
+    "semantic_hash": "c32ac38af93f3ee0b6808ff7d53c9a91"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/progress-history.template.md": {
-    "mtime": 1782441645.9332933,
-    "ast_hash": "cfee94d99ef71c85ad47454298f23713",
-    "semantic_hash": "cfee94d99ef71c85ad47454298f23713"
+    "mtime": 1784670569.2247021,
+    "ast_hash": "f5373099669ecfb77dd5450b3e47b43b",
+    "semantic_hash": "f5373099669ecfb77dd5450b3e47b43b"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/role-explorer.template.md": {
-    "mtime": 1782441645.933433,
-    "ast_hash": "5b875c37642d466dad44ff7fa4df65b8",
-    "semantic_hash": "5b875c37642d466dad44ff7fa4df65b8"
+    "mtime": 1784519559.67809,
+    "ast_hash": "919aea5fcea2b2e3c833d2f29df78b4a",
+    "semantic_hash": "919aea5fcea2b2e3c833d2f29df78b4a"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/role-implementer.template.md": {
-    "mtime": 1782441645.9335663,
-    "ast_hash": "6103f8c646e39f27268d1c3ad2fd6bf1",
-    "semantic_hash": "6103f8c646e39f27268d1c3ad2fd6bf1"
+    "mtime": 1784519559.678234,
+    "ast_hash": "ab211cbca5efe79bb4df4238809769d0",
+    "semantic_hash": "ab211cbca5efe79bb4df4238809769d0"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/role-leader.template.md": {
     "mtime": 1782441645.9337008,
@@ -1120,83 +900,2488 @@
     "semantic_hash": "fcf35d04ce88aa1be9e638d41a17e58e"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/role-reviewer.template.md": {
-    "mtime": 1782441645.933859,
-    "ast_hash": "5bd53bb148249a279d49ee0d85fcb5c7",
-    "semantic_hash": "5bd53bb148249a279d49ee0d85fcb5c7"
+    "mtime": 1784519559.678406,
+    "ast_hash": "2c6435a04349ea74d91e1d8ff6429241",
+    "semantic_hash": "2c6435a04349ea74d91e1d8ff6429241"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/sprint.template.md": {
-    "mtime": 1784231973.203191,
-    "ast_hash": "ad77d89915218785c38599c5da63da19",
-    "semantic_hash": "ad77d89915218785c38599c5da63da19"
+    "mtime": 1784519559.6785505,
+    "ast_hash": "d2b7a294b7729bea6e4c9d28668b6d42",
+    "semantic_hash": "d2b7a294b7729bea6e4c9d28668b6d42"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/README.md": {
-    "mtime": 1784317965.0813594,
+    "mtime": 1784506891.049255,
     "ast_hash": "8dd1c106ef3eb192eb4c51b87f211840",
     "semantic_hash": "8dd1c106ef3eb192eb4c51b87f211840"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/anatomy.md": {
-    "mtime": 1784308774.6458328,
-    "ast_hash": "c09be856279e6e71cf0ce851ebad75ca",
-    "semantic_hash": "c09be856279e6e71cf0ce851ebad75ca"
+    "mtime": 1784519559.6788943,
+    "ast_hash": "c0d1809320f58cab7354905fa653074e",
+    "semantic_hash": "c0d1809320f58cab7354905fa653074e"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/checklists.md": {
-    "mtime": 1784245563.760045,
-    "ast_hash": "42122ee21078bdf882d88e882f3a64bf",
-    "semantic_hash": "42122ee21078bdf882d88e882f3a64bf"
+    "mtime": 1784519559.6790876,
+    "ast_hash": "58bc44f98f5b18eee3111bc14a71e287",
+    "semantic_hash": "58bc44f98f5b18eee3111bc14a71e287"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/discovery.md": {
-    "mtime": 1784308806.3764112,
-    "ast_hash": "b3a21e2951388988109a9fb386d4d270",
-    "semantic_hash": "b3a21e2951388988109a9fb386d4d270"
+    "mtime": 1784519559.6792724,
+    "ast_hash": "147d4f2798b01253b35ff62d65582584",
+    "semantic_hash": "147d4f2798b01253b35ff62d65582584"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/evals.md": {
-    "mtime": 1784235024.2593937,
-    "ast_hash": "8d1b52557c345f97221698dd491aa112",
-    "semantic_hash": "8d1b52557c345f97221698dd491aa112"
+    "mtime": 1784519559.6794195,
+    "ast_hash": "ceeb1c1074eb6aafde4a850f520ec87d",
+    "semantic_hash": "ceeb1c1074eb6aafde4a850f520ec87d"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/examples.md": {
-    "mtime": 1784308769.2768734,
-    "ast_hash": "0fd912ae53cec56b0c27b55857ebe1ce",
-    "semantic_hash": "0fd912ae53cec56b0c27b55857ebe1ce"
+    "mtime": 1784519559.6795788,
+    "ast_hash": "b8474c49388b7b6bbf9b737d2577337c",
+    "semantic_hash": "b8474c49388b7b6bbf9b737d2577337c"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/graphify.md": {
-    "mtime": 1782441645.9353554,
+    "mtime": 1784506891.0612636,
     "ast_hash": "4de38b733810b5b7f9b32f9dcddc8d57",
     "semantic_hash": "4de38b733810b5b7f9b32f9dcddc8d57"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/models.md": {
-    "mtime": 1784242891.9603739,
-    "ast_hash": "9c36d9009cb584d19d3499a0a5c68e3b",
-    "semantic_hash": "9c36d9009cb584d19d3499a0a5c68e3b"
+    "mtime": 1784519559.6797256,
+    "ast_hash": "cc0ad406d948e7539df58f3f6ef6475a",
+    "semantic_hash": "cc0ad406d948e7539df58f3f6ef6475a"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/obsidian.md": {
-    "mtime": 1784224142.2178655,
-    "ast_hash": "64fd6a5901829a7092dd5668c80983b5",
-    "semantic_hash": "64fd6a5901829a7092dd5668c80983b5"
+    "mtime": 1784519559.6798842,
+    "ast_hash": "68f7b49d29cfc67a10ecbe1d52f382f6",
+    "semantic_hash": "68f7b49d29cfc67a10ecbe1d52f382f6"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/security.md": {
-    "mtime": 1782487213.5978615,
+    "mtime": 1784506891.0683107,
     "ast_hash": "c6732a23faf630a75a857c971d95068a",
     "semantic_hash": "c6732a23faf630a75a857c971d95068a"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/templates.md": {
-    "mtime": 1784308767.4358828,
-    "ast_hash": "b9f7ab14d30cb860b10a98e81d420519",
-    "semantic_hash": "b9f7ab14d30cb860b10a98e81d420519"
+    "mtime": 1784519559.6800854,
+    "ast_hash": "b9e4ac3499580747abda77874d9750a4",
+    "semantic_hash": "b9e4ac3499580747abda77874d9750a4"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/toolbox.md": {
-    "mtime": 1784317963.3444145,
-    "ast_hash": "9a191bcde20438caee6a29bb59da97fb",
-    "semantic_hash": "9a191bcde20438caee6a29bb59da97fb"
+    "mtime": 1784670601.750427,
+    "ast_hash": "8e57643f8c80da757fa86ca7ef9e2c21",
+    "semantic_hash": "8e57643f8c80da757fa86ca7ef9e2c21"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/tools.md": {
-    "mtime": 1784242891.960884,
-    "ast_hash": "6e0bd8d21f4205a85933bbbc019f2c62",
-    "semantic_hash": "6e0bd8d21f4205a85933bbbc019f2c62"
+    "mtime": 1784519559.6804082,
+    "ast_hash": "04b6e97d6650947d7666d2a7ebb31de1",
+    "semantic_hash": "04b6e97d6650947d7666d2a7ebb31de1"
   },
   "/Users/rodrigomardones/proyectos/programing/handyman/handyman/references/workflow.md": {
-    "mtime": 1784308764.844916,
-    "ast_hash": "335d1a3cb3a46cf53c12d4bd63fe976b",
-    "semantic_hash": "335d1a3cb3a46cf53c12d4bd63fe976b"
+    "mtime": 1784670601.749945,
+    "ast_hash": "0b24e8a8d256c5956a79c4f9248802e9",
+    "semantic_hash": "0b24e8a8d256c5956a79c4f9248802e9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/feature_archive.json": {
+    "mtime": 1784669770.6078963,
+    "ast_hash": "752dc931689bfe588e8d7f5015969bc0",
+    "semantic_hash": "752dc931689bfe588e8d7f5015969bc0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/feature_list.json": {
+    "mtime": 1784670428.8142257,
+    "ast_hash": "1007b51228bd92ae7e14473620a1f112",
+    "semantic_hash": "1007b51228bd92ae7e14473620a1f112"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/actions/intake.ts": {
+    "mtime": 1784519559.6654415,
+    "ast_hash": "4cf2edb07617cf8dc1feb36257d8b8fa",
+    "semantic_hash": "4cf2edb07617cf8dc1feb36257d8b8fa"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/acceptance/route.ts": {
+    "mtime": 1784519559.665755,
+    "ast_hash": "4e5696baab2dcb9929b0d2e8b9d28ffa",
+    "semantic_hash": "4e5696baab2dcb9929b0d2e8b9d28ffa"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/ask/route.ts": {
+    "mtime": 1784519559.6658943,
+    "ast_hash": "ed79af7920b481f731e6be1689a52118",
+    "semantic_hash": "ed79af7920b481f731e6be1689a52118"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/corpus/route.ts": {
+    "mtime": 1784519559.666021,
+    "ast_hash": "324071361c3e83ef3412d6775f33871a",
+    "semantic_hash": "324071361c3e83ef3412d6775f33871a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/draft/route.ts": {
+    "mtime": 1784519559.6661599,
+    "ast_hash": "b78d6c98ea9d15dba11c7245954e6e4d",
+    "semantic_hash": "b78d6c98ea9d15dba11c7245954e6e4d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/feature/route.ts": {
+    "mtime": 1784519559.6662982,
+    "ast_hash": "dedfe7abdd1408dc20e03e82399dc2ba",
+    "semantic_hash": "dedfe7abdd1408dc20e03e82399dc2ba"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/files/route.ts": {
+    "mtime": 1784519559.6664233,
+    "ast_hash": "4a4928714f9616335fe76cb3fb631b03",
+    "semantic_hash": "4a4928714f9616335fe76cb3fb631b03"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/intake/route.ts": {
+    "mtime": 1784519559.6665504,
+    "ast_hash": "148751c110de9f22ded9ed73100ec7ef",
+    "semantic_hash": "148751c110de9f22ded9ed73100ec7ef"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/md/route.ts": {
+    "mtime": 1784519559.6666813,
+    "ast_hash": "660ce9e6492013ed69068e03db024ea7",
+    "semantic_hash": "660ce9e6492013ed69068e03db024ea7"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/providers/route.ts": {
+    "mtime": 1784519559.6668172,
+    "ast_hash": "71650f9e8eafcd3b70e7b7c426ff1a3b",
+    "semantic_hash": "71650f9e8eafcd3b70e7b7c426ff1a3b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/retro/route.ts": {
+    "mtime": 1784519559.666976,
+    "ast_hash": "3f63a1bff8c85ceb6201ae6c0634e06d",
+    "semantic_hash": "3f63a1bff8c85ceb6201ae6c0634e06d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/review-notes/route.ts": {
+    "mtime": 1784519559.6671221,
+    "ast_hash": "aa0b70aca9625062a4a5dee5ae62a8ff",
+    "semantic_hash": "aa0b70aca9625062a4a5dee5ae62a8ff"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/state/route.ts": {
+    "mtime": 1784519559.6672568,
+    "ast_hash": "913f75e81a54dfaf5142e1f715d28dfc",
+    "semantic_hash": "913f75e81a54dfaf5142e1f715d28dfc"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/summarize/route.ts": {
+    "mtime": 1784519559.667402,
+    "ast_hash": "30fff2a972ddad9feebcdad57be7af3a",
+    "semantic_hash": "30fff2a972ddad9feebcdad57be7af3a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/api/triage/route.ts": {
+    "mtime": 1784519559.6675353,
+    "ast_hash": "fc92ace983e1fe4599bbce777818c237",
+    "semantic_hash": "fc92ace983e1fe4599bbce777818c237"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/ask/askHtml.ts": {
+    "mtime": 1784519559.6676695,
+    "ast_hash": "7498af59f09206923bc4220dfb18b15b",
+    "semantic_hash": "7498af59f09206923bc4220dfb18b15b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/ask/page.tsx": {
+    "mtime": 1784664928.7256858,
+    "ast_hash": "b449e4f1bc12f9bf43251ff6ad6f715a",
+    "semantic_hash": "b449e4f1bc12f9bf43251ff6ad6f715a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/events/route.ts": {
+    "mtime": 1784519559.6680086,
+    "ast_hash": "16d234dc6e2436db10243f8e966881dc",
+    "semantic_hash": "16d234dc6e2436db10243f8e966881dc"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/fleet/fleetHtml.ts": {
+    "mtime": 1784519559.6682203,
+    "ast_hash": "e335c2cebad9e18449535dc8643d53fe",
+    "semantic_hash": "e335c2cebad9e18449535dc8643d53fe"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/fleet/page.tsx": {
+    "mtime": 1784664928.7265399,
+    "ast_hash": "f266829b1fd98cad0393a52599251817",
+    "semantic_hash": "f266829b1fd98cad0393a52599251817"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/fleet/summaryHtml.ts": {
+    "mtime": 1784519559.6685977,
+    "ast_hash": "6af71705a6d966c15ca7b8b7637ca82a",
+    "semantic_hash": "6af71705a6d966c15ca7b8b7637ca82a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/graph/[...slug]/route.ts": {
+    "mtime": 1784519559.6688824,
+    "ast_hash": "ff815dc62b372e6d3629b1d048c448c1",
+    "semantic_hash": "ff815dc62b372e6d3629b1d048c448c1"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/harness/[name]/page.tsx": {
+    "mtime": 1784664928.7271986,
+    "ast_hash": "dc3697f74e5e04e13283fe5987503c79",
+    "semantic_hash": "dc3697f74e5e04e13283fe5987503c79"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/harness/harnessHtml.ts": {
+    "mtime": 1784664928.7276077,
+    "ast_hash": "33f1da26cd7bc2f2b0ff0d9002878437",
+    "semantic_hash": "33f1da26cd7bc2f2b0ff0d9002878437"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/intake/intakeHtml.ts": {
+    "mtime": 1784519559.6694832,
+    "ast_hash": "a33e87cb8c726ba7f177374dc8d8798b",
+    "semantic_hash": "a33e87cb8c726ba7f177374dc8d8798b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/intake/page.tsx": {
+    "mtime": 1784664928.7281392,
+    "ast_hash": "a10a37f9b750f4aaafbb43ea2dc5ba45",
+    "semantic_hash": "a10a37f9b750f4aaafbb43ea2dc5ba45"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/layout.tsx": {
+    "mtime": 1784664928.72842,
+    "ast_hash": "4ba8ef6e75f221714c02cb80ee29efc9",
+    "semantic_hash": "4ba8ef6e75f221714c02cb80ee29efc9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/page.tsx": {
+    "mtime": 1784664928.7291002,
+    "ast_hash": "b92514ae34a674d12a5d5a724c7b6eda",
+    "semantic_hash": "b92514ae34a674d12a5d5a724c7b6eda"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/search/page.tsx": {
+    "mtime": 1784664928.7296898,
+    "ast_hash": "435c22dd0b83a8f8627416f8794dcc07",
+    "semantic_hash": "435c22dd0b83a8f8627416f8794dcc07"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/search/searchHtml.ts": {
+    "mtime": 1784519559.6706111,
+    "ast_hash": "a1393afc22db3d6ef8b6b4e0dc76e1f3",
+    "semantic_hash": "a1393afc22db3d6ef8b6b4e0dc76e1f3"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/timeline/page.tsx": {
+    "mtime": 1784664928.7303615,
+    "ast_hash": "359dbf11a4a236ee0cd44d0a6d1c0953",
+    "semantic_hash": "359dbf11a4a236ee0cd44d0a6d1c0953"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/timeline/timelineHtml.ts": {
+    "mtime": 1784519559.6710722,
+    "ast_hash": "634a59a5369b62c60472e149b585d318",
+    "semantic_hash": "634a59a5369b62c60472e149b585d318"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/app/vendor/[...slug]/route.ts": {
+    "mtime": 1784519559.671281,
+    "ast_hash": "a94a3fbe79761d3ef7ef021504fedb1f",
+    "semantic_hash": "a94a3fbe79761d3ef7ef021504fedb1f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/components/AddFeatureForm.tsx": {
+    "mtime": 1784519559.6715837,
+    "ast_hash": "f980cb946d743835b4906ce4e48ec0fe",
+    "semantic_hash": "f980cb946d743835b4906ce4e48ec0fe"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/components/AskClient.tsx": {
+    "mtime": 1784519559.6718302,
+    "ast_hash": "1ba56323d33b9eb84af6690ce13858b5",
+    "semantic_hash": "1ba56323d33b9eb84af6690ce13858b5"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/components/FleetLive.tsx": {
+    "mtime": 1784519559.6719306,
+    "ast_hash": "f77dde8c978cbeb8b0b530c0ee9667af",
+    "semantic_hash": "f77dde8c978cbeb8b0b530c0ee9667af"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/components/FleetSummaryClient.tsx": {
+    "mtime": 1784519559.6721644,
+    "ast_hash": "16767907b02163fa15d4065e2ca75d39",
+    "semantic_hash": "16767907b02163fa15d4065e2ca75d39"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/components/HarnessLive.tsx": {
+    "mtime": 1784519559.6722965,
+    "ast_hash": "ba7aa201b883ead19fb5309311a22140",
+    "semantic_hash": "ba7aa201b883ead19fb5309311a22140"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/components/IntakeClient.tsx": {
+    "mtime": 1784519559.6725354,
+    "ast_hash": "b7d886862b79f5ff7e6fb632180dc401",
+    "semantic_hash": "b7d886862b79f5ff7e6fb632180dc401"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/components/MdDialog.tsx": {
+    "mtime": 1784519559.67277,
+    "ast_hash": "5cbb9f69e29a16f3c0dd20ac42df8f92",
+    "semantic_hash": "5cbb9f69e29a16f3c0dd20ac42df8f92"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/components/ScrollReveal.tsx": {
+    "mtime": 1784664928.7308292,
+    "ast_hash": "85c5984e1a169242aac1ad95c16909ce",
+    "semantic_hash": "85c5984e1a169242aac1ad95c16909ce"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/components/SearchClient.tsx": {
+    "mtime": 1784519559.6730711,
+    "ast_hash": "81bd88eb3e484d8926915b284f7b1c81",
+    "semantic_hash": "81bd88eb3e484d8926915b284f7b1c81"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/components/TimelineLive.tsx": {
+    "mtime": 1784519559.6731865,
+    "ast_hash": "28c02170153b47d4ec18288a11a328c9",
+    "semantic_hash": "28c02170153b47d4ec18288a11a328c9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/components/ToolboxShell.tsx": {
+    "mtime": 1784519559.673424,
+    "ast_hash": "4a2eed0b824934059cb60564a2206fde",
+    "semantic_hash": "4a2eed0b824934059cb60564a2206fde"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/instrumentation.ts": {
+    "mtime": 1784519559.6735356,
+    "ast_hash": "8ccec48a9f0ae0b0033164bc613b21db",
+    "semantic_hash": "8ccec48a9f0ae0b0033164bc613b21db"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/lib/announce.ts": {
+    "mtime": 1784519559.673665,
+    "ast_hash": "c8e1091f5f7bf97aff283ce571ebca95",
+    "semantic_hash": "c8e1091f5f7bf97aff283ce571ebca95"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/lib/changeHub.ts": {
+    "mtime": 1784519559.6737628,
+    "ast_hash": "05a4d252d5371ca3fd1e281f5e63085b",
+    "semantic_hash": "05a4d252d5371ca3fd1e281f5e63085b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/lib/md.ts": {
+    "mtime": 1784519559.673872,
+    "ast_hash": "f71a9b357c35a6148e07d7138646e8eb",
+    "semantic_hash": "f71a9b357c35a6148e07d7138646e8eb"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/lib/palette.ts": {
+    "mtime": 1784664928.7314317,
+    "ast_hash": "5683f1509c9b81701a58ea8eda01aef1",
+    "semantic_hash": "5683f1509c9b81701a58ea8eda01aef1"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/lib/relay.ts": {
+    "mtime": 1784519559.6740775,
+    "ast_hash": "3bc8753578da5f03dbe362f30f964476",
+    "semantic_hash": "3bc8753578da5f03dbe362f30f964476"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/lib/relayTarget.ts": {
+    "mtime": 1784519559.6741667,
+    "ast_hash": "d06195e17eb6d0181cc2670cd158c3f8",
+    "semantic_hash": "d06195e17eb6d0181cc2670cd158c3f8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/lib/respond.ts": {
+    "mtime": 1784519559.6742675,
+    "ast_hash": "95f690f2bc391a8e65486d3aa08c0dbd",
+    "semantic_hash": "95f690f2bc391a8e65486d3aa08c0dbd"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/lib/runtime.ts": {
+    "mtime": 1784519559.6743672,
+    "ast_hash": "667a4e116d90b5d64fa16764c51cd4c6",
+    "semantic_hash": "667a4e116d90b5d64fa16764c51cd4c6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/lib/shortcuts.ts": {
+    "mtime": 1784519559.6744778,
+    "ast_hash": "fc6c1dd3b9827905121843878da044c5",
+    "semantic_hash": "fc6c1dd3b9827905121843878da044c5"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/lib/theme.ts": {
+    "mtime": 1784519559.6745808,
+    "ast_hash": "fbfe91a9685ddda5957f7305134403af",
+    "semantic_hash": "fbfe91a9685ddda5957f7305134403af"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/lib/toolboxState.ts": {
+    "mtime": 1784519559.6747062,
+    "ast_hash": "ef9ca4fbfcf1082c166892bd7287e120",
+    "semantic_hash": "ef9ca4fbfcf1082c166892bd7287e120"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/lib/useLiveHtml.ts": {
+    "mtime": 1784519559.6748173,
+    "ast_hash": "b27c3b6480e3d97e6dba287cd2e6317c",
+    "semantic_hash": "b27c3b6480e3d97e6dba287cd2e6317c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/next.config.ts": {
+    "mtime": 1784664928.7318225,
+    "ast_hash": "ec21929657cfc39f9df3e0937da3d464",
+    "semantic_hash": "ec21929657cfc39f9df3e0937da3d464"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/package.json": {
+    "mtime": 1784519559.675003,
+    "ast_hash": "4bf982db1329dec80f9989ce3a8adc2d",
+    "semantic_hash": "4bf982db1329dec80f9989ce3a8adc2d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/proxy.ts": {
+    "mtime": 1784519559.6750898,
+    "ast_hash": "ae16b34b88ad679810f641bd9f02e6f8",
+    "semantic_hash": "ae16b34b88ad679810f641bd9f02e6f8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/tsconfig.json": {
+    "mtime": 1784519559.6751776,
+    "ast_hash": "e82dedf1c69c8eece0eb4168356b7117",
+    "semantic_hash": "e82dedf1c69c8eece0eb4168356b7117"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/assets/schemas/sprint.schema.json": {
+    "mtime": 1784670008.9894633,
+    "ast_hash": "e992e201601075ef6584771e3865a2f0",
+    "semantic_hash": "e992e201601075ef6584771e3865a2f0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/scripts/pack_npm.mjs": {
+    "mtime": 1784519559.6807356,
+    "ast_hash": "3255fac1413a018023a9611ffc1568ad",
+    "semantic_hash": "3255fac1413a018023a9611ffc1568ad"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/skills-lock.json": {
+    "mtime": 1784519559.6808693,
+    "ast_hash": "0fc3324e293a99be033b327d1998c1ff",
+    "semantic_hash": "0fc3324e293a99be033b327d1998c1ff"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/cli.ts": {
+    "mtime": 1784519559.6812572,
+    "ast_hash": "91a03647f6fe3ed7c5ad0322de9a186c",
+    "semantic_hash": "91a03647f6fe3ed7c5ad0322de9a186c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/featureWrite.ts": {
+    "mtime": 1784669988.4033132,
+    "ast_hash": "d223b7492f12a3c54c53ce9ac0822f3e",
+    "semantic_hash": "d223b7492f12a3c54c53ce9ac0822f3e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/core/period.ts": {
+    "mtime": 1784669962.3928432,
+    "ast_hash": "3900fe27f834e660bfa953accd2fba5b",
+    "semantic_hash": "3900fe27f834e660bfa953accd2fba5b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/toolbox_acceptance.ts": {
+    "mtime": 1784519559.6825202,
+    "ast_hash": "afa6b3a0a28acb324a3c6071a4182eaa",
+    "semantic_hash": "afa6b3a0a28acb324a3c6071a4182eaa"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/toolbox_assets.ts": {
+    "mtime": 1784519559.6826186,
+    "ast_hash": "2e1d9fddbbc673d08b73b969ecefd3ab",
+    "semantic_hash": "2e1d9fddbbc673d08b73b969ecefd3ab"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/toolbox_draft.ts": {
+    "mtime": 1784519559.6827478,
+    "ast_hash": "25c82c42400c75ee4de66c979461e9a0",
+    "semantic_hash": "25c82c42400c75ee4de66c979461e9a0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/toolbox_llm.ts": {
+    "mtime": 1784519559.682927,
+    "ast_hash": "a4feba639b60f17466a7e09b83d8877d",
+    "semantic_hash": "a4feba639b60f17466a7e09b83d8877d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/toolbox_retro.ts": {
+    "mtime": 1784519559.6830316,
+    "ast_hash": "564b0bb96f11e429ae9d5730d874e98a",
+    "semantic_hash": "564b0bb96f11e429ae9d5730d874e98a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/toolbox_review_notes.ts": {
+    "mtime": 1784519559.6831334,
+    "ast_hash": "b9ea55c906c883c1fd9021e73dca95a9",
+    "semantic_hash": "b9ea55c906c883c1fd9021e73dca95a9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/toolbox_review_notes_cli.ts": {
+    "mtime": 1784519559.6832647,
+    "ast_hash": "36383b5136003df518f4885cc1bf950c",
+    "semantic_hash": "36383b5136003df518f4885cc1bf950c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/toolbox_state.ts": {
+    "mtime": 1784519559.6833942,
+    "ast_hash": "4e3d838403b9daf3d1982ff6acfcbe83",
+    "semantic_hash": "4e3d838403b9daf3d1982ff6acfcbe83"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/src/toolbox_triage.ts": {
+    "mtime": 1784519559.6835096,
+    "ast_hash": "9a12fe992d95a1b9b9a203746a1da603",
+    "semantic_hash": "9a12fe992d95a1b9b9a203746a1da603"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/harness.config.json": {
+    "mtime": 1784670084.8331726,
+    "ast_hash": "fe4c3ec96243c9b51aede840f7b81a89",
+    "semantic_hash": "fe4c3ec96243c9b51aede840f7b81a89"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/package.json": {
+    "mtime": 1784519559.6846237,
+    "ast_hash": "c599199bc9ccff6329240d0581a0d2aa",
+    "semantic_hash": "c599199bc9ccff6329240d0581a0d2aa"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/package.json": {
+    "mtime": 1784519559.6895168,
+    "ast_hash": "6a00790030b528958c84f416044e7c5d",
+    "semantic_hash": "6a00790030b528958c84f416044e7c5d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/acceptance.ts": {
+    "mtime": 1784670601.7474415,
+    "ast_hash": "2f4dd7fa2a2636a65eafbc8c156f936b",
+    "semantic_hash": "2f4dd7fa2a2636a65eafbc8c156f936b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/ask.ts": {
+    "mtime": 1784519559.6897976,
+    "ast_hash": "33f40eb21b5a872f179745f8dc11ad85",
+    "semantic_hash": "33f40eb21b5a872f179745f8dc11ad85"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/draft.ts": {
+    "mtime": 1784670601.747025,
+    "ast_hash": "b85a4a12b29cac7a32ef21feeddc155d",
+    "semantic_hash": "b85a4a12b29cac7a32ef21feeddc155d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/index.ts": {
+    "mtime": 1784519559.6900425,
+    "ast_hash": "937a8ffd26698e9578782378a6777967",
+    "semantic_hash": "937a8ffd26698e9578782378a6777967"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/intake.ts": {
+    "mtime": 1784519559.6901371,
+    "ast_hash": "9f4eef01cee26600c7f66b3be3bbba7d",
+    "semantic_hash": "9f4eef01cee26600c7f66b3be3bbba7d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/llm.ts": {
+    "mtime": 1784670601.7480872,
+    "ast_hash": "71bc2d8167796432160184ceda12d03c",
+    "semantic_hash": "71bc2d8167796432160184ceda12d03c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/registry.ts": {
+    "mtime": 1784519559.6904087,
+    "ast_hash": "8de5eab478b44561f9c3bcf7704b9d54",
+    "semantic_hash": "8de5eab478b44561f9c3bcf7704b9d54"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/retro.ts": {
+    "mtime": 1784670601.748748,
+    "ast_hash": "e74b61125605225ad085365cbdef12e1",
+    "semantic_hash": "e74b61125605225ad085365cbdef12e1"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/reviewNotes.ts": {
+    "mtime": 1784670601.7490957,
+    "ast_hash": "26e4322831ac5b918923755269d1004d",
+    "semantic_hash": "26e4322831ac5b918923755269d1004d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/state.ts": {
+    "mtime": 1784664928.7330816,
+    "ast_hash": "3caf1f6da32a3fed7f15bf91b6d95200",
+    "semantic_hash": "3caf1f6da32a3fed7f15bf91b6d95200"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/summary.ts": {
+    "mtime": 1784519559.6909046,
+    "ast_hash": "8b27f217e1b739f11b53ffd0ba24c5a2",
+    "semantic_hash": "8b27f217e1b739f11b53ffd0ba24c5a2"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/triage.ts": {
+    "mtime": 1784670601.7494123,
+    "ast_hash": "fa40df1149df9c8c049b65b0ff5262cc",
+    "semantic_hash": "fa40df1149df9c8c049b65b0ff5262cc"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/src/workspace.ts": {
+    "mtime": 1784519559.6910648,
+    "ast_hash": "4ef18488fe22ca9b75aec2a139894274",
+    "semantic_hash": "4ef18488fe22ca9b75aec2a139894274"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/packages/toolbox-core/tsconfig.json": {
+    "mtime": 1784519559.691151,
+    "ast_hash": "7f186f8aee3177dc6939683658b44075",
+    "semantic_hash": "7f186f8aee3177dc6939683658b44075"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/lab_skill_install.sh": {
+    "mtime": 1784519559.6917925,
+    "ast_hash": "1bcac63ab29e41661fbba2baeadd48d0",
+    "semantic_hash": "1bcac63ab29e41661fbba2baeadd48d0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/lib/mock_openai.js": {
+    "mtime": 1784519559.6919312,
+    "ast_hash": "d732dbfa411dc9599293dc8c7b1b0a59",
+    "semantic_hash": "d732dbfa411dc9599293dc8c7b1b0a59"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_npm_pack.sh": {
+    "mtime": 1784519559.6930997,
+    "ast_hash": "63620b80729c8ab33c5c17667da7e3a4",
+    "semantic_hash": "63620b80729c8ab33c5c17667da7e3a4"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_toolbox_acceptance.js": {
+    "mtime": 1784519559.693528,
+    "ast_hash": "77ea6096f5d494c9cfc81033b2d1a6a3",
+    "semantic_hash": "77ea6096f5d494c9cfc81033b2d1a6a3"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_toolbox_cli_llm.sh": {
+    "mtime": 1784519559.6936474,
+    "ast_hash": "a768d8282bda263ea3ff9247f2bfd004",
+    "semantic_hash": "a768d8282bda263ea3ff9247f2bfd004"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_toolbox_draft.js": {
+    "mtime": 1784349834.066712,
+    "ast_hash": "3254bcc283437b44931cb9ea32a9874e",
+    "semantic_hash": "3254bcc283437b44931cb9ea32a9874e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_toolbox_llm.js": {
+    "mtime": 1784519559.6938286,
+    "ast_hash": "d56b5e577c7d47346330fb8f29a3b871",
+    "semantic_hash": "d56b5e577c7d47346330fb8f29a3b871"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_toolbox_retro.js": {
+    "mtime": 1784519559.6939619,
+    "ast_hash": "8d6eafce14c66de8a366349af2f8f24b",
+    "semantic_hash": "8d6eafce14c66de8a366349af2f8f24b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_toolbox_review_notes.js": {
+    "mtime": 1784519559.6940806,
+    "ast_hash": "476cb37c381ca93a9189b4db3b55c2a4",
+    "semantic_hash": "476cb37c381ca93a9189b4db3b55c2a4"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_toolbox_state.js": {
+    "mtime": 1784519559.6944032,
+    "ast_hash": "41aba2c93a7551094df7df6c392f91aa",
+    "semantic_hash": "41aba2c93a7551094df7df6c392f91aa"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_toolbox_triage.js": {
+    "mtime": 1784519559.6945562,
+    "ast_hash": "63887fb85e4cc5f728e12ea792c1e7a1",
+    "semantic_hash": "63887fb85e4cc5f728e12ea792c1e7a1"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_acceptance.sh": {
+    "mtime": 1784519559.694671,
+    "ast_hash": "3bdf864e9885a1eac0685e4d80d1497a",
+    "semantic_hash": "3bdf864e9885a1eac0685e4d80d1497a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_feature.sh": {
+    "mtime": 1784664928.7344308,
+    "ast_hash": "04e56d26a098642bab980e84067f108c",
+    "semantic_hash": "04e56d26a098642bab980e84067f108c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_fleet.sh": {
+    "mtime": 1784664928.7347884,
+    "ast_hash": "31f8c0c5f4eb96559123c9c63b60d72f",
+    "semantic_hash": "31f8c0c5f4eb96559123c9c63b60d72f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_harness.sh": {
+    "mtime": 1784664928.7351673,
+    "ast_hash": "6caca43cc827f630414c0a9c709c6bae",
+    "semantic_hash": "6caca43cc827f630414c0a9c709c6bae"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_intake.sh": {
+    "mtime": 1784519559.6951587,
+    "ast_hash": "a517983dbb5baf5772632179c731e13b",
+    "semantic_hash": "a517983dbb5baf5772632179c731e13b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_intake_ask.sh": {
+    "mtime": 1784519559.6952841,
+    "ast_hash": "c9d3151c56c2e7173c5b6ef4009a11f9",
+    "semantic_hash": "c9d3151c56c2e7173c5b6ef4009a11f9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_landing.sh": {
+    "mtime": 1784664928.735394,
+    "ast_hash": "28f097035d43ecb749c3a0cc5bef1380",
+    "semantic_hash": "28f097035d43ecb749c3a0cc5bef1380"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_readapi.sh": {
+    "mtime": 1784519559.695506,
+    "ast_hash": "c6ea9d01b8c9a6710d6d897670f5a827",
+    "semantic_hash": "c6ea9d01b8c9a6710d6d897670f5a827"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_relays.sh": {
+    "mtime": 1784519559.695621,
+    "ast_hash": "245b9a4cc053d34179dbc4e355d32a1f",
+    "semantic_hash": "245b9a4cc053d34179dbc4e355d32a1f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_retro.sh": {
+    "mtime": 1784519559.6957405,
+    "ast_hash": "172d405e24b0e80a848aef3c43d0ffee",
+    "semantic_hash": "172d405e24b0e80a848aef3c43d0ffee"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_review_notes.sh": {
+    "mtime": 1784519559.6958475,
+    "ast_hash": "2ad3f4cf82830b6d8049cff4db4f8885",
+    "semantic_hash": "2ad3f4cf82830b6d8049cff4db4f8885"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_runtime.sh": {
+    "mtime": 1784519559.6959603,
+    "ast_hash": "1add36c4d1ab9b2eb36eb3729e541600",
+    "semantic_hash": "1add36c4d1ab9b2eb36eb3729e541600"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_timeline_search.sh": {
+    "mtime": 1784664928.7357516,
+    "ast_hash": "b349df75b454387d05aa6344c11f5697",
+    "semantic_hash": "b349df75b454387d05aa6344c11f5697"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/tests/test_web_triage.sh": {
+    "mtime": 1784519559.6961944,
+    "ast_hash": "fea4d9abbfac75f4b8d7009694b169ff",
+    "semantic_hash": "fea4d9abbfac75f4b8d7009694b169ff"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.agents/skills/frontend-design/LICENSE.txt": {
+    "mtime": 1784349834.0125663,
+    "ast_hash": "2ee41112a44fe7014dce33e26468ba93",
+    "semantic_hash": "2ee41112a44fe7014dce33e26468ba93"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.agents/skills/frontend-design/SKILL.md": {
+    "mtime": 1784349834.0126426,
+    "ast_hash": "31c633612585bf2dd4e6d1103afc9f33",
+    "semantic_hash": "31c633612585bf2dd4e6d1103afc9f33"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.agents/skills/ponytail/SKILL.md": {
+    "mtime": 1784349834.0127535,
+    "ast_hash": "31ee4251674290fdaaecf05d487dcf46",
+    "semantic_hash": "31ee4251674290fdaaecf05d487dcf46"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.github/agents/implementer.agent.md": {
+    "mtime": 1784350377.284155,
+    "ast_hash": "3d9379758435a8b7ef1dd461aa981848",
+    "semantic_hash": "3d9379758435a8b7ef1dd461aa981848"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.github/agents/leader.agent.md": {
+    "mtime": 1784350377.2839472,
+    "ast_hash": "6ab06a63f3897192474c228a34757486",
+    "semantic_hash": "6ab06a63f3897192474c228a34757486"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.github/agents/reviewer.agent.md": {
+    "mtime": 1784519559.6115525,
+    "ast_hash": "fd405c5f81162a67f95c3838d5be2191",
+    "semantic_hash": "fd405c5f81162a67f95c3838d5be2191"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_atomic_feature_intake.md": {
+    "mtime": 1784519559.613543,
+    "ast_hash": "6783b8b927510d6a67e3df13e6bac7f5",
+    "semantic_hash": "6783b8b927510d6a67e3df13e6bac7f5"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_backlog_generator.md": {
+    "mtime": 1784519559.6137059,
+    "ast_hash": "5e4255de9a9c6ed3142f455d57d67503",
+    "semantic_hash": "5e4255de9a9c6ed3142f455d57d67503"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_backlog_review_reissue.md": {
+    "mtime": 1784519559.613828,
+    "ast_hash": "c0f3cbf877b23c3cea1b184e4741b9d9",
+    "semantic_hash": "c0f3cbf877b23c3cea1b184e4741b9d9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_bootstrap_interview_step.md": {
+    "mtime": 1784519559.6140141,
+    "ast_hash": "37bd04ccadc18ff4eb7705039baa97a7",
+    "semantic_hash": "37bd04ccadc18ff4eb7705039baa97a7"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_bootstrap_protocol.md": {
+    "mtime": 1784519559.6141672,
+    "ast_hash": "25ee80402a67b11eb57cd05a14994baa",
+    "semantic_hash": "25ee80402a67b11eb57cd05a14994baa"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_branch_provenance.md": {
+    "mtime": 1784519559.6143322,
+    "ast_hash": "909a34ecc285a7cba8ca5610dd7d2cf9",
+    "semantic_hash": "909a34ecc285a7cba8ca5610dd7d2cf9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_business_context_advisory.md": {
+    "mtime": 1784519559.614482,
+    "ast_hash": "3fab34d764eb6f05461fa3d53ef1a58e",
+    "semantic_hash": "3fab34d764eb6f05461fa3d53ef1a58e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_business_intake_prompts.md": {
+    "mtime": 1784519559.614627,
+    "ast_hash": "b5f298ea2674b251d9c0713d6950449d",
+    "semantic_hash": "b5f298ea2674b251d9c0713d6950449d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_business_interview_contract.md": {
+    "mtime": 1784519559.6147776,
+    "ast_hash": "978d25d61e158f21c95b11eb238f4508",
+    "semantic_hash": "978d25d61e158f21c95b11eb238f4508"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_bussiness_context.md": {
+    "mtime": 1784519559.6149406,
+    "ast_hash": "79a0742d7b7cc55ad7be2dc130835fc1",
+    "semantic_hash": "79a0742d7b7cc55ad7be2dc130835fc1"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_config_source_of_truth.md": {
+    "mtime": 1784519559.615087,
+    "ast_hash": "5cc8d066381dcabf2e7f351a554d9701",
+    "semantic_hash": "5cc8d066381dcabf2e7f351a554d9701"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_deterministic_actions_per_layer.md": {
+    "mtime": 1784519559.6152508,
+    "ast_hash": "55752c2d1b76e1aa0515c40bee45d329",
+    "semantic_hash": "55752c2d1b76e1aa0515c40bee45d329"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_discovery_agents_reference.md": {
+    "mtime": 1784519559.6154113,
+    "ast_hash": "a28b42103a4b9b954a6e6363465e4ff3",
+    "semantic_hash": "a28b42103a4b9b954a6e6363465e4ff3"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_discovery_agents_schema.md": {
+    "mtime": 1784519559.6155467,
+    "ast_hash": "57965d9a0ebfb6a4c340c2d08088c89f",
+    "semantic_hash": "57965d9a0ebfb6a4c340c2d08088c89f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_discovery_config_schema.md": {
+    "mtime": 1784519559.615693,
+    "ast_hash": "137b33efd6e57d325e286c78b7ebda02",
+    "semantic_hash": "137b33efd6e57d325e286c78b7ebda02"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_discovery_note_summary.md": {
+    "mtime": 1784519559.6158328,
+    "ast_hash": "d7c42c06852dbec160edcabac96c2f14",
+    "semantic_hash": "d7c42c06852dbec160edcabac96c2f14"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_discovery_reference_doc.md": {
+    "mtime": 1784519559.6160042,
+    "ast_hash": "2b7fda2ae7d5318fd2fc1dc5248fd092",
+    "semantic_hash": "2b7fda2ae7d5318fd2fc1dc5248fd092"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_docs_sprint_split.md": {
+    "mtime": 1784519559.6161568,
+    "ast_hash": "a90265407575947ee011f8ba89f0cbe1",
+    "semantic_hash": "a90265407575947ee011f8ba89f0cbe1"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_documentation_update_sprint_clousure.md": {
+    "mtime": 1784519559.616304,
+    "ast_hash": "5aee65525ceb764de7a63a26e494d46c",
+    "semantic_hash": "5aee65525ceb764de7a63a26e494d46c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_error_inconsistency_docs.md": {
+    "mtime": 1784519559.6164465,
+    "ast_hash": "ddac9dad4afdb94db0a6deece3f3c27c",
+    "semantic_hash": "ddac9dad4afdb94db0a6deece3f3c27c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_evals_passk_report.md": {
+    "mtime": 1784519559.6165912,
+    "ast_hash": "3db2cb8b09e34d228ef9d456298a61a9",
+    "semantic_hash": "3db2cb8b09e34d228ef9d456298a61a9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_evals_trigger_eval.md": {
+    "mtime": 1784519559.6167605,
+    "ast_hash": "24d08247b0beacc65f86d12d3940a29a",
+    "semantic_hash": "24d08247b0beacc65f86d12d3940a29a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_cli.md": {
+    "mtime": 1784519559.6168933,
+    "ast_hash": "fa6b78a10c44888803c18c23b999360b",
+    "semantic_hash": "fa6b78a10c44888803c18c23b999360b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_contract_no_dates.md": {
+    "mtime": 1784519559.6170526,
+    "ast_hash": "c436aecea0c0cbc7fbdd9eb26ee671b3",
+    "semantic_hash": "c436aecea0c0cbc7fbdd9eb26ee671b3"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_depends_on.md": {
+    "mtime": 1784519559.6172042,
+    "ast_hash": "89605477b4c8686b06e7774e2ee83906",
+    "semantic_hash": "89605477b4c8686b06e7774e2ee83906"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_request_agents_link.md": {
+    "mtime": 1784519559.6173463,
+    "ast_hash": "15c02190ef73c313d508e200f3b3273b",
+    "semantic_hash": "15c02190ef73c313d508e200f3b3273b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_request_archetype_examples.md": {
+    "mtime": 1784519559.617484,
+    "ast_hash": "468ac7b93b126718aea8ea92994ae8dd",
+    "semantic_hash": "468ac7b93b126718aea8ea92994ae8dd"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_request_core_optional.md": {
+    "mtime": 1784519559.6176167,
+    "ast_hash": "51cc72629f4ba143d8d3ff802ca8916a",
+    "semantic_hash": "51cc72629f4ba143d8d3ff802ca8916a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_request_format_contracts.md": {
+    "mtime": 1784519559.617756,
+    "ast_hash": "1be0c0ccfe1ba8c0bd7338dab6ef0573",
+    "semantic_hash": "1be0c0ccfe1ba8c0bd7338dab6ef0573"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_request_intake_example.md": {
+    "mtime": 1784519559.6178916,
+    "ast_hash": "8d9aee3060d88864a31c8b1e2e8d3af7",
+    "semantic_hash": "8d9aee3060d88864a31c8b1e2e8d3af7"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_request_md.md": {
+    "mtime": 1784519559.61805,
+    "ast_hash": "1c7766146f8b8ec7c296e1b24907e6a9",
+    "semantic_hash": "1c7766146f8b8ec7c296e1b24907e6a9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_request_templates_doc.md": {
+    "mtime": 1784519559.6182055,
+    "ast_hash": "2a7fc21f687c472793692c5d1fb1c0e1",
+    "semantic_hash": "2a7fc21f687c472793692c5d1fb1c0e1"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_request_tools_link.md": {
+    "mtime": 1784519559.6183476,
+    "ast_hash": "58cd5e08e9ac656e7cecf6752484667f",
+    "semantic_hash": "58cd5e08e9ac656e7cecf6752484667f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_state_machine.md": {
+    "mtime": 1784519559.6185026,
+    "ast_hash": "bd7ef70eae2c4fca37350036028b9816",
+    "semantic_hash": "bd7ef70eae2c4fca37350036028b9816"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_tools_provenance.md": {
+    "mtime": 1784519559.6186514,
+    "ast_hash": "6c0343634545d1bba87659c133bf28ae",
+    "semantic_hash": "6c0343634545d1bba87659c133bf28ae"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_feature_unblock.md": {
+    "mtime": 1784519559.6187882,
+    "ast_hash": "3a207fa26faf8b8b7bafb7d606644fbc",
+    "semantic_hash": "3a207fa26faf8b8b7bafb7d606644fbc"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_fleet_health.md": {
+    "mtime": 1784519559.6189227,
+    "ast_hash": "cca89653e108f2d9cb61c7790babeaa7",
+    "semantic_hash": "cca89653e108f2d9cb61c7790babeaa7"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_fleet_heartbeat.md": {
+    "mtime": 1784519559.6191227,
+    "ast_hash": "0ba1eb59618e87521880aacb6daea8e7",
+    "semantic_hash": "0ba1eb59618e87521880aacb6daea8e7"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_fleet_moc.md": {
+    "mtime": 1784519559.6192722,
+    "ast_hash": "646de17e36b95c779a1d15594ffb8ea4",
+    "semantic_hash": "646de17e36b95c779a1d15594ffb8ea4"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_fleet_moc_html.md": {
+    "mtime": 1784519559.6194108,
+    "ast_hash": "435da3d5a1f06db43b1c8209d130aad0",
+    "semantic_hash": "435da3d5a1f06db43b1c8209d130aad0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_fleet_monitoring_research.md": {
+    "mtime": 1784519559.6195655,
+    "ast_hash": "ba1c6674c268213c43cb87fef318b2ae",
+    "semantic_hash": "ba1c6674c268213c43cb87fef318b2ae"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_fleet_reference_doc.md": {
+    "mtime": 1784519559.619718,
+    "ast_hash": "5a1d02dcbd7f676a1aa6fd4145819dd3",
+    "semantic_hash": "5a1d02dcbd7f676a1aa6fd4145819dd3"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_fleet_registry.md": {
+    "mtime": 1784519559.6198604,
+    "ast_hash": "a20f04a140f0dddf2b3fb71badccdf86",
+    "semantic_hash": "a20f04a140f0dddf2b3fb71badccdf86"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_fleet_run_verifier.md": {
+    "mtime": 1784519559.6199958,
+    "ast_hash": "93c883cfd1191cad885ec9ed082aa0e2",
+    "semantic_hash": "93c883cfd1191cad885ec9ed082aa0e2"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_fleet_status.md": {
+    "mtime": 1784519559.6201437,
+    "ast_hash": "85a410cac114fe30aed7b42d2fc12819",
+    "semantic_hash": "85a410cac114fe30aed7b42d2fc12819"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_fleet_timeline.md": {
+    "mtime": 1784519559.6202903,
+    "ast_hash": "0addd6a11c1726c2df96fb5bd6a5ebbc",
+    "semantic_hash": "0addd6a11c1726c2df96fb5bd6a5ebbc"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_frontmatter_advisory.md": {
+    "mtime": 1784519559.620453,
+    "ast_hash": "8dac7984a17077f4610815eebe40b711",
+    "semantic_hash": "8dac7984a17077f4610815eebe40b711"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_harness_done_reads_review.md": {
+    "mtime": 1784519559.6205604,
+    "ast_hash": "7382ab001fca624b3eabec08d7c64a1a",
+    "semantic_hash": "7382ab001fca624b3eabec08d7c64a1a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_harness_ecosystem_research.md": {
+    "mtime": 1784519559.6207058,
+    "ast_hash": "a3573e94cfcdbda1819a5a295f187969",
+    "semantic_hash": "a3573e94cfcdbda1819a5a295f187969"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_harness_evidence_debt_advisory.md": {
+    "mtime": 1784519559.6208167,
+    "ast_hash": "c1f45fe3a888c0f8faabd657554a6b9d",
+    "semantic_hash": "c1f45fe3a888c0f8faabd657554a6b9d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_harness_migrations.md": {
+    "mtime": 1784519559.620975,
+    "ast_hash": "067135fc3719782f5bba8c79131d6998",
+    "semantic_hash": "067135fc3719782f5bba8c79131d6998"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_harness_report_actor.md": {
+    "mtime": 1784519559.6210873,
+    "ast_hash": "b1a0facfd1bc7cbf928c68dcebb4d0a6",
+    "semantic_hash": "b1a0facfd1bc7cbf928c68dcebb4d0a6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_harness_roles_toolbox_pointer.md": {
+    "mtime": 1784519559.6212099,
+    "ast_hash": "844c7bf0197240e9bd196c988f507f57",
+    "semantic_hash": "844c7bf0197240e9bd196c988f507f57"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_harness_unblock_verbs.md": {
+    "mtime": 1784519559.6213226,
+    "ast_hash": "2d50958e2d2be3c31b3adfb4eb743b40",
+    "semantic_hash": "2d50958e2d2be3c31b3adfb4eb743b40"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_harness_verb_write_contract.md": {
+    "mtime": 1784519559.6214364,
+    "ast_hash": "1715f73c681de5464244936b8c8a9292",
+    "semantic_hash": "1715f73c681de5464244936b8c8a9292"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_harness_versioning.md": {
+    "mtime": 1784519559.6215975,
+    "ast_hash": "db03ab49c9fa6344897cb2d7fa5599a0",
+    "semantic_hash": "db03ab49c9fa6344897cb2d7fa5599a0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_history_compaction.md": {
+    "mtime": 1784519559.6217625,
+    "ast_hash": "7c33d084baa7216750279a596e3f379d",
+    "semantic_hash": "7c33d084baa7216750279a596e3f379d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_index_regen.md": {
+    "mtime": 1784519559.6219187,
+    "ast_hash": "21cb8ba1158faf774b089c55509f90ab",
+    "semantic_hash": "21cb8ba1158faf774b089c55509f90ab"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_init_runs_validate_harness.md": {
+    "mtime": 1784519559.6220636,
+    "ast_hash": "acab65bd97945adf28cda5d5295b55b8",
+    "semantic_hash": "acab65bd97945adf28cda5d5295b55b8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_json_schema.md": {
+    "mtime": 1784519559.6222517,
+    "ast_hash": "ca8500e1c1dd6a5be817074f13755278",
+    "semantic_hash": "ca8500e1c1dd6a5be817074f13755278"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_license_mit_coherente.md": {
+    "mtime": 1784519559.6223817,
+    "ast_hash": "b4fe9ec5975054b3ce88ac6d522ef10c",
+    "semantic_hash": "b4fe9ec5975054b3ce88ac6d522ef10c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_live_schema_validation.md": {
+    "mtime": 1784519559.6225624,
+    "ast_hash": "e3801a1c5738146003b573926cca2bbb",
+    "semantic_hash": "e3801a1c5738146003b573926cca2bbb"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_mcp_validation_vscode.md": {
+    "mtime": 1784519559.6227257,
+    "ast_hash": "0f951abae166441f99a1128b9297c282",
+    "semantic_hash": "0f951abae166441f99a1128b9297c282"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_metrics_script.md": {
+    "mtime": 1784519559.6228957,
+    "ast_hash": "ac352d4f5c33ddb8b1a654aaddd7f048",
+    "semantic_hash": "ac352d4f5c33ddb8b1a654aaddd7f048"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_new_proposal_ux_ui_handyman_workstation.md": {
+    "mtime": 1784519559.6230826,
+    "ast_hash": "540ed422c46150eb188e99e7497b3f61",
+    "semantic_hash": "540ed422c46150eb188e99e7497b3f61"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_new_proposal_ux_ui_handyman_workstation_2.md": {
+    "mtime": 1784519559.623287,
+    "ast_hash": "cc4917b4f0760f5ed0fe241b6a481870",
+    "semantic_hash": "cc4917b4f0760f5ed0fe241b6a481870"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_new_test_evals_aplication.md": {
+    "mtime": 1784519559.6235068,
+    "ast_hash": "24008a4649942bd7e3d53ac8d063fcd3",
+    "semantic_hash": "24008a4649942bd7e3d53ac8d063fcd3"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_new_test_evals_revision.md": {
+    "mtime": 1784519559.6236978,
+    "ast_hash": "52ff95db1c5f54aee8ce77109a7b645d",
+    "semantic_hash": "52ff95db1c5f54aee8ce77109a7b645d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_okf_memoria_alignment.md": {
+    "mtime": 1784519559.6238453,
+    "ast_hash": "b2c69beba237fbe494e5b27fdbd0630e",
+    "semantic_hash": "b2c69beba237fbe494e5b27fdbd0630e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_panel_idea_to_feature.md": {
+    "mtime": 1784519559.6239874,
+    "ast_hash": "d7e24ffe556babb8741959a8b5e5d384",
+    "semantic_hash": "d7e24ffe556babb8741959a8b5e5d384"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_panel_visible_en_readme.md": {
+    "mtime": 1784519559.6241274,
+    "ast_hash": "6190f3e3c7794c4ee20f403d7a042486",
+    "semantic_hash": "6190f3e3c7794c4ee20f403d7a042486"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_post_run_hooks.md": {
+    "mtime": 1784519559.6243033,
+    "ast_hash": "7c5f1dea8142219cabc53c5586fc8b09",
+    "semantic_hash": "7c5f1dea8142219cabc53c5586fc8b09"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_pre_and_post_process_research.md": {
+    "mtime": 1784519559.6244779,
+    "ast_hash": "47031e7c19482ea27f92a52f903d7764",
+    "semantic_hash": "47031e7c19482ea27f92a52f903d7764"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_preflight_advisory.md": {
+    "mtime": 1784519559.6246524,
+    "ast_hash": "5939a6306a4bb147083582d8148490c3",
+    "semantic_hash": "5939a6306a4bb147083582d8148490c3"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_preflight_fanout.md": {
+    "mtime": 1784519559.624929,
+    "ast_hash": "d83e8dfbe569ca465dae680b03fc10f6",
+    "semantic_hash": "d83e8dfbe569ca465dae680b03fc10f6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_preflight_orchestrator.md": {
+    "mtime": 1784519559.6251616,
+    "ast_hash": "1d5fb25cab6a6f5039a40a34bca70c36",
+    "semantic_hash": "1d5fb25cab6a6f5039a40a34bca70c36"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_preflight_strict_mode.md": {
+    "mtime": 1784519559.6253705,
+    "ast_hash": "b8051d96db0ba5606ee913ec1c21ee44",
+    "semantic_hash": "b8051d96db0ba5606ee913ec1c21ee44"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_progress_helpers.md": {
+    "mtime": 1784519559.625608,
+    "ast_hash": "484e8d47391bcd4f7f222a50fba96e12",
+    "semantic_hash": "484e8d47391bcd4f7f222a50fba96e12"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_repo_publico_sin_contenido_ajeno.md": {
+    "mtime": 1784519559.6257682,
+    "ast_hash": "e5ccaa0bec2bd9eb52220dba1dad9d92",
+    "semantic_hash": "e5ccaa0bec2bd9eb52220dba1dad9d92"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_research_workflow_project_handyman.md": {
+    "mtime": 1784519559.6259873,
+    "ast_hash": "da044fa74197a2410fc66835349a2b97",
+    "semantic_hash": "da044fa74197a2410fc66835349a2b97"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_script_observation_shape.md": {
+    "mtime": 1784519559.6261616,
+    "ast_hash": "1285204156194489445c64ef78e60115",
+    "semantic_hash": "1285204156194489445c64ef78e60115"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_security_snyk_w011.md": {
+    "mtime": 1784519559.6263282,
+    "ast_hash": "5cc308f1d8799e6e603d3cd0d7310b33",
+    "semantic_hash": "5cc308f1d8799e6e603d3cd0d7310b33"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_skill_invoca_npx.md": {
+    "mtime": 1784519559.6264424,
+    "ast_hash": "70117a1fb25fb2d2c21acc6d135faf54",
+    "semantic_hash": "70117a1fb25fb2d2c21acc6d135faf54"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_skill_preflight_pointer.md": {
+    "mtime": 1784519559.6266348,
+    "ast_hash": "2515862769d7c0c7c4cff9e0974fe96e",
+    "semantic_hash": "2515862769d7c0c7c4cff9e0974fe96e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_sprint_lifecycle.md": {
+    "mtime": 1784519559.6268077,
+    "ast_hash": "b21417feff149d8b4d52465a2a1394b8",
+    "semantic_hash": "b21417feff149d8b4d52465a2a1394b8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_sprint_schema.md": {
+    "mtime": 1784519559.6269743,
+    "ast_hash": "90d89505fc35faae1695595b8b948048",
+    "semantic_hash": "90d89505fc35faae1695595b8b948048"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_sprint_script.md": {
+    "mtime": 1784519559.62715,
+    "ast_hash": "46f55b69b2df8d69cd28d5b8896f7fe3",
+    "semantic_hash": "46f55b69b2df8d69cd28d5b8896f7fe3"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_sprint_workflow_reference.md": {
+    "mtime": 1784519559.6272902,
+    "ast_hash": "f43e9a1bee2d743c5e2323601dcf9bae",
+    "semantic_hash": "f43e9a1bee2d743c5e2323601dcf9bae"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_start_and_close_timestamps.md": {
+    "mtime": 1784519559.6274252,
+    "ast_hash": "0ee33c4a37bb6babab879fd9958a85cd",
+    "semantic_hash": "0ee33c4a37bb6babab879fd9958a85cd"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_sync_docs_handyman_v2.md": {
+    "mtime": 1784519559.6275837,
+    "ast_hash": "0eb8fa796422dbc9f17015b4c96d3796",
+    "semantic_hash": "0eb8fa796422dbc9f17015b4c96d3796"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_tool_discovery.md": {
+    "mtime": 1784519559.627739,
+    "ast_hash": "f11ea8825aee2c717a95ff79d10034ad",
+    "semantic_hash": "f11ea8825aee2c717a95ff79d10034ad"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_tool_discovery_reference_investigation.md": {
+    "mtime": 1784519559.6278903,
+    "ast_hash": "22375c3857834b14273d6a8847d7dafb",
+    "semantic_hash": "22375c3857834b14273d6a8847d7dafb"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_a11y_live.md": {
+    "mtime": 1784519559.6280427,
+    "ast_hash": "c75e2a78b601f216c867116f5b154bb3",
+    "semantic_hash": "c75e2a78b601f216c867116f5b154bb3"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_acceptance_from_diff.md": {
+    "mtime": 1784519559.6281552,
+    "ast_hash": "dd1c1b1dc8a47d1de30704481f28ce3f",
+    "semantic_hash": "dd1c1b1dc8a47d1de30704481f28ce3f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_ask_fleet.md": {
+    "mtime": 1784519559.6283062,
+    "ast_hash": "4cedf242aa09cafe67b18db885c001ee",
+    "semantic_hash": "4cedf242aa09cafe67b18db885c001ee"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_backlog_triage.md": {
+    "mtime": 1784519559.6284204,
+    "ast_hash": "53f28e55e2ab2227a4901ccea5ec52a2",
+    "semantic_hash": "53f28e55e2ab2227a4901ccea5ec52a2"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_cli_review_notes.md": {
+    "mtime": 1784519559.6285353,
+    "ast_hash": "9f719d1c0b4676dadd5bbb4fddb82393",
+    "semantic_hash": "9f719d1c0b4676dadd5bbb4fddb82393"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_command_palette.md": {
+    "mtime": 1784519559.6286986,
+    "ast_hash": "d1dd6ac49bac5ab8a600c9d6f87df981",
+    "semantic_hash": "d1dd6ac49bac5ab8a600c9d6f87df981"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_core_package.md": {
+    "mtime": 1784519559.628816,
+    "ast_hash": "5b26719585dab9a9fc0ef2da0ec62c87",
+    "semantic_hash": "5b26719585dab9a9fc0ef2da0ec62c87"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_draft_relay.md": {
+    "mtime": 1784519559.6289725,
+    "ast_hash": "04081a4759f9600cea830d50c66b8814",
+    "semantic_hash": "04081a4759f9600cea830d50c66b8814"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_fleet_summary.md": {
+    "mtime": 1784519559.629097,
+    "ast_hash": "e88d117e829c7807a2cc580043d658f0",
+    "semantic_hash": "e88d117e829c7807a2cc580043d658f0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_graph_view.md": {
+    "mtime": 1784519559.629247,
+    "ast_hash": "bfda14201e92fb211841a321edae213a",
+    "semantic_hash": "bfda14201e92fb211841a321edae213a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_intake_enhancements.md": {
+    "mtime": 1784519559.6294048,
+    "ast_hash": "ff3d79f568d93c7353135741eb17c2e9",
+    "semantic_hash": "ff3d79f568d93c7353135741eb17c2e9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_intake_ui.md": {
+    "mtime": 1784519559.629561,
+    "ast_hash": "727c5197c93dcde1d58c35786a8dec01",
+    "semantic_hash": "727c5197c93dcde1d58c35786a8dec01"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_llm_providers.md": {
+    "mtime": 1784519559.6297126,
+    "ast_hash": "f954d973cfbbec92e247a561acb069cb",
+    "semantic_hash": "f954d973cfbbec92e247a561acb069cb"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_markdown_render.md": {
+    "mtime": 1784519559.629886,
+    "ast_hash": "9782d7b450da07eb01fb27bc02952229",
+    "semantic_hash": "9782d7b450da07eb01fb27bc02952229"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_next_fleet_view.md": {
+    "mtime": 1784519559.6300302,
+    "ast_hash": "c6f09c2ac6d9d37f9b55b07391a41bbf",
+    "semantic_hash": "c6f09c2ac6d9d37f9b55b07391a41bbf"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_next_harness_view.md": {
+    "mtime": 1784519559.6301875,
+    "ast_hash": "caecbe521ee38bd738a96470a8f5fd42",
+    "semantic_hash": "caecbe521ee38bd738a96470a8f5fd42"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_next_intake_action.md": {
+    "mtime": 1784519559.6303089,
+    "ast_hash": "646db9569ac89b7e2854cf41396cc921",
+    "semantic_hash": "646db9569ac89b7e2854cf41396cc921"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_next_intake_ask_ui.md": {
+    "mtime": 1784519559.6304421,
+    "ast_hash": "8dc0b836b2edb4a5070fa3dc270afe0f",
+    "semantic_hash": "8dc0b836b2edb4a5070fa3dc270afe0f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_next_landing.md": {
+    "mtime": 1784519559.630592,
+    "ast_hash": "dee87f3d58516f2dd659ba649f4d208a",
+    "semantic_hash": "dee87f3d58516f2dd659ba649f4d208a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_next_llm_relays.md": {
+    "mtime": 1784519559.6307733,
+    "ast_hash": "026683e29d55d82e2e4c7e527997347f",
+    "semantic_hash": "026683e29d55d82e2e4c7e527997347f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_next_read_api.md": {
+    "mtime": 1784519559.6309152,
+    "ast_hash": "a1263bf20035be8711902ba5ae0d17d6",
+    "semantic_hash": "a1263bf20035be8711902ba5ae0d17d6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_next_runtime_events.md": {
+    "mtime": 1784519559.6310375,
+    "ast_hash": "f3537227a308666d6c1b9086cb74307e",
+    "semantic_hash": "f3537227a308666d6c1b9086cb74307e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_next_scaffold.md": {
+    "mtime": 1784519559.6311605,
+    "ast_hash": "2191a6879b0d8bcb992909dcaa07cabf",
+    "semantic_hash": "2191a6879b0d8bcb992909dcaa07cabf"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_observer.md": {
+    "mtime": 1784519559.6313188,
+    "ast_hash": "2b683f38b58d19e01578654e18d5c265",
+    "semantic_hash": "2b683f38b58d19e01578654e18d5c265"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_panel_retirement.md": {
+    "mtime": 1784519559.631465,
+    "ast_hash": "1cd220df77092e7d3a62d7f70a886a28",
+    "semantic_hash": "1cd220df77092e7d3a62d7f70a886a28"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_parity_oracle.md": {
+    "mtime": 1784519559.631581,
+    "ast_hash": "05c39d04f1957d9abb99aacba705210f",
+    "semantic_hash": "05c39d04f1957d9abb99aacba705210f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_port.md": {
+    "mtime": 1784519559.6317372,
+    "ast_hash": "3a8c908b58da0c7dbbefcdec7525a5de",
+    "semantic_hash": "3a8c908b58da0c7dbbefcdec7525a5de"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_provider_registry.md": {
+    "mtime": 1784519559.6318555,
+    "ast_hash": "1776de0a16eab74663f07066109011ed",
+    "semantic_hash": "1776de0a16eab74663f07066109011ed"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_retro_lessons.md": {
+    "mtime": 1784519559.6319659,
+    "ast_hash": "c799ff31a90db5e809cca027425592f9",
+    "semantic_hash": "c799ff31a90db5e809cca027425592f9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_review_notes.md": {
+    "mtime": 1784519559.6320758,
+    "ast_hash": "18cd3dc1399ce6006ccd1e0f6c59c55e",
+    "semantic_hash": "18cd3dc1399ce6006ccd1e0f6c59c55e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_search.md": {
+    "mtime": 1784519559.6322198,
+    "ast_hash": "487a39f76a447fa2f653c2b018359ae7",
+    "semantic_hash": "487a39f76a447fa2f653c2b018359ae7"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_serve_decommission.md": {
+    "mtime": 1784519559.632357,
+    "ast_hash": "9bbf6b6bc6f42faec5748dc492c1f2eb",
+    "semantic_hash": "9bbf6b6bc6f42faec5748dc492c1f2eb"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_theme_toggle.md": {
+    "mtime": 1784519559.6325147,
+    "ast_hash": "ec98197effbeee53a7235c144ec229bf",
+    "semantic_hash": "ec98197effbeee53a7235c144ec229bf"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolbox_ui_project_info.md": {
+    "mtime": 1784519559.6326666,
+    "ast_hash": "bb8c4d4e86ce504c5e63e8495aa9115c",
+    "semantic_hash": "bb8c4d4e86ce504c5e63e8495aa9115c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_toolchain_npm_handyman_harness.md": {
+    "mtime": 1784519559.6327972,
+    "ast_hash": "e7c3587fb39ee1b908ab25673eff32c6",
+    "semantic_hash": "e7c3587fb39ee1b908ab25673eff32c6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_tools_discovery_advisory.md": {
+    "mtime": 1784519559.6329544,
+    "ast_hash": "a1fe82fbfa2851c2f22e00a4a584f63e",
+    "semantic_hash": "a1fe82fbfa2851c2f22e00a4a584f63e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_tools_discovery_agents.md": {
+    "mtime": 1784519559.6330924,
+    "ast_hash": "b89e624b196ff4f62be35896e74e0c21",
+    "semantic_hash": "b89e624b196ff4f62be35896e74e0c21"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_tools_discovery_agents_advisory.md": {
+    "mtime": 1784519559.6332448,
+    "ast_hash": "a68e3609d206595bd133f9ab0be123c5",
+    "semantic_hash": "a68e3609d206595bd133f9ab0be123c5"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_tools_discovery_declare.md": {
+    "mtime": 1784519559.6334085,
+    "ast_hash": "70dd32fea3a1807e8ccfec4311586a73",
+    "semantic_hash": "70dd32fea3a1807e8ccfec4311586a73"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_tools_discovery_discovery.md": {
+    "mtime": 1784519559.6335382,
+    "ast_hash": "b331907e1dd270e48166b6ecb6a39e2e",
+    "semantic_hash": "b331907e1dd270e48166b6ecb6a39e2e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_tools_discovery_script.md": {
+    "mtime": 1784519559.6336575,
+    "ast_hash": "5725ee8234ea413e2cc1b161d53d4371",
+    "semantic_hash": "5725ee8234ea413e2cc1b161d53d4371"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_two_stage_review.md": {
+    "mtime": 1784519559.6337962,
+    "ast_hash": "c6eb2a6dad360078d2bb9bad2cb01715",
+    "semantic_hash": "c6eb2a6dad360078d2bb9bad2cb01715"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_unattended_loop_contract.md": {
+    "mtime": 1784519559.6339438,
+    "ast_hash": "da5e7dcd464c78cdb3218c35288e84fe",
+    "semantic_hash": "da5e7dcd464c78cdb3218c35288e84fe"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_undefined.md": {
+    "mtime": 1784519559.6341085,
+    "ast_hash": "b21548247e4a8a1e63e758d958626aa0",
+    "semantic_hash": "b21548247e4a8a1e63e758d958626aa0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_update_harness_diff.md": {
+    "mtime": 1784519559.6342828,
+    "ast_hash": "58199c2fb93208e53f8fc238ab39c05c",
+    "semantic_hash": "58199c2fb93208e53f8fc238ab39c05c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_upgrade_harness_check.md": {
+    "mtime": 1784519559.6344252,
+    "ast_hash": "80f05b9f48856c7a45d134066487ebb4",
+    "semantic_hash": "80f05b9f48856c7a45d134066487ebb4"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_upgrade_harness_diff.md": {
+    "mtime": 1784519559.6345932,
+    "ast_hash": "91f1e0a1e5cbb2a60dd10508bc2ccf3e",
+    "semantic_hash": "91f1e0a1e5cbb2a60dd10508bc2ccf3e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_upgrade_mode.md": {
+    "mtime": 1784519559.634735,
+    "ast_hash": "9fb9cb277db5e796f597c328c62b929b",
+    "semantic_hash": "9fb9cb277db5e796f597c328c62b929b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_validate_harness.md": {
+    "mtime": 1784519559.6348653,
+    "ast_hash": "1bbe9767bb6fcf1fdd20dfb8e092d682",
+    "semantic_hash": "1bbe9767bb6fcf1fdd20dfb8e092d682"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_validate_harness_cli.md": {
+    "mtime": 1784519559.6350172,
+    "ast_hash": "c75fff071803c8200d82f8fead269c25",
+    "semantic_hash": "c75fff071803c8200d82f8fead269c25"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_validator_legacy_frontmatter_alias.md": {
+    "mtime": 1784519559.6351316,
+    "ast_hash": "c91aaa018a6205d3cfdb620c95106d92",
+    "semantic_hash": "c91aaa018a6205d3cfdb620c95106d92"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_verifier_advisory_consistency.md": {
+    "mtime": 1784519559.635281,
+    "ast_hash": "5198c2cdfc2de2b49a9a2209987deb15",
+    "semantic_hash": "5198c2cdfc2de2b49a9a2209987deb15"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_version_handshake_npm.md": {
+    "mtime": 1784519559.6353872,
+    "ast_hash": "f30097cae4d0a895b769b7406c97d66b",
+    "semantic_hash": "f30097cae4d0a895b769b7406c97d66b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workflow_stability_steps.md": {
+    "mtime": 1784519559.6355255,
+    "ast_hash": "22c7cae13565c8e99651f1fba040cabf",
+    "semantic_hash": "22c7cae13565c8e99651f1fba040cabf"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workflow_stages_reference.md": {
+    "mtime": 1784519559.635658,
+    "ast_hash": "06754f861a91d339588bff6d2fc9cf0f",
+    "semantic_hash": "06754f861a91d339588bff6d2fc9cf0f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_action_nomenclature.md": {
+    "mtime": 1784519559.6357844,
+    "ast_hash": "ae32897ba4995292fcbf993619e5edbe",
+    "semantic_hash": "ae32897ba4995292fcbf993619e5edbe"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_app_shell.md": {
+    "mtime": 1784519559.6359043,
+    "ast_hash": "ad929ce1812e86ea4d3dadf37cb51c79",
+    "semantic_hash": "ad929ce1812e86ea4d3dadf37cb51c79"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_design_guidelines_doc.md": {
+    "mtime": 1784519559.6360302,
+    "ast_hash": "71d523e5762f1dda2054893d6453fde6",
+    "semantic_hash": "71d523e5762f1dda2054893d6453fde6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_detail_declutter.md": {
+    "mtime": 1784519559.6363435,
+    "ast_hash": "73bbaac961e4053de6a363f80a7ef5e6",
+    "semantic_hash": "73bbaac961e4053de6a363f80a7ef5e6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_intake.md": {
+    "mtime": 1784519559.63652,
+    "ast_hash": "6bf8458cabf3ef3c5f2bfb0759132a22",
+    "semantic_hash": "6bf8458cabf3ef3c5f2bfb0759132a22"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_interaction_contract.md": {
+    "mtime": 1784519559.6366603,
+    "ast_hash": "6bbb8df7275c06d579c2bfac5ec1ca4a",
+    "semantic_hash": "6bbb8df7275c06d579c2bfac5ec1ca4a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_reference_doc.md": {
+    "mtime": 1784519559.6367965,
+    "ast_hash": "8e15fb7563775e8349b811f5e1ea438a",
+    "semantic_hash": "8e15fb7563775e8349b811f5e1ea438a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_serve.md": {
+    "mtime": 1784519559.6369464,
+    "ast_hash": "0d09b5a5100b6570dbf7261fb8336f02",
+    "semantic_hash": "0d09b5a5100b6570dbf7261fb8336f02"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_stale_panel_warning.md": {
+    "mtime": 1784519559.6370928,
+    "ast_hash": "756e87c5a4c78de635a74c77e50375c7",
+    "semantic_hash": "756e87c5a4c78de635a74c77e50375c7"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_theme_toggle.md": {
+    "mtime": 1784519559.6372545,
+    "ast_hash": "9d85f5af5ffb14c6f8d4cc41a0b7be3d",
+    "semantic_hash": "9d85f5af5ffb14c6f8d4cc41a0b7be3d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_verify.md": {
+    "mtime": 1784519559.6375513,
+    "ast_hash": "0315c36a0a048c3e52d7aedfd5389ca9",
+    "semantic_hash": "0315c36a0a048c3e52d7aedfd5389ca9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_views_routing.md": {
+    "mtime": 1784519559.6376855,
+    "ast_hash": "5676b631377005f7446b70709a6a73d2",
+    "semantic_hash": "5676b631377005f7446b70709a6a73d2"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/impl_workstation_wcag22_markup.md": {
+    "mtime": 1784519559.6378396,
+    "ast_hash": "3621f9245f0737acd548039ce2871c25",
+    "semantic_hash": "3621f9245f0737acd548039ce2871c25"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_atomic_feature_intake.md": {
+    "mtime": 1784519559.6379821,
+    "ast_hash": "1e42cc490bb334c42ef0773f665c7448",
+    "semantic_hash": "1e42cc490bb334c42ef0773f665c7448"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_backlog_generator.md": {
+    "mtime": 1784519559.6381166,
+    "ast_hash": "c0f833b3fd2798388e911f781be2c39b",
+    "semantic_hash": "c0f833b3fd2798388e911f781be2c39b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_backlog_review_reissue.md": {
+    "mtime": 1784519559.638253,
+    "ast_hash": "ef6d00dc10c58329481dc94b7cd62976",
+    "semantic_hash": "ef6d00dc10c58329481dc94b7cd62976"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_bootstrap_interview_step.md": {
+    "mtime": 1784519559.6384,
+    "ast_hash": "e92e0855643a7bf934a156f737ffc3b6",
+    "semantic_hash": "e92e0855643a7bf934a156f737ffc3b6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_bootstrap_protocol.md": {
+    "mtime": 1784519559.6385477,
+    "ast_hash": "02cc3877fc022626d6c28383887c7caf",
+    "semantic_hash": "02cc3877fc022626d6c28383887c7caf"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_branch_provenance.md": {
+    "mtime": 1784519559.6386852,
+    "ast_hash": "92370b96d57bbe23c8a6dd19e14f2825",
+    "semantic_hash": "92370b96d57bbe23c8a6dd19e14f2825"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_business_context_advisory.md": {
+    "mtime": 1784519559.6388187,
+    "ast_hash": "3f1e0d05fda074c57438678fadb219b8",
+    "semantic_hash": "3f1e0d05fda074c57438678fadb219b8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_business_intake_prompts.md": {
+    "mtime": 1784519559.6389394,
+    "ast_hash": "20cedb540de3ab127909be5760405ba2",
+    "semantic_hash": "20cedb540de3ab127909be5760405ba2"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_business_interview_contract.md": {
+    "mtime": 1784519559.6390557,
+    "ast_hash": "ef319aa231bf57b2176a335667ba39e0",
+    "semantic_hash": "ef319aa231bf57b2176a335667ba39e0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_bussiness_context.md": {
+    "mtime": 1784519559.6391838,
+    "ast_hash": "b44f7588cd98cfa2866b872dbd6d0591",
+    "semantic_hash": "b44f7588cd98cfa2866b872dbd6d0591"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_config_source_of_truth.md": {
+    "mtime": 1784519559.639313,
+    "ast_hash": "addfd54269127fd3824b722056ad4903",
+    "semantic_hash": "addfd54269127fd3824b722056ad4903"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_deterministic_actions_per_layer.md": {
+    "mtime": 1784519559.6394622,
+    "ast_hash": "709964064cdaca5e0154823571c2acca",
+    "semantic_hash": "709964064cdaca5e0154823571c2acca"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_discovery_agents_batch.md": {
+    "mtime": 1784519559.6396177,
+    "ast_hash": "354e8c4c5337a646772a073c388de6fc",
+    "semantic_hash": "354e8c4c5337a646772a073c388de6fc"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_discovery_agents_reference.md": {
+    "mtime": 1784519559.639766,
+    "ast_hash": "0b032cc10ade6131e6ada62c1c1c2f16",
+    "semantic_hash": "0b032cc10ade6131e6ada62c1c1c2f16"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_discovery_agents_schema.md": {
+    "mtime": 1784519559.6399033,
+    "ast_hash": "5484c54d5c044199fd59d6c890838201",
+    "semantic_hash": "5484c54d5c044199fd59d6c890838201"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_discovery_config_schema.md": {
+    "mtime": 1784519559.6400259,
+    "ast_hash": "1fc123395f0528b3261d47787d06b302",
+    "semantic_hash": "1fc123395f0528b3261d47787d06b302"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_discovery_note_summary.md": {
+    "mtime": 1784519559.6401525,
+    "ast_hash": "63ca00da299556d9e2b9f26c04843675",
+    "semantic_hash": "63ca00da299556d9e2b9f26c04843675"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_discovery_reference_doc.md": {
+    "mtime": 1784519559.6402795,
+    "ast_hash": "03d699e34f9cbad0ea2b3dd85a210827",
+    "semantic_hash": "03d699e34f9cbad0ea2b3dd85a210827"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_discovery_workflow_batch.md": {
+    "mtime": 1784519559.6404004,
+    "ast_hash": "2a4d7b8ae93442abc0ead9d27fdee7bb",
+    "semantic_hash": "2a4d7b8ae93442abc0ead9d27fdee7bb"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_docs_sprint_split.md": {
+    "mtime": 1784519559.6405473,
+    "ast_hash": "237401bb94890707f02eeaf3fbf69122",
+    "semantic_hash": "237401bb94890707f02eeaf3fbf69122"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_documentation_update_sprint_clousure.md": {
+    "mtime": 1784519559.6406898,
+    "ast_hash": "6f950cf6665eddfffb3fb2a0140b7552",
+    "semantic_hash": "6f950cf6665eddfffb3fb2a0140b7552"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_error_inconsistency_docs.md": {
+    "mtime": 1784519559.6408472,
+    "ast_hash": "18162d55fa12ea1bd3b7bb99bc9bebcc",
+    "semantic_hash": "18162d55fa12ea1bd3b7bb99bc9bebcc"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_evals_passk_report.md": {
+    "mtime": 1784519559.6410038,
+    "ast_hash": "497ee895e883a807e3df5b0f8bf1d7a5",
+    "semantic_hash": "497ee895e883a807e3df5b0f8bf1d7a5"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_evals_trigger_eval.md": {
+    "mtime": 1784519559.641135,
+    "ast_hash": "bdea0c6e674363ed92b69d0cff505eb8",
+    "semantic_hash": "bdea0c6e674363ed92b69d0cff505eb8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_cli.md": {
+    "mtime": 1784519559.6412678,
+    "ast_hash": "c4f43e11d946b152d5a85df92cb6b5b6",
+    "semantic_hash": "c4f43e11d946b152d5a85df92cb6b5b6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_contract_no_dates.md": {
+    "mtime": 1784519559.6414008,
+    "ast_hash": "f0dd55a57e86cade3964e93f8873adf6",
+    "semantic_hash": "f0dd55a57e86cade3964e93f8873adf6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_depends_on.md": {
+    "mtime": 1784519559.6415575,
+    "ast_hash": "4b7c3792f1a612940d1748c94ba0e769",
+    "semantic_hash": "4b7c3792f1a612940d1748c94ba0e769"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_request_agents_link.md": {
+    "mtime": 1784519559.6417189,
+    "ast_hash": "a49009d26de9d6b6eee03f2143f45b22",
+    "semantic_hash": "a49009d26de9d6b6eee03f2143f45b22"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_request_archetype_examples.md": {
+    "mtime": 1784519559.641895,
+    "ast_hash": "e33d5945ff9c0d55182dbf716382244a",
+    "semantic_hash": "e33d5945ff9c0d55182dbf716382244a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_request_core_optional.md": {
+    "mtime": 1784519559.6420698,
+    "ast_hash": "3a146794ecebb8e4959547c963d8727b",
+    "semantic_hash": "3a146794ecebb8e4959547c963d8727b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_request_format_contracts.md": {
+    "mtime": 1784519559.6422293,
+    "ast_hash": "4e82cea11b389c71e717fc6ef4d82d97",
+    "semantic_hash": "4e82cea11b389c71e717fc6ef4d82d97"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_request_intake_example.md": {
+    "mtime": 1784519559.6424727,
+    "ast_hash": "d00f4c08103325c673b3fea00eb332be",
+    "semantic_hash": "d00f4c08103325c673b3fea00eb332be"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_request_md.md": {
+    "mtime": 1784519559.6426568,
+    "ast_hash": "99a6006dcdd499f2763aadf2904714fc",
+    "semantic_hash": "99a6006dcdd499f2763aadf2904714fc"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_request_templates_doc.md": {
+    "mtime": 1784519559.6428254,
+    "ast_hash": "7393ccc5af51373de0081cac0204b315",
+    "semantic_hash": "7393ccc5af51373de0081cac0204b315"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_request_tools_link.md": {
+    "mtime": 1784519559.6430008,
+    "ast_hash": "77e705acdd8d985a4b0139dd05ea6350",
+    "semantic_hash": "77e705acdd8d985a4b0139dd05ea6350"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_state_machine.md": {
+    "mtime": 1784519559.6431844,
+    "ast_hash": "39a82e3e54a15a067eee19dfa681d8b3",
+    "semantic_hash": "39a82e3e54a15a067eee19dfa681d8b3"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_tools_provenance.md": {
+    "mtime": 1784519559.643358,
+    "ast_hash": "1e6f8f540a625dd55dd2ebabfece845a",
+    "semantic_hash": "1e6f8f540a625dd55dd2ebabfece845a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_feature_unblock.md": {
+    "mtime": 1784519559.643538,
+    "ast_hash": "1d620773f0b6716cbe743b66725f7ff5",
+    "semantic_hash": "1d620773f0b6716cbe743b66725f7ff5"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_fleet_health.md": {
+    "mtime": 1784519559.6437135,
+    "ast_hash": "e71d34fcc74926d79fdb03bf5068b0c7",
+    "semantic_hash": "e71d34fcc74926d79fdb03bf5068b0c7"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_fleet_heartbeat.md": {
+    "mtime": 1784519559.6438935,
+    "ast_hash": "3247173198ea8c6c0b8f9f2b6cfca84c",
+    "semantic_hash": "3247173198ea8c6c0b8f9f2b6cfca84c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_fleet_moc.md": {
+    "mtime": 1784519559.644077,
+    "ast_hash": "259756943009ea8398dfb0f6b15e4454",
+    "semantic_hash": "259756943009ea8398dfb0f6b15e4454"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_fleet_moc_html.md": {
+    "mtime": 1784519559.6442535,
+    "ast_hash": "90955dff29ae378b14727ff994797978",
+    "semantic_hash": "90955dff29ae378b14727ff994797978"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_fleet_monitoring_research.md": {
+    "mtime": 1784519559.644428,
+    "ast_hash": "22942f04414bca7826e2d47eb59dd582",
+    "semantic_hash": "22942f04414bca7826e2d47eb59dd582"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_fleet_reference_doc.md": {
+    "mtime": 1784519559.6446183,
+    "ast_hash": "efb7822bb7333ceaaba19b300b7af896",
+    "semantic_hash": "efb7822bb7333ceaaba19b300b7af896"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_fleet_registry.md": {
+    "mtime": 1784519559.6448007,
+    "ast_hash": "3e5e7e6e8a91e0325b82938fec405c02",
+    "semantic_hash": "3e5e7e6e8a91e0325b82938fec405c02"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_fleet_run_verifier.md": {
+    "mtime": 1784519559.644974,
+    "ast_hash": "5861f9de6d52495966f0535a3969fd9a",
+    "semantic_hash": "5861f9de6d52495966f0535a3969fd9a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_fleet_status.md": {
+    "mtime": 1784519559.6451375,
+    "ast_hash": "39232a9778ff30dfdb3a4c735ee7e4c7",
+    "semantic_hash": "39232a9778ff30dfdb3a4c735ee7e4c7"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_fleet_timeline.md": {
+    "mtime": 1784519559.6452947,
+    "ast_hash": "a984e73f648e17144a7a0c07f52ed575",
+    "semantic_hash": "a984e73f648e17144a7a0c07f52ed575"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_frontmatter_advisory.md": {
+    "mtime": 1784519559.6454244,
+    "ast_hash": "f25a3a3aaed17dd9618f328f9313f839",
+    "semantic_hash": "f25a3a3aaed17dd9618f328f9313f839"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_harness_done_reads_review.md": {
+    "mtime": 1784519559.645551,
+    "ast_hash": "9d3dc174b67680636198b42a71b49dda",
+    "semantic_hash": "9d3dc174b67680636198b42a71b49dda"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_harness_ecosystem_research.md": {
+    "mtime": 1784519559.6456866,
+    "ast_hash": "ab14a2f20c20ed5d707a9574167c564d",
+    "semantic_hash": "ab14a2f20c20ed5d707a9574167c564d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_harness_evidence_debt_advisory.md": {
+    "mtime": 1784519559.6457942,
+    "ast_hash": "a21fcb572e874d23a01b99094ece4cfb",
+    "semantic_hash": "a21fcb572e874d23a01b99094ece4cfb"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_harness_migrations.md": {
+    "mtime": 1784519559.6459494,
+    "ast_hash": "25bd0ee48592bbbcf4cb009f2698b167",
+    "semantic_hash": "25bd0ee48592bbbcf4cb009f2698b167"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_harness_report_actor.md": {
+    "mtime": 1784519559.6460958,
+    "ast_hash": "cedd98006accbff74a19fb3a218a1078",
+    "semantic_hash": "cedd98006accbff74a19fb3a218a1078"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_harness_roles_toolbox_pointer.md": {
+    "mtime": 1784519559.6462436,
+    "ast_hash": "0bb576a90fdbfd3246610a21a55a2b8f",
+    "semantic_hash": "0bb576a90fdbfd3246610a21a55a2b8f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_harness_unblock_verbs.md": {
+    "mtime": 1784519559.6463666,
+    "ast_hash": "555d29cbbb6ec1a1da3647ab85337a5f",
+    "semantic_hash": "555d29cbbb6ec1a1da3647ab85337a5f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_harness_verb_write_contract.md": {
+    "mtime": 1784519559.6464868,
+    "ast_hash": "c8c45a4616db0dda0523615cf10e7a0f",
+    "semantic_hash": "c8c45a4616db0dda0523615cf10e7a0f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_harness_versioning.md": {
+    "mtime": 1784519559.646644,
+    "ast_hash": "d9f20a8237251ce27f21416047538ec0",
+    "semantic_hash": "d9f20a8237251ce27f21416047538ec0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_history_compaction.md": {
+    "mtime": 1784519559.64677,
+    "ast_hash": "4bebb12ee5c7ed90334b64fa1129d13c",
+    "semantic_hash": "4bebb12ee5c7ed90334b64fa1129d13c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_index_regen.md": {
+    "mtime": 1784519559.6469026,
+    "ast_hash": "46c913432cf3bebcf90176a5928f0c97",
+    "semantic_hash": "46c913432cf3bebcf90176a5928f0c97"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_init_runs_validate_harness.md": {
+    "mtime": 1784519559.6470337,
+    "ast_hash": "f580640b73cba0f8444598cf92be1eac",
+    "semantic_hash": "f580640b73cba0f8444598cf92be1eac"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_json_schema.md": {
+    "mtime": 1784519559.6471858,
+    "ast_hash": "186df3ccb3644f969a7cfb6e88b649c0",
+    "semantic_hash": "186df3ccb3644f969a7cfb6e88b649c0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_license_mit_coherente.md": {
+    "mtime": 1784519559.64732,
+    "ast_hash": "4846cd412c181f4b7398d5fbfb71a844",
+    "semantic_hash": "4846cd412c181f4b7398d5fbfb71a844"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_live_schema_validation.md": {
+    "mtime": 1784519559.6474555,
+    "ast_hash": "df9fbc551c0e3cb2b239b3992590796a",
+    "semantic_hash": "df9fbc551c0e3cb2b239b3992590796a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_mcp_validation_vscode.md": {
+    "mtime": 1784519559.647599,
+    "ast_hash": "747208e98ef2a67233f94010f74d627f",
+    "semantic_hash": "747208e98ef2a67233f94010f74d627f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_metrics_script.md": {
+    "mtime": 1784519559.6477299,
+    "ast_hash": "dc8e582e21b42d6bb12e65b45efe126c",
+    "semantic_hash": "dc8e582e21b42d6bb12e65b45efe126c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_new_proposal_ux_ui_handyman_workstation.md": {
+    "mtime": 1784519559.647875,
+    "ast_hash": "183239b6cd392fcec00b6e15114e3481",
+    "semantic_hash": "183239b6cd392fcec00b6e15114e3481"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_new_proposal_ux_ui_handyman_workstation_2.md": {
+    "mtime": 1784519559.64805,
+    "ast_hash": "ab45ee219b7aba9390a58ac516028cbb",
+    "semantic_hash": "ab45ee219b7aba9390a58ac516028cbb"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_new_test_evals_aplication.md": {
+    "mtime": 1784519559.6482496,
+    "ast_hash": "6ef70d139a1942b9eb93d58c0223d253",
+    "semantic_hash": "6ef70d139a1942b9eb93d58c0223d253"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_new_test_evals_revision.md": {
+    "mtime": 1784519559.6484058,
+    "ast_hash": "18d61954165a03577d06d45bb67b9d79",
+    "semantic_hash": "18d61954165a03577d06d45bb67b9d79"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_okf_memoria_alignment.md": {
+    "mtime": 1784519559.648526,
+    "ast_hash": "fcbf1071c34867b4e8c20fd31c0131ca",
+    "semantic_hash": "fcbf1071c34867b4e8c20fd31c0131ca"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_panel_idea_to_feature.md": {
+    "mtime": 1784519559.6486547,
+    "ast_hash": "0df33586fc38b1d82b5c8e2de3afd39d",
+    "semantic_hash": "0df33586fc38b1d82b5c8e2de3afd39d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_post_run_hooks.md": {
+    "mtime": 1784519559.6487963,
+    "ast_hash": "4246b90f181212e501e3c5ce002e963e",
+    "semantic_hash": "4246b90f181212e501e3c5ce002e963e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_pre_and_post_process_research.md": {
+    "mtime": 1784519559.6489317,
+    "ast_hash": "2c88ce841ac61c9096a426c18d81cf24",
+    "semantic_hash": "2c88ce841ac61c9096a426c18d81cf24"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_preflight_advisory.md": {
+    "mtime": 1784519559.649083,
+    "ast_hash": "155a8e8738185eec71dba960071abf1e",
+    "semantic_hash": "155a8e8738185eec71dba960071abf1e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_preflight_fanout.md": {
+    "mtime": 1784519559.6492326,
+    "ast_hash": "111214b5bf72ae7100869d9ea1b3e169",
+    "semantic_hash": "111214b5bf72ae7100869d9ea1b3e169"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_preflight_orchestrator.md": {
+    "mtime": 1784519559.6493819,
+    "ast_hash": "68ebc9f5b17b64467a8a9e16c9506765",
+    "semantic_hash": "68ebc9f5b17b64467a8a9e16c9506765"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_preflight_strict_mode.md": {
+    "mtime": 1784519559.6495187,
+    "ast_hash": "e0fabbfe3b55b4fccd5398eb0d673852",
+    "semantic_hash": "e0fabbfe3b55b4fccd5398eb0d673852"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_progress_helpers.md": {
+    "mtime": 1784519559.6496813,
+    "ast_hash": "22334f89f18b13cb645e985b4b25ea25",
+    "semantic_hash": "22334f89f18b13cb645e985b4b25ea25"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_repo_publico_sin_contenido_ajeno.md": {
+    "mtime": 1784519559.6497836,
+    "ast_hash": "30e11cd79feed3cc485177b937ee4874",
+    "semantic_hash": "30e11cd79feed3cc485177b937ee4874"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_research_workflow_project_handyman.md": {
+    "mtime": 1784519559.6499262,
+    "ast_hash": "1891244622f0fa3b8f9a3ed07676a163",
+    "semantic_hash": "1891244622f0fa3b8f9a3ed07676a163"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_script_observation_shape.md": {
+    "mtime": 1784519559.6500723,
+    "ast_hash": "5c89a8a82643cc2d2b2a3ed378edcf79",
+    "semantic_hash": "5c89a8a82643cc2d2b2a3ed378edcf79"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_security_snyk_w011.md": {
+    "mtime": 1784519559.6502182,
+    "ast_hash": "0054148310c5173e9b98bcc67465f6e6",
+    "semantic_hash": "0054148310c5173e9b98bcc67465f6e6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_skill_invoca_npx.md": {
+    "mtime": 1784519559.6503384,
+    "ast_hash": "f7b3e8edb8edbf3117327a81c6283f4d",
+    "semantic_hash": "f7b3e8edb8edbf3117327a81c6283f4d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_skill_preflight_pointer.md": {
+    "mtime": 1784519559.6504683,
+    "ast_hash": "f4362455cfdd6312fe8c1aa4c780b762",
+    "semantic_hash": "f4362455cfdd6312fe8c1aa4c780b762"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_sprint_lifecycle.md": {
+    "mtime": 1784519559.6506088,
+    "ast_hash": "1277974b8e0e45c8bbc7e09206537689",
+    "semantic_hash": "1277974b8e0e45c8bbc7e09206537689"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_sprint_lifecycle_batch.md": {
+    "mtime": 1784519559.6507506,
+    "ast_hash": "568c2833708043b1b111bd94c41b7ea2",
+    "semantic_hash": "568c2833708043b1b111bd94c41b7ea2"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_sprint_schema.md": {
+    "mtime": 1784519559.6508677,
+    "ast_hash": "414958105db559f953d39d35a8e6a41f",
+    "semantic_hash": "414958105db559f953d39d35a8e6a41f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_sprint_script.md": {
+    "mtime": 1784519559.6509895,
+    "ast_hash": "87ea43b50cd11006046606eb16a870cf",
+    "semantic_hash": "87ea43b50cd11006046606eb16a870cf"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_sprint_workflow_reference.md": {
+    "mtime": 1784519559.6511445,
+    "ast_hash": "a150441b0a5a25eedb71164298387494",
+    "semantic_hash": "a150441b0a5a25eedb71164298387494"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_start_and_close_timestamps.md": {
+    "mtime": 1784519559.6512966,
+    "ast_hash": "d0ada4c766199c3e3a874c7c48d57931",
+    "semantic_hash": "d0ada4c766199c3e3a874c7c48d57931"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_sync_docs_handyman_v2.md": {
+    "mtime": 1784519559.6514335,
+    "ast_hash": "8f2e531f5b2daee3b68eed989d74e426",
+    "semantic_hash": "8f2e531f5b2daee3b68eed989d74e426"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_tool_discovery.md": {
+    "mtime": 1784519559.6515863,
+    "ast_hash": "085e1af9c2bbb477c6434c98910be0bd",
+    "semantic_hash": "085e1af9c2bbb477c6434c98910be0bd"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_tool_discovery_reference_investigation.md": {
+    "mtime": 1784519559.651733,
+    "ast_hash": "15a45562e9b752b5244d1b28ff2592ec",
+    "semantic_hash": "15a45562e9b752b5244d1b28ff2592ec"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_a11y_live.md": {
+    "mtime": 1784519559.6518617,
+    "ast_hash": "c03194fe3a5625b270204286bb5639f6",
+    "semantic_hash": "c03194fe3a5625b270204286bb5639f6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_acceptance_from_diff.md": {
+    "mtime": 1784519559.65196,
+    "ast_hash": "c01cf2a97b18ae4d9c691e24e07943f5",
+    "semantic_hash": "c01cf2a97b18ae4d9c691e24e07943f5"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_ask_fleet.md": {
+    "mtime": 1784519559.6520882,
+    "ast_hash": "3482a4a0795e60b594bdbfaa04a1295b",
+    "semantic_hash": "3482a4a0795e60b594bdbfaa04a1295b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_backlog_triage.md": {
+    "mtime": 1784519559.6522095,
+    "ast_hash": "20cdc794e819aad2d17eb4c44d854031",
+    "semantic_hash": "20cdc794e819aad2d17eb4c44d854031"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_cli_review_notes.md": {
+    "mtime": 1784519559.6523223,
+    "ast_hash": "daf96473961418557561abd5a3393ff9",
+    "semantic_hash": "daf96473961418557561abd5a3393ff9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_command_palette.md": {
+    "mtime": 1784519559.6524599,
+    "ast_hash": "c26b8d1df26a3165647b92fe04c03bb1",
+    "semantic_hash": "c26b8d1df26a3165647b92fe04c03bb1"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_core_package.md": {
+    "mtime": 1784519559.6525657,
+    "ast_hash": "df43b5b368e398fda0b98ddc72c00c96",
+    "semantic_hash": "df43b5b368e398fda0b98ddc72c00c96"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_fleet_summary.md": {
+    "mtime": 1784519559.6526937,
+    "ast_hash": "4a4e32a9bdf9d2c962f2aaf34f95e2c8",
+    "semantic_hash": "4a4e32a9bdf9d2c962f2aaf34f95e2c8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_intake_ui.md": {
+    "mtime": 1784519559.6528168,
+    "ast_hash": "4b738f89247615f9c91b32ec3d24477e",
+    "semantic_hash": "4b738f89247615f9c91b32ec3d24477e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_llm_providers.md": {
+    "mtime": 1784519559.652946,
+    "ast_hash": "ed2aec1b3fb63f9fe37857e88ecc84b1",
+    "semantic_hash": "ed2aec1b3fb63f9fe37857e88ecc84b1"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_markdown_render.md": {
+    "mtime": 1784519559.6531227,
+    "ast_hash": "70de63fa516c6e72bb02a78e15edd781",
+    "semantic_hash": "70de63fa516c6e72bb02a78e15edd781"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_next_fleet_view.md": {
+    "mtime": 1784519559.6532505,
+    "ast_hash": "8cc2a6549d0fbcb7c40e0492568ef9f2",
+    "semantic_hash": "8cc2a6549d0fbcb7c40e0492568ef9f2"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_next_harness_view.md": {
+    "mtime": 1784519559.653365,
+    "ast_hash": "7d70261234c71d94c91788fe8193e60a",
+    "semantic_hash": "7d70261234c71d94c91788fe8193e60a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_next_intake_action.md": {
+    "mtime": 1784519559.653477,
+    "ast_hash": "c4eb2fc9b495078958f020dc4723403e",
+    "semantic_hash": "c4eb2fc9b495078958f020dc4723403e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_next_intake_ask_ui.md": {
+    "mtime": 1784519559.6536233,
+    "ast_hash": "62f2a1d1eb3134c16572c59fbbaf6623",
+    "semantic_hash": "62f2a1d1eb3134c16572c59fbbaf6623"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_next_landing.md": {
+    "mtime": 1784519559.6537707,
+    "ast_hash": "d853b67ac25adfe5e91b258cf7fcac65",
+    "semantic_hash": "d853b67ac25adfe5e91b258cf7fcac65"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_next_llm_relays.md": {
+    "mtime": 1784519559.6539361,
+    "ast_hash": "9e39ae80c733f9b811ae20066667f937",
+    "semantic_hash": "9e39ae80c733f9b811ae20066667f937"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_next_read_api.md": {
+    "mtime": 1784519559.6540458,
+    "ast_hash": "e7b8280c3ada870a1a689ca71583678d",
+    "semantic_hash": "e7b8280c3ada870a1a689ca71583678d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_next_runtime_events.md": {
+    "mtime": 1784519559.6541646,
+    "ast_hash": "31c9f6c05f09dc4bacf8cb90dbdf8f67",
+    "semantic_hash": "31c9f6c05f09dc4bacf8cb90dbdf8f67"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_next_scaffold.md": {
+    "mtime": 1784519559.654281,
+    "ast_hash": "a094de70e33f450011e0453c7191af42",
+    "semantic_hash": "a094de70e33f450011e0453c7191af42"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_next_timeline_search.md": {
+    "mtime": 1784519559.6544366,
+    "ast_hash": "29ff7fd0cb69d9c2f755908790a6c3d8",
+    "semantic_hash": "29ff7fd0cb69d9c2f755908790a6c3d8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_panel_retirement.md": {
+    "mtime": 1784519559.6545541,
+    "ast_hash": "e375e424aa2ab5dc97b599e00833abef",
+    "semantic_hash": "e375e424aa2ab5dc97b599e00833abef"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_parity_oracle.md": {
+    "mtime": 1784519559.654673,
+    "ast_hash": "47eb62c6542069ece35aec1822eaee25",
+    "semantic_hash": "47eb62c6542069ece35aec1822eaee25"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_provider_registry.md": {
+    "mtime": 1784519559.6547804,
+    "ast_hash": "f088e06ac0006e44fdf10d1d5f036c88",
+    "semantic_hash": "f088e06ac0006e44fdf10d1d5f036c88"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_retro_lessons.md": {
+    "mtime": 1784519559.6548946,
+    "ast_hash": "228bdfb8fd70a356de83445698d7046b",
+    "semantic_hash": "228bdfb8fd70a356de83445698d7046b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_review_notes.md": {
+    "mtime": 1784519559.6550074,
+    "ast_hash": "d8e79ae34e6e817b09cf7b3f68294a5d",
+    "semantic_hash": "d8e79ae34e6e817b09cf7b3f68294a5d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_serve_decommission.md": {
+    "mtime": 1784519559.6551461,
+    "ast_hash": "532473be6a3abc7a15f8510eebac6f36",
+    "semantic_hash": "532473be6a3abc7a15f8510eebac6f36"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_theme_toggle.md": {
+    "mtime": 1784519559.655371,
+    "ast_hash": "412d53e570de4c3de34f689c7c8a2f38",
+    "semantic_hash": "412d53e570de4c3de34f689c7c8a2f38"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolbox_ui_project_info.md": {
+    "mtime": 1784519559.655537,
+    "ast_hash": "ab86956cb4aaebdfc06cff39991b51e2",
+    "semantic_hash": "ab86956cb4aaebdfc06cff39991b51e2"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_toolchain_npm_handyman_harness.md": {
+    "mtime": 1784519559.6556573,
+    "ast_hash": "d333e17659ae06476b385683634391fe",
+    "semantic_hash": "d333e17659ae06476b385683634391fe"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_tools_discovery_advisory.md": {
+    "mtime": 1784519559.6558142,
+    "ast_hash": "dbb179ed0f71d0db992c3863bf55f31d",
+    "semantic_hash": "dbb179ed0f71d0db992c3863bf55f31d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_tools_discovery_agents.md": {
+    "mtime": 1784519559.6559613,
+    "ast_hash": "6b87872b0275aec298f7831e5e964fc5",
+    "semantic_hash": "6b87872b0275aec298f7831e5e964fc5"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_tools_discovery_agents_advisory.md": {
+    "mtime": 1784519559.6561058,
+    "ast_hash": "e9f779763bb33f1d837837a63f717350",
+    "semantic_hash": "e9f779763bb33f1d837837a63f717350"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_tools_discovery_declare.md": {
+    "mtime": 1784519559.6562395,
+    "ast_hash": "f297d1d762d26a91bc32f92db0a826c7",
+    "semantic_hash": "f297d1d762d26a91bc32f92db0a826c7"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_tools_discovery_script.md": {
+    "mtime": 1784519559.6563888,
+    "ast_hash": "1e6705a7de92a8ce3e9699847ebbcac0",
+    "semantic_hash": "1e6705a7de92a8ce3e9699847ebbcac0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_two_stage_review.md": {
+    "mtime": 1784519559.6565332,
+    "ast_hash": "4bb08a2dd23b9709503189eafadd6a92",
+    "semantic_hash": "4bb08a2dd23b9709503189eafadd6a92"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_unattended_loop_contract.md": {
+    "mtime": 1784519559.65667,
+    "ast_hash": "43c5b77792bebb545f0c674e07ed00ab",
+    "semantic_hash": "43c5b77792bebb545f0c674e07ed00ab"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_update_harness_diff.md": {
+    "mtime": 1784519559.6568263,
+    "ast_hash": "05b5f47a8fdf785cc55311a147af0a32",
+    "semantic_hash": "05b5f47a8fdf785cc55311a147af0a32"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_upgrade_harness_check.md": {
+    "mtime": 1784519559.6569548,
+    "ast_hash": "c5a2c269a23537c48f38ff3905037eb6",
+    "semantic_hash": "c5a2c269a23537c48f38ff3905037eb6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_upgrade_harness_diff.md": {
+    "mtime": 1784519559.6571004,
+    "ast_hash": "6236840e53f78a0ad039efef5f24f5d9",
+    "semantic_hash": "6236840e53f78a0ad039efef5f24f5d9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_upgrade_mode.md": {
+    "mtime": 1784519559.6572258,
+    "ast_hash": "51f8f29f897c941035e9ff1e7db5833a",
+    "semantic_hash": "51f8f29f897c941035e9ff1e7db5833a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_validate_harness.md": {
+    "mtime": 1784519559.6573756,
+    "ast_hash": "21f7b2b72b84fbb71cc61f330a9dacee",
+    "semantic_hash": "21f7b2b72b84fbb71cc61f330a9dacee"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_validate_harness_cli.md": {
+    "mtime": 1784519559.6575234,
+    "ast_hash": "6a240b1778a3d57f8ac4fe18ae2718d0",
+    "semantic_hash": "6a240b1778a3d57f8ac4fe18ae2718d0"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_validator_legacy_frontmatter_alias.md": {
+    "mtime": 1784519559.6576319,
+    "ast_hash": "282c4694de6e4cad2734454146bf1706",
+    "semantic_hash": "282c4694de6e4cad2734454146bf1706"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_verifier_advisory_consistency.md": {
+    "mtime": 1784519559.657776,
+    "ast_hash": "11f99a71c5cade5ef3a1637054b50394",
+    "semantic_hash": "11f99a71c5cade5ef3a1637054b50394"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_version_handshake_npm.md": {
+    "mtime": 1784519559.657874,
+    "ast_hash": "cc75349b9a61d3168ba9dc189154ce0a",
+    "semantic_hash": "cc75349b9a61d3168ba9dc189154ce0a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workflow_stability_steps.md": {
+    "mtime": 1784519559.6580124,
+    "ast_hash": "1c88ee5ee516be6a99725680a07a11a8",
+    "semantic_hash": "1c88ee5ee516be6a99725680a07a11a8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workflow_stages_reference.md": {
+    "mtime": 1784519559.6581438,
+    "ast_hash": "1bd0c2b36742fe788f3bedd7c58b6ad3",
+    "semantic_hash": "1bd0c2b36742fe788f3bedd7c58b6ad3"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workstation_action_nomenclature.md": {
+    "mtime": 1784519559.6582732,
+    "ast_hash": "ced9f5110e6300516de23f3cfa9de83c",
+    "semantic_hash": "ced9f5110e6300516de23f3cfa9de83c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workstation_app_shell.md": {
+    "mtime": 1784519559.6584105,
+    "ast_hash": "1fbbd3aceb213a0a763387debccd0ac3",
+    "semantic_hash": "1fbbd3aceb213a0a763387debccd0ac3"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workstation_design_guidelines_doc.md": {
+    "mtime": 1784519559.6585565,
+    "ast_hash": "57f3b66b33e4ab569db0b445748ecdf4",
+    "semantic_hash": "57f3b66b33e4ab569db0b445748ecdf4"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workstation_detail_declutter.md": {
+    "mtime": 1784519559.6588306,
+    "ast_hash": "412e45d21c5777f012fa85a80468dc37",
+    "semantic_hash": "412e45d21c5777f012fa85a80468dc37"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workstation_intake.md": {
+    "mtime": 1784519559.6589677,
+    "ast_hash": "02bd8652f53526561924c05b9408b9b6",
+    "semantic_hash": "02bd8652f53526561924c05b9408b9b6"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workstation_interaction_contract.md": {
+    "mtime": 1784519559.6591053,
+    "ast_hash": "3ff7d96bc754811d0172a3745d5d18aa",
+    "semantic_hash": "3ff7d96bc754811d0172a3745d5d18aa"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workstation_reference_doc.md": {
+    "mtime": 1784519559.6592326,
+    "ast_hash": "f93175a0fdb6207f8a8d13051edd52dc",
+    "semantic_hash": "f93175a0fdb6207f8a8d13051edd52dc"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workstation_serve.md": {
+    "mtime": 1784519559.6593668,
+    "ast_hash": "765fbbfbc06306847bf2b84feb8f9d70",
+    "semantic_hash": "765fbbfbc06306847bf2b84feb8f9d70"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workstation_stale_panel_warning.md": {
+    "mtime": 1784519559.6595118,
+    "ast_hash": "97de69926139a145f41a5d297af9768e",
+    "semantic_hash": "97de69926139a145f41a5d297af9768e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workstation_theme_toggle.md": {
+    "mtime": 1784519559.6597493,
+    "ast_hash": "287ab50d9f75248a09b7b162579cf7f4",
+    "semantic_hash": "287ab50d9f75248a09b7b162579cf7f4"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workstation_verify.md": {
+    "mtime": 1784519559.6601121,
+    "ast_hash": "ace5ff9b3fd4007536efc80a13e56e29",
+    "semantic_hash": "ace5ff9b3fd4007536efc80a13e56e29"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/archive/backlog/review_workstation_views_routing.md": {
+    "mtime": 1784519559.6602426,
+    "ast_hash": "a6e8b086e3ede465830434caa49052fb",
+    "semantic_hash": "a6e8b086e3ede465830434caa49052fb"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/backlog/explore_npm_pack_64.md": {
+    "mtime": 1784519559.612377,
+    "ast_hash": "b61b856527f3fa743fd85233eb1f7925",
+    "semantic_hash": "b61b856527f3fa743fd85233eb1f7925"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/backlog/explore_okf_memoria.md": {
+    "mtime": 1784519559.6125386,
+    "ast_hash": "c805ea71bd3528260808bc1f33df0ef8",
+    "semantic_hash": "c805ea71bd3528260808bc1f33df0ef8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/backlog/explore_reorganizacion_capas.md": {
+    "mtime": 1784668776.5898294,
+    "ast_hash": "0cbd1e3054a7f75352fb11d5fa6e647d",
+    "semantic_hash": "0cbd1e3054a7f75352fb11d5fa6e647d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/backlog/explore_toolbox_a11y_live.md": {
+    "mtime": 1784519559.6127188,
+    "ast_hash": "62b0952f28847ef5cb5011e389e97216",
+    "semantic_hash": "62b0952f28847ef5cb5011e389e97216"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/backlog/explore_toolbox_next_unification.md": {
+    "mtime": 1784519559.61288,
+    "ast_hash": "4a89eff002b90b1ac661ed954fd8cefd",
+    "semantic_hash": "4a89eff002b90b1ac661ed954fd8cefd"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/backlog/explore_toolbox_nextjs_migration.md": {
+    "mtime": 1784519559.6130683,
+    "ast_hash": "6cf63b42a627be899f87a3db2182fca5",
+    "semantic_hash": "6cf63b42a627be899f87a3db2182fca5"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/backlog/explore_workstation_ui_state_2.md": {
+    "mtime": 1784519559.6133285,
+    "ast_hash": "8f9f3261295b70053f15d7ca43f2f7c4",
+    "semantic_hash": "8f9f3261295b70053f15d7ca43f2f7c4"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/backlog/impl_period_close_branch_unit.md": {
+    "mtime": 1784670214.9913847,
+    "ast_hash": "0cada3c57edeba7574457d4c90de3eed",
+    "semantic_hash": "0cada3c57edeba7574457d4c90de3eed"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/docs/architecture.md": {
+    "mtime": 1784664928.7215889,
+    "ast_hash": "dffcd01b783033d3e986f90024d38d0e",
+    "semantic_hash": "dffcd01b783033d3e986f90024d38d0e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/docs/business.md": {
+    "mtime": 1784664928.7220404,
+    "ast_hash": "c1a36b8a3b73f21bc74a8a67be32132a",
+    "semantic_hash": "c1a36b8a3b73f21bc74a8a67be32132a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/docs/conventions.md": {
+    "mtime": 1784670619.5082107,
+    "ast_hash": "e3c14345d2dba22062a68f0a8d9aaec9",
+    "semantic_hash": "e3c14345d2dba22062a68f0a8d9aaec9"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/docs/current/audit-toolbox-next-landing.md": {
+    "mtime": 1784519559.6608074,
+    "ast_hash": "441f3f324736ba2c738e2d1db8bb019a",
+    "semantic_hash": "441f3f324736ba2c738e2d1db8bb019a"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/docs/current/go-no-go-sp1.md": {
+    "mtime": 1784519559.6609783,
+    "ast_hash": "e7d05e04f7aebfb49ec055e3381ee354",
+    "semantic_hash": "e7d05e04f7aebfb49ec055e3381ee354"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/docs/current/handoff-2026-07-16.md": {
+    "mtime": 1784519559.6611464,
+    "ast_hash": "571a04d8610474d7e469e81ca331775f",
+    "semantic_hash": "571a04d8610474d7e469e81ca331775f"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/docs/current/handoff-2026-07-18.md": {
+    "mtime": 1784519559.6612782,
+    "ast_hash": "3bced13736663179b349d8d7dc4c95ed",
+    "semantic_hash": "3bced13736663179b349d8d7dc4c95ed"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/docs/current/handoff-2026-07-19.md": {
+    "mtime": 1784519559.6614077,
+    "ast_hash": "ffb3373b26a6961b1b6d10b6ce211c07",
+    "semantic_hash": "ffb3373b26a6961b1b6d10b6ce211c07"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/docs/current/handoff-2026-07-19b.md": {
+    "mtime": 1784519559.6615765,
+    "ast_hash": "2fc74e2be1109ef844aeb48719c9bf61",
+    "semantic_hash": "2fc74e2be1109ef844aeb48719c9bf61"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/.handyman/progress/history.md": {
+    "mtime": 1784670635.587837,
+    "ast_hash": "adeb1063e5a50c968b8f9c0b589a0ef1",
+    "semantic_hash": "adeb1063e5a50c968b8f9c0b589a0ef1"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/apps/web/README.md": {
+    "mtime": 1784519559.665321,
+    "ast_hash": "f640f5d7cf28bce0bacecd5979aeb223",
+    "semantic_hash": "f640f5d7cf28bce0bacecd5979aeb223"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-acciones-deterministas-por-capa.md": {
+    "mtime": 1782437050.5277796,
+    "ast_hash": "639f40178aafcc9b19a309f88e719a12",
+    "semantic_hash": "639f40178aafcc9b19a309f88e719a12"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-actualizacion-harness.md": {
+    "mtime": 1781761242.383765,
+    "ast_hash": "01d8489fbb672fb13a1947ef120ee963",
+    "semantic_hash": "01d8489fbb672fb13a1947ef120ee963"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-business-context-bootstrap.md": {
+    "mtime": 1782437050.5280738,
+    "ast_hash": "c5c5d9fc6a6abe50cb82220103fae39c",
+    "semantic_hash": "c5c5d9fc6a6abe50cb82220103fae39c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-feature-request-md.md": {
+    "mtime": 1782437050.5284045,
+    "ast_hash": "07a69505ca4fa9621a16991c27378927",
+    "semantic_hash": "07a69505ca4fa9621a16991c27378927"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-harnesses-ecosistema.md": {
+    "mtime": 1784159545.0529985,
+    "ast_hash": "6fc71a1ccdc1bbbd36794c660f47e6f4",
+    "semantic_hash": "6fc71a1ccdc1bbbd36794c660f47e6f4"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-inconsistencia-bootstrap.md": {
+    "mtime": 1782437050.5286107,
+    "ast_hash": "974466eee183ca108b3457e91bd013de",
+    "semantic_hash": "974466eee183ca108b3457e91bd013de"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-iteraciones.md": {
+    "mtime": 1781756751.098907,
+    "ast_hash": "c64d71382efdf46f933a8bf5a6359fb8",
+    "semantic_hash": "c64d71382efdf46f933a8bf5a6359fb8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-observador-fleet-web.md": {
+    "mtime": 1784349834.0332732,
+    "ast_hash": "05ab764601ff65d486ca8e567d0bfb56",
+    "semantic_hash": "05ab764601ff65d486ca8e567d0bfb56"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-peticiones-llm-toolbox.md": {
+    "mtime": 1784349834.033392,
+    "ast_hash": "1789c959c17c1118381b14de6ec60e60",
+    "semantic_hash": "1789c959c17c1118381b14de6ec60e60"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-pre-post-process.md": {
+    "mtime": 1782939394.786504,
+    "ast_hash": "626bcfd0a2acb2566b4a8cbde9c648f8",
+    "semantic_hash": "626bcfd0a2acb2566b4a8cbde9c648f8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-rag-handyman.md": {
+    "mtime": 1784349834.0335422,
+    "ast_hash": "26ca5a632fb41569b853e009dbd50563",
+    "semantic_hash": "26ca5a632fb41569b853e009dbd50563"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-snyk-w011.md": {
+    "mtime": 1782487213.5972018,
+    "ast_hash": "e5c32480574690b6a06ed26d8a8f6c4c",
+    "semantic_hash": "e5c32480574690b6a06ed26d8a8f6c4c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-sprints-cierre-periodo.md": {
+    "mtime": 1784159545.0531995,
+    "ast_hash": "b7c4caffe132a049780b81d770c8756d",
+    "semantic_hash": "b7c4caffe132a049780b81d770c8756d"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-tareas-llm-toolbox.md": {
+    "mtime": 1784350588.016256,
+    "ast_hash": "2c4995c59c70490fb742c0d3b11fd600",
+    "semantic_hash": "2c4995c59c70490fb742c0d3b11fd600"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-tests-evaluaciones-modelo.md": {
+    "mtime": 1782883266.1980588,
+    "ast_hash": "b2e16c297800240f6d8bf8df2f48a43c",
+    "semantic_hash": "b2e16c297800240f6d8bf8df2f48a43c"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-tool-discovery-referencias.md": {
+    "mtime": 1782939394.786794,
+    "ast_hash": "01673afc3d31b71c496cd0888773d388",
+    "semantic_hash": "01673afc3d31b71c496cd0888773d388"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-tool-discovery.md": {
+    "mtime": 1782883266.1983867,
+    "ast_hash": "5ddb13e17ccc7b41ef6ab2b4e04aac7e",
+    "semantic_hash": "5ddb13e17ccc7b41ef6ab2b4e04aac7e"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-ui-observador-toolbox.md": {
+    "mtime": 1784349834.0336323,
+    "ast_hash": "a2ee1bb89df4c382ba71f1a34391e8df",
+    "semantic_hash": "a2ee1bb89df4c382ba71f1a34391e8df"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/analisis-workflow-etapas.md": {
+    "mtime": 1782944321.2133255,
+    "ast_hash": "e67362578e6cc15e63a51aa1869328db",
+    "semantic_hash": "e67362578e6cc15e63a51aa1869328db"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/docs/archive/estado-migracion-ts.md": {
+    "mtime": 1784349834.0337143,
+    "ast_hash": "0a1b792243113cae4a36b84fefa688f8",
+    "semantic_hash": "0a1b792243113cae4a36b84fefa688f8"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/handyman/README.npm.md": {
+    "mtime": 1784519559.6754482,
+    "ast_hash": "bce67e01f01d92ef0aa1e4fe47d7a47b",
+    "semantic_hash": "bce67e01f01d92ef0aa1e4fe47d7a47b"
+  },
+  "/Users/rodrigomardones/proyectos/programing/handyman/pnpm-workspace.yaml": {
+    "mtime": 1784519559.691666,
+    "ast_hash": "64afda30aceb1cdfd1fc39ca5f4db44d",
+    "semantic_hash": "64afda30aceb1cdfd1fc39ca5f4db44d"
   }
 }

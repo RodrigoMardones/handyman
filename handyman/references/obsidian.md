@@ -96,7 +96,7 @@ Keep the local harness abstract from the repo: ignore the operational state unde
 
 ```text
 .handyman/*
-!.handyman/docs/
+!.handyman/memory/
 .obsidian/
 .trash/
 ```
@@ -109,5 +109,5 @@ If you adopt Obsidian on an existing Handyman workspace:
 
 1. Add frontmatter blocks to `progress/current.md` and historical reports as you touch them. No need to rewrite history.
 2. Drop in an `index.md` at the workspace root.
-3. Append `.handyman/*`, `!.handyman/docs/`, `.obsidian/`, and `.trash/` to `.gitignore`.
+3. Append `.handyman/*`, `!.handyman/memory/`, `.obsidian/`, and `.trash/` to `.gitignore`.
 4. Run `./init.sh` to confirm the verifier still passes; presence of `.obsidian/` or `index.md` must not break it.

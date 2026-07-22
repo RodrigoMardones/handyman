@@ -7,10 +7,10 @@
 
 ## Docs
 
-- [business](docs/business.md)
-- [architecture](docs/architecture.md)
-- [conventions](docs/conventions.md)
-- [verification](docs/verification.md)
+- [business](memory/business.md)
+- [architecture](memory/architecture.md)
+- [conventions](memory/conventions.md)
+- [verification](memory/verification.md)
 
 ## Progress
 

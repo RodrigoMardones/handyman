@@ -1,6 +1,6 @@
 /**
  * Acceptance from a diff or a spec (feature 33, item 2.4 of
- * docs/analisis-tareas-llm-toolbox.md).
+ * docs/archive/analisis-tareas-llm-toolbox.md).
  *
  * Given the working diff of an in-progress feature, or a raw spec/issue, draft
  * the observable acceptance bullets. Read-only: it generates text the human
@@ -25,7 +25,7 @@ export interface AcceptanceResult {
     model: string;
     source: AcceptanceSource;
     /** True when the last bullet names the green gate, per the contract in
-     *  docs/analisis-feature-request-md.md. Reported, never enforced. */
+     *  docs/archive/analisis-feature-request-md.md. Reported, never enforced. */
     gate_last: boolean;
     /** Only meaningful for source='diff'. */
     diff_truncated: boolean;

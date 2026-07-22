@@ -69,10 +69,11 @@ fi
 rm -rf "$S1"
 
 # --- S2: open rejects a malformed sprint id -----------------------------------
-start_case "open: rejects a malformed sprint id without writing"
+# The id becomes docs/sprints/sprint.<ID>.md, so a slash can never be valid.
+start_case "open: rejects a sprint id with a slash without writing"
 S2="$(mktemp -d)"
 write_harness "$S2"
-OUT="$(node "$SPRINT" --root "$S2" open sprint-one 2>&1)"; CODE=$?
+OUT="$(node "$SPRINT" --root "$S2" open "feat/bad" 2>&1)"; CODE=$?
 CUR="$(json_get "$S2/harness.config.json" "d.current_sprint")"
 if [ "$CODE" -ne 0 ] && [ "$CUR" = "None" ]; then
   pass
@@ -80,6 +81,22 @@ else
   fail "expected failure, exit=$CODE current=$CUR output: $OUT"
 fi
 rm -rf "$S2"
+
+# --- S2b: open accepts a branch-slug label ------------------------------------
+# Branch-as-unit protocol: the period label is the working branch slugified
+# (feat/rework-tools -> feat-rework-tools). Calendar ids stay valid too.
+start_case "open: accepts a branch-slug label and stamps pendings with it"
+S2B="$(mktemp -d)"
+write_harness "$S2B"
+OUT="$(node "$SPRINT" --root "$S2B" open feat-rework-tools 2>&1)"; CODE=$?
+CUR="$(json_get "$S2B/harness.config.json" "d.current_sprint")"
+LBL_A="$(json_get "$S2B/.handyman/feature_list.json" "(d.features.find(f=>f.name==='a')||{}).sprint ?? ''")"
+if [ "$CODE" -eq 0 ] && [ "$CUR" = "feat-rework-tools" ] && [ "$LBL_A" = "feat-rework-tools" ]; then
+  pass
+else
+  fail "expected slug accepted, exit=$CODE current=$CUR a=$LBL_A output: $OUT"
+fi
+rm -rf "$S2B"
 
 # --- S3: open enforces the single-open-sprint invariant ------------------------
 start_case "open: fails when a sprint is already open"
@@ -117,7 +134,7 @@ write_harness "$S5"
 node "$SPRINT" --root "$S5" open 2026-SP1 >/dev/null 2>&1
 node -e 'const fs=require("fs");const p=process.argv[1];const d=JSON.parse(fs.readFileSync(p,"utf8"));for(const f of d.features){if(f.name==="a"){f.status="done";}}fs.writeFileSync(p,JSON.stringify(d,null,2)+"\n");' "$S5/.handyman/feature_list.json"
 OUT="$(node "$SPRINT" --root "$S5" close 2>&1)"; CODE=$?
-DOC="$S5/.handyman/docs/sprints/sprint.2026-SP1.md"
+DOC="$S5/.handyman/memory/sprints/sprint.2026-SP1.md"
 CUR="$(json_get "$S5/harness.config.json" "d.current_sprint")"
 HAS_A="$(json_get "$S5/.handyman/feature_list.json" "d.features.some(f=>f.name==='a')")"
 LBL_B="$(json_get "$S5/.handyman/feature_list.json" "(d.features.find(f=>f.name==='b')||{}).sprint ?? ''")"
@@ -141,7 +158,7 @@ node "$SPRINT" --root "$S6" open 2026-SP1 >/dev/null 2>&1
 OUT="$(node "$SPRINT" --root "$S6" close --dry-run 2>&1)"; CODE=$?
 CUR="$(json_get "$S6/harness.config.json" "d.current_sprint")"
 if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "DRY RUN" \
-  && [ ! -e "$S6/.handyman/docs/sprints/sprint.2026-SP1.md" ] \
+  && [ ! -e "$S6/.handyman/memory/sprints/sprint.2026-SP1.md" ] \
   && [ ! -e "$S6/.handyman/archive" ] && [ "$CUR" = "2026-SP1" ]; then
   pass
 else
@@ -260,7 +277,7 @@ write_harness "$S12"
 node "$SPRINT" --root "$S12" open 2026-SP1 >/dev/null 2>&1
 node -e 'const fs=require("fs");const p=process.argv[1];const d=JSON.parse(fs.readFileSync(p,"utf8"));for(const f of d.features){if(f.name==="a"){f.status="done";}}fs.writeFileSync(p,JSON.stringify(d,null,2)+"\n");' "$S12/.handyman/feature_list.json"
 OUT="$(node "$SPRINT" --root "$S12" close 2>&1)"; CODE=$?
-DOC="$S12/.handyman/docs/sprints/sprint.2026-SP1.md"
+DOC="$S12/.handyman/memory/sprints/sprint.2026-SP1.md"
 # closed_at appears in the frontmatter and the Identity section as an ISO 8601 stamp
 FM_CLOSED="$(grep -E '^closed_at:' "$DOC" | sed -E 's/^closed_at:[[:space:]]*//')"
 ID_CLOSED="$(grep -E '^[[:space:]]*-[[:space:]]*\*\*Closed at:\*\*' "$DOC" | sed -E 's/.*\*\*[[:space:]]*//')"

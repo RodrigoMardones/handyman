@@ -1,6 +1,6 @@
 /**
  * Acceptance from a diff or a spec (feature 33, item 2.4 of
- * docs/analisis-tareas-llm-toolbox.md).
+ * docs/archive/analisis-tareas-llm-toolbox.md).
  *
  * Given the working diff of an in-progress feature, or a raw spec/issue, draft
  * the observable acceptance bullets. Read-only: it generates text the human

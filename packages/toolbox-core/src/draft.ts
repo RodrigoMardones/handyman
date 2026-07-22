@@ -2,7 +2,7 @@
  * Handyman toolBox draft relay: turn an informal request into the harness
  * intake document (server-side only, never writes disk).
  *
- * Design: docs/analisis-peticiones-llm-toolbox.md §4. The user writes a free
+ * Design: docs/archive/analisis-peticiones-llm-toolbox.md §4. The user writes a free
  * prompt in the panel; the server builds a prompt that distils the harness
  * experience (the contract in assets/feature-request.template.md) plus the
  * volatile context of the target harness (feature queue, likely-duplicate
@@ -26,7 +26,7 @@
  */
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { resolveWorkspace } from "./workspace.js";
+import { resolveDocsDir, resolveWorkspace } from "./workspace.js";
 import { LlmError } from "./llm.js";
 
 // The intake template is a handyman skill asset (handyman/assets/), not a
@@ -145,7 +145,7 @@ export function composeSystem(system: DraftSystem): string {
     "1. One request = ONE feature. If the ask is two things, pick the clearest",
     "   one and note the split in Context; never merge two features.",
     "2. Pick an archetype and write it as the FIRST line of the draft inside a",
-    "   comment: `[Research]` leaves a plan in docs/; `[Implementation]` changes",
+    "   comment: `[Research]` leaves a plan in memory/; `[Implementation]` changes",
     "   code + tests. Use the matching worked example below as the mould.",
     "3. Acceptance criteria are OBSERVABLE and TESTABLE, one bullet each,",
     "   covering the happy path and at least one failure case.",
@@ -230,7 +230,7 @@ function harnessCorpus(project: string, root: string, workspace: string): Corpus
     }
   }
   for (const kind of ["backlog", "docs"] as const) {
-    const dir = join(workspace, kind);
+    const dir = kind === "docs" ? resolveDocsDir(workspace) : join(workspace, kind);
     let names: string[] = [];
     try {
       names = readdirSync(dir);

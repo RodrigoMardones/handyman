@@ -6,7 +6,7 @@
  * and MCP servers is *semantic*: a skill triggers on its `description`
  * (progressive disclosure) and an MCP tool surfaces through a deferred list
  * plus a semantic `tool_search`. This CLI is the deterministic counterpart the
- * harness asks for in `docs/analisis-tool-discovery.md`: it lists the installed
+ * harness asks for in `docs/archive/analisis-tool-discovery.md`: it lists the installed
  * skills, finds them by keyword without a similarity model, and checks the
  * `discovery` block of `harness.config.json` against what is actually on disk.
  *
@@ -417,7 +417,15 @@ function cmdCheck(args: ParsedArgs): number {
     }
   }
 
-  const undeclared = [...installed].filter((n) => !declaredSkills.includes(n)).sort();
+  // NOTE only project-local installs: a skill under the user's global roots is
+  // their personal toolbox, not this repo's contract, and listing every global
+  // install buried the signal under dozens of NOTEs. An explicit --skills-dir
+  // is a hermetic override and keeps the full report.
+  const projectLocal = (n: string) =>
+    args.skillsDir !== null || (skillPath.get(n) ?? "").startsWith(root + sep);
+  const undeclared = [...installed]
+    .filter((n) => !declaredSkills.includes(n) && projectLocal(n))
+    .sort();
   for (const name of undeclared) {
     info(`NOTE: installed but not declared: ${name}`);
   }

@@ -337,16 +337,36 @@ else
 fi
 rm -rf "$T17"
 
-# --- T18: scaffold creates the sprint docs split ------------------------------
-start_case "scaffold creates docs/current and docs/sprints in the workspace"
+# --- T18: scaffold creates the memory layout ---------------------------------
+start_case "scaffold creates memory/ and memory/sprints in the workspace (no current/)"
 T18="$(mktemp -d)"
 "$SUITE_DIR/../handyman/scripts/scaffold.sh" local "$T18" demo >/dev/null 2>&1
-if [ -d "$T18/.handyman/docs/current" ] && [ -d "$T18/.handyman/docs/sprints" ]; then
+if [ -d "$T18/.handyman/memory/sprints" ] && [ -f "$T18/.handyman/memory/business.md" ] \
+  && [ ! -d "$T18/.handyman/memory/current" ] && [ ! -d "$T18/.handyman/docs" ]; then
   pass
 else
-  fail "missing docs split dirs under $T18/.handyman/docs"
+  fail "expected memory layout under $T18/.handyman"
 fi
 rm -rf "$T18"
+
+# --- T18b: legacy docs/ workspace still verifies (fallback) -------------------
+start_case "legacy docs/ workspace passes the reference verifier via fallback"
+T18B="$(mktemp -d)"
+write_bridge_files "$T18B"
+write_workspace_files "$T18B/.handyman" 1
+CODE=0; "$T18B/init.sh" >/dev/null 2>&1 || CODE=$?
+mkdir -p "$T18B/.handyman/memory"
+for f in business architecture conventions verification; do
+  : > "$T18B/.handyman/memory/$f.md"
+done
+rm -rf "$T18B/.handyman/docs"
+CODE2=0; "$T18B/init.sh" >/dev/null 2>&1 || CODE2=$?
+if [ "$CODE" -eq 0 ] && [ "$CODE2" -eq 0 ]; then
+  pass
+else
+  fail "legacy=$CODE memory=$CODE2"
+fi
+rm -rf "$T18B"
 
 # --- T19: validator flags dangling depends_on, accepts archived targets -------
 start_case "validate_harness: flags dangling depends_on, accepts archived ids"
