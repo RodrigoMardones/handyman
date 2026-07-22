@@ -29,7 +29,7 @@ request before you start.
 # - One request = ONE feature. If it asks for two things, split it into two requests.
 # - Acceptance is observable and testable: every bullet can be checked by a test.
 # - The green gate (./init.sh | bash tests/run_tests.sh) is ALWAYS the last Acceptance bullet.
-# - Choose an archetype: [Research] leaves a plan in docs/ ; [Implementation] changes code + tests.
+# - Choose an archetype: [Research] leaves a plan in memory/ ; [Implementation] changes code + tests.
 # - Fill the CORE always; delete the OPTIONAL sections that do not apply (no placeholders).
 # - Only name, title, description, and acceptance become the feature_list.json entry (via npx handyman-harness@3 feature add);
 #   Verification, Considerations, Tools, and Post-feature are guidance for the leader and the human.
@@ -76,7 +76,7 @@ request before you start.
 - <constraints, complementary skills, style — e.g. ponytail, skill-creator>
 
 ## Post-feature
-- <docs to update under HARNESS_WORKSPACE/docs/...>
+- <docs to update under HARNESS_WORKSPACE/memory/...>
 - <PR publication or other closeout>
 
 ## Tools (extension)

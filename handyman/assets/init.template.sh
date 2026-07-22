@@ -223,7 +223,8 @@ check_graphify_context() {
 # bootstrap business interview was skipped. The business domain cannot be inferred
 # from code, so flag it for the user to fill. Never changes EXIT_CODE.
 check_business_context() {
-  biz="$HARNESS_WORKSPACE/docs/business.md"
+  biz="$HARNESS_WORKSPACE/memory/business.md"
+  [ -f "$biz" ] || biz="$HARNESS_WORKSPACE/docs/business.md"
   [ -f "$biz" ] || return 0
   if grep -qE 'Describe the business, the problem it solves|Define domain terms so code' "$biz"; then
     echo "NOTE: docs/business.md still matches the starter template - the bootstrap business interview looks skipped." >&2

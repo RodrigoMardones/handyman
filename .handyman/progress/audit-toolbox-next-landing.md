@@ -66,5 +66,5 @@ Veredicto: **PASS**.
 - Pre-Flight Check completo (62 casillas, todas PASS): comentario al tope de
   `apps/web/app/page.tsx`.
 - Reporte de implementacion:
-  [[../../backlog/impl_toolbox_next_landing]].
+  [[../backlog/impl_toolbox_next_landing]].
 - Skill fuente: `design-taste-frontend/SKILL.md` (secciones 4.7, 9.C, 14).

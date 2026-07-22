@@ -16,7 +16,7 @@ Resolve `HARNESS_WORKSPACE` before checking state. In local mode it is the proje
 
 ## C3 - Architecture Respected
 
-- [ ] Changed files match `$HARNESS_WORKSPACE/docs/architecture.md`.
+- [ ] Changed files match `$HARNESS_WORKSPACE/memory/architecture.md` (legacy: `docs/`).
 - [ ] No unapproved dependencies.
 - [ ] No debug prints or TODOs without context.
 
@@ -30,3 +30,9 @@ Resolve `HARNESS_WORKSPACE` before checking state. In local mode it is the proje
 - [ ] `$HARNESS_WORKSPACE/progress/history.md` updated.
 - [ ] `$HARNESS_WORKSPACE/progress/current.md` reset.
 - [ ] Feature status is correct.
+
+## C6 - Period Closed (at branch merge)
+
+- [ ] `sprint.js close` run before merging the branch: done features moved to `archive/feature_archive.json`, history compacted to stubs, `memory/sprints/sprint.<branch-slug>.md` derived.
+- [ ] Reports of archived features moved to `archive/backlog/`; only active `explore_` files remain in `backlog/`.
+- [ ] `current_sprint` cleared (next branch opens its own period).

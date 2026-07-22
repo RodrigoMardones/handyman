@@ -30,7 +30,8 @@ FLEET_SUMMARY_CLIENT_CSS="$WEB_DIR/components/FleetSummaryClient.module.css"
 MD_LIB="$WEB_DIR/lib/md.ts"
 INTAKE_ACTION="$WEB_DIR/actions/intake.ts"
 WEB_PKG="$WEB_DIR/package.json"
-ARCH_DOC="$REPO_ROOT/.handyman/docs/architecture.md"
+ARCH_DOC="$REPO_ROOT/.handyman/memory/architecture.md"
+[ -f "$ARCH_DOC" ] || ARCH_DOC="$REPO_ROOT/.handyman/docs/architecture.md"
 
 # Transpile a single IMPORT-FREE pure module to CommonJS and run a JS snippet
 # against its exports. Usage: run_transpiled SRC_FILE 'js code using the `mod`

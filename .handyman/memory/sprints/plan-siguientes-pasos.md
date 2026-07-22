@@ -12,7 +12,7 @@ type: Sprint
 
 - **Migración completa.** Features 38-50 cerradas: un solo proceso Next standalone vía `toolbox serve`, `toolbox_serve.ts` borrado, `proxy.ts` reducido al host-guard, oráculo en 28/28 y gate verde (26 suites + `./init.sh` exit 0).
 - **Backlog vacío de trabajo reclamable.** `pending: 0`, `in_progress: 0`, `blocked: 4`. El loop desatendido está parado con la condición correcta: *"nothing pending is ready — necesita una decisión humana, no otra sesión"*. Este doc es esa decisión.
-- **Las 4 bloqueadas son el propósito de la rama.** `feat/llm-toolbox-tasks` se abrió para la capa LLM (features 32-35, ítems 2.3-2.6 de [analisis-tareas-llm-toolbox.md](../../../docs/analisis-tareas-llm-toolbox.md)). Todo lo hecho hasta ahora — la migración entera — fue **infraestructura para hospedarlas**. Aún no se construyó ninguna.
+- **Las 4 bloqueadas son el propósito de la rama.** `feat/llm-toolbox-tasks` se abrió para la capa LLM (features 32-35, ítems 2.3-2.6 de [analisis-tareas-llm-toolbox.md](../../../docs/archive/analisis-tareas-llm-toolbox.md)). Todo lo hecho hasta ahora — la migración entera — fue **infraestructura para hospedarlas**. Aún no se construyó ninguna.
 - **El bloqueador §0 del análisis ya no aplica.** Existe `.env` con una API key y el registro de proveedores expone `zai` / `claude` / `ollama`. La capa de proveedores está viva (features 30/31 cerradas).
 
 ### Las 4 features bloqueadas

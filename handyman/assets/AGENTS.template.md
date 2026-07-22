@@ -22,7 +22,7 @@ A map, not a rulebook: read only what you need.
 | `feature-request.md` | `$HARNESS_WORKSPACE` | drafting a task |
 | `progress/current.md`, `progress/history.md` | `$HARNESS_WORKSPACE/progress/` | always / for history |
 | `backlog/impl_<feature>.md`, `backlog/review_<feature>.md` | `$HARNESS_WORKSPACE/backlog/` | reviewing or resuming |
-| `docs/business.md`, `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md` | `$HARNESS_WORKSPACE/docs/` | before editing / closing |
+| `memory/business.md`, `memory/architecture.md`, `memory/conventions.md`, `memory/verification.md` | `$HARNESS_WORKSPACE/memory/` | before editing / closing |
 | `CHECKPOINTS.md` | `$PROJECT_ROOT` | before review or close |
 | `src/`, `tests/` | `$PROJECT_ROOT` | implementation |
 

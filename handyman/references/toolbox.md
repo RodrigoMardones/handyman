@@ -3,7 +3,7 @@
 Read-only observation of every Handyman harness on the machine from a single
 place. One registry, one collector, derived health signals, a global Obsidian
 MOC and a live localhost observer. TypeScript port of the legacy fleet layer
-(renamed toolBox); design and evidence: `docs/analisis-observador-fleet-web.md`
+(renamed toolBox); design and evidence: `docs/archive/analisis-observador-fleet-web.md`
 in the skill repo.
 
 ## Philosophy
@@ -108,7 +108,7 @@ connect-src 'self'`) is the second defense on every response.
 ### LLM layer (`src/toolbox_llm.ts`)
 
 Server-side provider port for the intake-drafting plan
-(`docs/analisis-peticiones-llm-toolbox.md`): one `LlmProvider` interface with
+(`docs/archive/analisis-peticiones-llm-toolbox.md`): one `LlmProvider` interface with
 two adapters parameterized by `baseUrl` — Anthropic Messages (Claude via
 `ANTHROPIC_API_KEY`; Z.ai GLM Coding Plan via `Z_AI_API_KEY`, verified
 empirically at `api.z.ai/api/anthropic`) and OpenAI-compatible (Z.ai
@@ -120,7 +120,7 @@ browser: `GET /api/providers` returns only `{id, available, model}`.
 ### Intake-draft relay (`POST /api/draft`)
 
 `POST /api/draft {root, prompt, provider, files?}` is the case-estrella of
-`docs/analisis-peticiones-llm-toolbox.md` §4-5 (Plan A). It builds the intake
+`docs/archive/analisis-peticiones-llm-toolbox.md` §4-5 (Plan A). It builds the intake
 prompt from the bundled `assets/feature-request.template.md` (stable,
 cacheable: CORE/OPTIONAL shape + two archetype examples + the green-gate-as-
 last-bullet rule + the `npx handyman-harness@3 feature add` contract) plus the volatile
@@ -197,7 +197,7 @@ library:
   (except its own navigation keys); an `event.target` guard keeps typing safe.
 
 The search view is deliberately client-side retrieval — the skill's RAG
-analysis (`docs/analisis-rag-handyman.md`) concluded the harness corpus needs
+analysis (`docs/archive/analisis-rag-handyman.md`) concluded the harness corpus needs
 no server-side RAG pipeline: a BM25 index rebuilt from disk in milliseconds is
 immune to staleness; agents keep using agentic search.
 

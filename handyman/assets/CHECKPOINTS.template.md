@@ -16,7 +16,7 @@ Resolve `HARNESS_WORKSPACE` before checking state. In local mode it is the proje
 
 ## C3 - Architecture Respected
 
-- [ ] Changed files match `$HARNESS_WORKSPACE/docs/architecture.md`.
+- [ ] Changed files match `$HARNESS_WORKSPACE/memory/architecture.md` (legacy: `docs/`).
 - [ ] No unapproved dependencies.
 - [ ] No debug prints or TODOs without context.
 

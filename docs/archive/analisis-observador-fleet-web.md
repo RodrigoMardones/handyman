@@ -3,7 +3,7 @@
 > ¿Cómo construir un observador de proyectos handyman en el navegador, 100% local y en
 > TypeScript, que combine el estado en disco de cada harness con la capa de retrieval
 > concluida en [analisis-rag-handyman.md](analisis-rag-handyman.md) y el grafo de
-> [mapa-entidades-negocio.md](mapa-entidades-negocio.md)?
+> [mapa-entidades-negocio.md](../mapa-entidades-negocio.md)?
 
 ## 1. Evidencia: lo que ya existe (y lo que se perdió en la migración)
 

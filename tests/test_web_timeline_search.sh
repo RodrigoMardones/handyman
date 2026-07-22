@@ -25,7 +25,8 @@ MD_DIALOG="$WEB_DIR/components/MdDialog.tsx"
 LAYOUT="$WEB_DIR/app/layout.tsx"
 GLOBALS_CSS="$WEB_DIR/app/globals.css"
 WEB_PKG="$WEB_DIR/package.json"
-ARCH_DOC="$REPO_ROOT/.handyman/docs/architecture.md"
+ARCH_DOC="$REPO_ROOT/.handyman/memory/architecture.md"
+[ -f "$ARCH_DOC" ] || ARCH_DOC="$REPO_ROOT/.handyman/docs/architecture.md"
 
 # Transpile a single pure module (no imports) to CommonJS and run a JS
 # snippet against its exports. Usage: run_transpiled SRC_FILE 'js code using

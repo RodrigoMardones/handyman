@@ -20,7 +20,7 @@
  */
 import { readdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
-import { resolveWorkspace } from "./core/index.js";
+import { resolveDocsDir, resolveWorkspace } from "./core/index.js";
 
 const DOCS = ["business", "architecture", "conventions", "verification"] as const;
 const STATUS_ORDER = ["in_progress", "pending", "blocked"] as const;
@@ -145,24 +145,33 @@ export function buildIndex(workspace: string): string {
     out.push("- [feature-request.md](feature-request.md)");
   }
 
+  const docsDir = resolveDocsDir(workspace);
+  const docsName = basename(docsDir);
   out.push("", "## Docs", "");
   for (const doc of DOCS) {
-    if (isFile(join(workspace, "docs", `${doc}.md`))) {
-      out.push(`- [${doc}](docs/${doc}.md)`);
+    if (isFile(join(docsDir, `${doc}.md`))) {
+      out.push(`- [${doc}](${docsName}/${doc}.md)`);
     }
   }
   // Work-period docs: closed sprints and unreviewed open-sprint drafts.
-  for (const path of mdNamesSorted(join(workspace, "docs", "sprints"))) {
-    out.push(`- [${stemOf(path)}](docs/sprints/${path})`);
+  for (const path of mdNamesSorted(join(docsDir, "sprints"))) {
+    out.push(`- [${stemOf(path)}](${docsName}/sprints/${path})`);
   }
-  for (const path of mdNamesSorted(join(workspace, "docs", "current"))) {
-    out.push(`- [${stemOf(path)}](docs/current/${path})`);
+  for (const path of mdNamesSorted(join(docsDir, "current"))) {
+    out.push(`- [${stemOf(path)}](${docsName}/current/${path})`);
   }
 
   out.push("", "## Progress", "");
   for (const prog of ["current", "history"]) {
     if (isFile(join(workspace, "progress", `${prog}.md`))) {
       out.push(`- [${prog}](progress/${prog}.md)`);
+    }
+  }
+  // Session artifacts beyond the two live files (e.g. handoffs merged from
+  // the retired docs/current/ folder).
+  for (const path of mdNamesSorted(join(workspace, "progress"))) {
+    if (path !== "current.md" && path !== "history.md") {
+      out.push(`- [${stemOf(path)}](progress/${path})`);
     }
   }
 

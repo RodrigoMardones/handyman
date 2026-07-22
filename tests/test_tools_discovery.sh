@@ -259,4 +259,27 @@ else
 fi
 rm -rf "$T"
 
+# --- T15: undeclared NOTEs are project-local only ----------------------------
+# A skill under the user's global roots is their personal toolbox, not the
+# repo's contract; only local installs (.agents/skills etc.) get the
+# undeclared NOTE. Declared skills keep resolving from any root.
+start_case "check NOTEs undeclared local skills only; global installs stay silent"
+T="$(mktemp -d)"; G="$(mktemp -d)"
+mkdir -p "$T/.agents/skills/localskill"
+printf -- '---\nname: localskill\ndescription: Local fixture skill.\n---\n' > "$T/.agents/skills/localskill/SKILL.md"
+mkdir -p "$G/globalskill" "$G/alpha"
+printf -- '---\nname: globalskill\ndescription: Global fixture skill.\n---\n' > "$G/globalskill/SKILL.md"
+printf -- '---\nname: alpha\ndescription: Declared global skill.\n---\n' > "$G/alpha/SKILL.md"
+write_config "$T" '{"skills":["alpha"],"mcp":[]}'
+OUT="$(HANDYMAN_SKILL_ROOTS="$G" node "$TD" --root "$T" check 2>&1)"; CODE=$?
+if [ "$CODE" -eq 0 ] \
+  && printf '%s' "$OUT" | grep -q "installed but not declared: localskill" \
+  && ! printf '%s' "$OUT" | grep -q "installed but not declared: globalskill" \
+  && printf '%s' "$OUT" | grep -q "skill alpha: ok"; then
+  pass
+else
+  fail "exit=$CODE out=$OUT"
+fi
+rm -rf "$T" "$G"
+
 summary

@@ -8,7 +8,7 @@ import { spawn, spawnSync } from "node:child_process";
  * $HOME/HANDYMAN) records ONLY each harness project_root plus the
  * registration date; everything else is read live from each harness on
  * every query, so there is no mirrored state to drift (disk is the source
- * of truth). Design: docs/analisis-observador-fleet-web.md.
+ * of truth). Design: docs/archive/analisis-observador-fleet-web.md.
  *
  * Subcommands:
  *   register PATH    add a harness project root (validates it resolves)

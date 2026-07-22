@@ -187,6 +187,34 @@ function preflight(root: string, strict: boolean): number {
     problems.push("discovery MISSING");
   }
 
+  // --- context: graphify graph freshness (advisory, never strict) ------------
+  // The graph is the context layer agents query before exploring code; one
+  // older than the last commit answers about a repo that no longer exists.
+  // Silent when the harness has no graph or no git history (fixtures).
+  const graphJson = join(root, "graphify-out", "graph.json");
+  let graphStat: ReturnType<typeof statSync> | null = null;
+  try {
+    graphStat = statSync(graphJson);
+  } catch {
+    graphStat = null;
+  }
+  if (graphStat?.isFile()) {
+    const [rcGit, headTs] = run(["git", "-C", root, "log", "-1", "--format=%ct"]);
+    const commitSec = Number(headTs.trim());
+    if (rcGit === 0 && Number.isFinite(commitSec)) {
+      if (graphStat.mtimeMs < commitSec * 1000) {
+        block(
+          "context",
+          "NOTE",
+          "graphify-out/graph.json is older than the last commit - " +
+            "run '/graphify --update' before querying it",
+        );
+      } else {
+        block("context", "OK", "");
+      }
+    }
+  }
+
   // --- worklist: claimable work + the unattended-loop stop condition ---------
   const featureJs = join(HANDYMAN_ROOT, "dist", "feature.js");
   [rc, out] = run(["node", featureJs, "--root", root, "ready"]);

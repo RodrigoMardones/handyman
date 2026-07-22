@@ -60,3 +60,22 @@ type: Doc
 Preferir nombres claros. Comentar solo el razonamiento no obvio (como ya hacen los
 scripts Python actuales, con comentarios de intencion sobre cada `check_*`). Los docs
 del proyecto (`docs/`, `README.md`) estan en espanol; mantener ese idioma.
+
+## Analysis Documents (regla unica, F1 del rework de capas)
+
+Un analisis vive en exactamente un lugar segun su estado, nunca en varios:
+
+- **En vuelo:** `$HARNESS_WORKSPACE/backlog/explore_<topic>.md` (formato del
+  asset `backlog-explore.template.md`). Es el unico hogar para investigacion
+  activa; el chat solo lleva la referencia.
+- **Durable de producto:** `docs/` del repo, solo para documentos que un
+  lector futuro necesita para operar el producto (p. ej.
+  `mapa-entidades-negocio.md`, plantillas de PR). Un analisis se "gradua" a
+  `docs/` unicamente si deja de ser investigacion y pasa a ser referencia.
+- **Cumplido:** `docs/archive/` cuando el trabajo que motivo el analisis ya
+  cerro. Los comentarios de codigo que citan un analisis como procedencia
+  apuntan a `docs/archive/analisis-*.md`.
+- El grafo de graphify es la capa de contexto sobre todo lo anterior:
+  `preflight` avisa (`context: NOTE`) cuando `graphify-out/graph.json` es mas
+  viejo que el ultimo commit; refrescarlo (`/graphify --update`) es parte del
+  cierre de rama, no de cada feature.

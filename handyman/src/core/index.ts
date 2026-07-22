@@ -7,7 +7,8 @@ export {
   saveFeatureList,
   serializeFeatureList,
 } from "./featureList.js";
+export { readCurrentSprint } from "./period.js";
 export { formatHalfEven } from "./rounding.js";
 export type { ValidationResult } from "./schema.js";
 export { validateFeatureList, validateHarnessConfig, validateSprint } from "./schema.js";
-export { PLATFORM_ROLE_DIRS, resolveWorkspace, VALID_STATUS } from "./workspace.js";
+export { PLATFORM_ROLE_DIRS, resolveDocsDir, resolveWorkspace, VALID_STATUS } from "./workspace.js";

@@ -187,8 +187,11 @@ else
 fi
 rm -rf "$F11"
 
-# --- F12: done writes a rich history entry ----------------------------------
-start_case "done: history entry carries the rich headed fields"
+# --- F12: done writes a compact history entry --------------------------------
+# The narrative lives in backlog/impl_<name>.md; the entry keeps the dated
+# heading (metrics/sprint parse it), Branch and Tools (renderDoc aggregates
+# them), the evidence pointers, and the gate.
+start_case "done: history entry carries the compact headed fields"
 F12="$(mktemp -d)"
 write_harness "$F12"
 write_verifier "$F12/pass.sh" 0
@@ -196,12 +199,13 @@ node "$FEATURE" --root "$F12" start a >/dev/null 2>&1
 node "$FEATURE" --root "$F12" "done" a --verifier "$F12/pass.sh" --date 2026-02-02 >/dev/null 2>&1
 HIST="$F12/.handyman/progress/history.md"
 if grep -q "Feature 1: a" "$HIST" \
-  && grep -q "[*][*]Agent:[*][*]" "$HIST" \
-  && grep -q "[*][*]Changes:[*][*]" "$HIST" \
-  && grep -q "[*][*]Closure:[*][*] done" "$HIST"; then
+  && grep -q "[*][*]Branch:[*][*]" "$HIST" \
+  && grep -q "[*][*]Evidence:[*][*] backlog/impl_a.md" "$HIST" \
+  && grep -q "[*][*]Verification:[*][*] verifier exit 0 · closure done" "$HIST" \
+  && ! grep -q "[*][*]Plan:[*][*]" "$HIST"; then
   pass
 else
-  fail "history entry is not the rich form"
+  fail "history entry is not the compact form: $(cat "$HIST")"
 fi
 rm -rf "$F12"
 
@@ -548,7 +552,7 @@ node "$BACKLOG" --root "$F32" review a --status changes_requested >/dev/null 2>&
 node "$FEATURE" --root "$F32" start a >/dev/null 2>&1
 node "$FEATURE" --root "$F32" "done" a --verifier "$F32/pass.sh" --date 2026-02-04 >/dev/null 2>&1
 HIST32="$F32/.handyman/progress/history.md"
-if grep -q -- "- \*\*Review:\*\* CHANGES_REQUESTED -> backlog/review_a.md" "$HIST32"; then
+if grep -q -- "review: CHANGES_REQUESTED -> backlog/review_a.md" "$HIST32"; then
   pass
 else
   fail "expected the generated review's status, uppercased: $(cat "$HIST32")"
@@ -563,7 +567,7 @@ write_verifier "$F32B/pass.sh" 0
 node "$BACKLOG" --root "$F32B" review a --status approved >/dev/null 2>&1
 node "$FEATURE" --root "$F32B" start a >/dev/null 2>&1
 node "$FEATURE" --root "$F32B" "done" a --verifier "$F32B/pass.sh" --date 2026-02-04 >/dev/null 2>&1
-if grep -q -- "- \*\*Review:\*\* APPROVED -> backlog/review_a.md" "$F32B/.handyman/progress/history.md"; then
+if grep -q -- "review: APPROVED -> backlog/review_a.md" "$F32B/.handyman/progress/history.md"; then
   pass
 else
   fail "expected APPROVED: $(cat "$F32B/.handyman/progress/history.md")"
@@ -579,7 +583,7 @@ mkdir -p "$F32C/.handyman/backlog"
 printf -- '---\nfeature: a\nverdict: approved\n---\n' > "$F32C/.handyman/backlog/review_a.md"
 node "$FEATURE" --root "$F32C" start a >/dev/null 2>&1
 node "$FEATURE" --root "$F32C" "done" a --verifier "$F32C/pass.sh" --date 2026-02-04 >/dev/null 2>&1
-if grep -q -- "- \*\*Review:\*\* APPROVED -> backlog/review_a.md" "$F32C/.handyman/progress/history.md"; then
+if grep -q -- "review: APPROVED -> backlog/review_a.md" "$F32C/.handyman/progress/history.md"; then
   pass
 else
   fail "expected the verdict: fallback to resolve: $(cat "$F32C/.handyman/progress/history.md")"
@@ -594,7 +598,7 @@ write_verifier "$F33/pass.sh" 0
 node "$FEATURE" --root "$F33" start a >/dev/null 2>&1
 node "$FEATURE" --root "$F33" "done" a --verifier "$F33/pass.sh" --date 2026-02-04 >/dev/null 2>&1
 HIST33="$F33/.handyman/progress/history.md"
-if grep -q -- "- \*\*Review:\*\* NO REVIEW FILE" "$HIST33" && ! grep -q "APPROVED" "$HIST33"; then
+if grep -q -- "review: NO REVIEW FILE" "$HIST33" && ! grep -q "APPROVED" "$HIST33"; then
   pass
 else
   fail "expected the NO REVIEW FILE marker and no APPROVED claim: $(cat "$HIST33")"
@@ -618,7 +622,7 @@ node "$FEATURE" --root "$F33B" "done" a --verifier "$F33B/pass.sh" --date 2026-0
 RC33B=$?
 HIST33B="$F33B/.handyman/progress/history.md"
 STATUS33B="$(node -e "process.stdout.write(String(require('$F33B/.handyman/feature_list.json').features[0].status))")"
-if grep -q -- "- \*\*Review:\*\* NO VERDICT" "$HIST33B" \
+if grep -q -- "review: NO VERDICT" "$HIST33B" \
   && ! grep -q "APPROVED" "$HIST33B" \
   && [ "$RC33B" -eq 0 ] && [ "$STATUS33B" = "done" ]; then
   pass
@@ -706,5 +710,58 @@ else
   fail "expected blocked -> in_progress dropping blocked_reason: exit=$CODE35 status=$ST35 reason=$BR35"
 fi
 rm -rf "$F35"
+
+# --- F36: add stamps the open period ------------------------------------------
+# `sprint open` labels only features that exist at open time; features born
+# afterwards must be stamped at add, or `close` never archives them (the gap
+# that stranded 19 done features in 2026-SP6).
+start_case "add: stamps a new feature with the open period from current_sprint"
+F36="$(mktemp -d)"
+write_harness "$F36"
+cat > "$F36/harness.config.json" <<'JSON'
+{ "harness_workspace": ".handyman", "current_sprint": "feat-x" }
+JSON
+node "$FEATURE" --root "$F36" add --name c >/dev/null 2>&1; CODE36=$?
+LBL36="$(node "$SUITE_DIR/lib/jsonget.js" read "$F36/.handyman/feature_list.json" \
+  "(d.features.find(f=>f.name==='c')||{}).sprint ?? ''")"
+if [ "$CODE36" -eq 0 ] && [ "$LBL36" = "feat-x" ]; then
+  pass
+else
+  fail "expected sprint 'feat-x' stamped at add: exit=$CODE36 sprint=$LBL36"
+fi
+rm -rf "$F36"
+
+# --- F37: add without an open period leaves the feature unlabeled -------------
+start_case "add: no open period leaves the feature without a sprint key"
+F37="$(mktemp -d)"
+write_harness "$F37"
+node "$FEATURE" --root "$F37" add --name c >/dev/null 2>&1; CODE37=$?
+LBL37="$(node "$SUITE_DIR/lib/jsonget.js" read "$F37/.handyman/feature_list.json" \
+  "String('sprint' in (d.features.find(f=>f.name==='c')||{}))")"
+if [ "$CODE37" -eq 0 ] && [ "$LBL37" = "false" ]; then
+  pass
+else
+  fail "expected no sprint key without an open period: exit=$CODE37 has_sprint=$LBL37"
+fi
+rm -rf "$F37"
+
+# --- F38: start adopts the open period when the feature lacks a label ---------
+# Covers the feature that existed unlabeled before the period opened; an
+# explicit label is never overwritten.
+start_case "start: adopts the open period when the feature has no label"
+F38="$(mktemp -d)"
+write_harness "$F38"
+cat > "$F38/harness.config.json" <<'JSON'
+{ "harness_workspace": ".handyman", "current_sprint": "feat-y" }
+JSON
+node "$FEATURE" --root "$F38" start a --no-preflight >/dev/null 2>&1; CODE38=$?
+LBL38="$(node "$SUITE_DIR/lib/jsonget.js" read "$F38/.handyman/feature_list.json" \
+  "(d.features.find(f=>f.name==='a')||{}).sprint ?? ''")"
+if [ "$CODE38" -eq 0 ] && [ "$LBL38" = "feat-y" ]; then
+  pass
+else
+  fail "expected sprint 'feat-y' adopted at start: exit=$CODE38 sprint=$LBL38"
+fi
+rm -rf "$F38"
 
 summary

@@ -42,7 +42,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] Create `$HARNESS_WORKSPACE/progress/` before any agent work starts.
 - [ ] Create `$HARNESS_WORKSPACE/backlog/` for task-detail reports (`impl_`, `review_`, `explore_`).
 - [ ] Add a starter `$HARNESS_WORKSPACE/feature_list.json` with at least one concrete feature.
-- [ ] In local mode, gitignore the operational harness state (`.handyman/*`) but keep `.handyman/docs/` versioned; also ignore `.obsidian/` and `.trash/`.
+- [ ] In local mode, gitignore the operational harness state (`.handyman/*`) but keep `.handyman/memory/` versioned; also ignore `.obsidian/` and `.trash/`.
 - [ ] Write docs that match the actual repo, not generic placeholders.
 - [ ] Make the verifier executable.
 - [ ] Ensure the verifier fails on invalid feature state.
@@ -105,7 +105,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] `backlog/explore_<topic>.md` reports carry frontmatter with `topic`, `role`, `updated`, `tags`.
 - [ ] Tags use the documented `#handyman/...` namespace, including `feature`, `role`, `review`, `session/current`, `history`, `docs`, `blocked`, and `moc` as applicable.
 - [ ] An `index.md` MOC at the workspace root links `feature_list.json`, `docs/`, `progress/current`, and `progress/history`; it links `AGENTS` or `CHECKPOINTS` only when those files exist inside the same vault.
-- [ ] `.obsidian/` and `.trash/` are gitignored and not committed; in local installs the operational state (`.handyman/*`) is ignored while `.handyman/docs/` stays versioned.
+- [ ] `.obsidian/` and `.trash/` are gitignored and not committed; in local installs the operational state (`.handyman/*`) is ignored while `.handyman/memory/` stays versioned.
 - [ ] Wikilinks (`[[...]]`) used in markdown still resolve to existing files.
 
 ## Common Risks

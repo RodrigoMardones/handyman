@@ -10,3 +10,10 @@ export declare const PLATFORM_ROLE_DIRS: readonly string[];
  */
 export declare const VALID_STATUS: readonly string[];
 export declare function resolveWorkspace(root: string): string;
+/**
+ * Resolve the workspace knowledge directory. New layout: `memory/`; legacy
+ * harnesses keep `docs/`. Preference: an existing `memory/` wins, an existing
+ * `docs/` is honored, and a fresh workspace gets `memory/`. Surfaces keep the
+ * name "docs" (MCP URIs, observer endpoints); only the disk layout moved.
+ */
+export declare function resolveDocsDir(workspace: string): string;

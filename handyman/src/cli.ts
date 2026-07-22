@@ -17,6 +17,7 @@ const VERBS = [
   "evals",
   "feature",
   "index_md",
+  "mcp",
   "metrics",
   "preflight",
   "sprint",

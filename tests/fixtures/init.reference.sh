@@ -79,10 +79,13 @@ for f in AGENTS.md CHECKPOINTS.md; do
   fi
 done
 
-# 3. Required harness files in HARNESS_WORKSPACE.
+# 3. Required harness files in HARNESS_WORKSPACE. The knowledge dir is
+# memory/ in the current layout; legacy harnesses keep docs/.
+DOCS_DIR="docs"
+[ -d "$HARNESS_WORKSPACE/memory" ] && DOCS_DIR="memory"
 for f in feature_list.json progress/current.md progress/history.md \
-         docs/business.md docs/architecture.md docs/conventions.md \
-         docs/verification.md; do
+         "$DOCS_DIR/business.md" "$DOCS_DIR/architecture.md" \
+         "$DOCS_DIR/conventions.md" "$DOCS_DIR/verification.md"; do
   if [ ! -f "$HARNESS_WORKSPACE/$f" ]; then
     echo "missing harness file: $f" >&2
     EXIT_CODE=1

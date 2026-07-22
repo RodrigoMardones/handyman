@@ -1,7 +1,7 @@
 /**
  * Handyman toolBox LLM layer: provider port + adapters (server-side only).
  *
- * Design: docs/analisis-peticiones-llm-toolbox.md §2-3. One small port
+ * Design: docs/archive/analisis-peticiones-llm-toolbox.md §2-3. One small port
  * (`LlmProvider`) with one adapter per wire protocol, parameterized by
  * baseUrl so a single adapter covers several vendors:
  *
