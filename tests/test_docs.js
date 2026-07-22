@@ -112,7 +112,8 @@ function testMarkdownLinks() {
     const parts = dirpath.split(path.sep);
     if (parts.includes(".git") || parts.includes("assets")
         || parts.includes("node_modules") || parts.includes("dist")
-        || parts.includes(".next") || parts.includes("coverage")) {
+        || parts.includes(".next") || parts.includes("coverage")
+        || parts.includes(".handyman.seed")) {
       continue;
     }
     let entries;
