@@ -72,5 +72,5 @@
   "post_run": [
     "node handyman/dist/index_md.js --root ."
   ],
-  "current_sprint": "feat-rework-tools"
+  "current_sprint": null
 }

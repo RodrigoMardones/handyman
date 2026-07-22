@@ -17,6 +17,14 @@ __pycache__/
 # Handyman harness: all state (feature_list, progress, backlog, docs, sprints,
 # index.md) stays in the repo as agent context; only upgrade backups are volatile.
 .handyman/.upgrade-backups/
+# Closed-feature reports archive: bulky and derivable from git history +
+# feature_archive.json (the compact index, kept tracked). Only the report
+# markdown under archive/backlog/ is local noise.
+.handyman/archive/backlog/
+# Harness seed bundle: a regenerable snapshot (Tier 1 config + Tier 2 memory +
+# bundled templates). Reproduce on demand with `handyman seed export --seed
+# .handyman.seed`. The `seed` CLI verb is the durable mechanism, not the snapshot.
+.handyman.seed/
 
 # graphify: graph.json / graph.html / GRAPH_REPORT.md / manifest stay in the
 # repo as shared context; ignore transient pipeline files, the machine-specific

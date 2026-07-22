@@ -35,6 +35,7 @@ const VERBS = [
   "mcp",
   "metrics",
   "preflight",
+  "seed",
   "sprint",
   "toolbox",
   "tools_discovery",

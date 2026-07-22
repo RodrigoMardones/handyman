@@ -1,6 +1,6 @@
 {
   "project": "handyman",
-  "description": "Skill de harness de agentes (Python+Bash) en migracion ordenada a TypeScript sobre Node.",
+  "description": "monorepo de handyman el cual contiene la skills, las herramientas y el core",
   "config": {
     "install_mode": "local",
     "project_name": "handyman",
@@ -8,7 +8,7 @@
     "handyman_root": null,
     "harness_workspace": ".handyman",
     "harness_version": "1.20.20",
-    "current_sprint": "feat-rework-tools",
+    "current_sprint": null,
     "discovery": {
       "skills": [],
       "mcp": [],
@@ -26,175 +26,5 @@
       "blocked"
     ]
   },
-  "features": [
-    {
-      "id": 69,
-      "name": "period_close_branch_unit",
-      "title": "Cierre de periodo por rama: archivar SP6, labels de rama, estampado automatico",
-      "description": "F0 del rework de capas (backlog/explore_reorganizacion_capas.md). La rama reemplaza al sprint como unidad: sprint open --label <rama-slug> al abrir rama, sprint close en el merge. Incluye el cierre pendiente de 2026-SP6 (39 done, 19 sin etiqueta por el hueco de estampado), retencion de backlog, fusion de plantillas de peticion, protocolo en AGENTS/CHECKPOINTS y limpieza del global.",
-      "acceptance": [
-        "feature_list.json queda sin features done: las 39 de 2026-SP6 archivadas en archive/feature_archive.json bajo su clave",
-        "sprint open acepta labels slug de rama (fs-safe); id con slash o espacio rechazado; test_sprint.sh cubre ambos",
-        "feature add y start estampan el periodo abierto (current_sprint) cuando falta; cubierto en test_feature.sh",
-        "impl_/review_ de features archivadas viven en archive/backlog/; los explore_ activos permanecen en backlog/",
-        "una sola plantilla de peticion (feature-request.md); request.template.md retirado y sus pendientes registrados como features",
-        "AGENTS.md y CHECKPOINTS.md documentan open-al-abrir-rama y close-en-el-merge",
-        "HOME/HANDYMAN sin events.jsonl ni index.html; registry.json intacto",
-        "./init.sh exits 0"
-      ],
-      "status": "done",
-      "meta": {
-        "started_at": "2026-07-21T21:36:02.830Z",
-        "done_at": "2026-07-21T21:46:35.824Z"
-      },
-      "sprint": "feat-rework-tools"
-    },
-    {
-      "id": 70,
-      "name": "graphify_freshness_gate",
-      "title": "Graphify como capa necesaria: frescura vigilada, regla de analisis, history compacto",
-      "description": "F1 del rework (decision: graphify se queda). Preflight avisa cuando el grafo esta desactualizado; regla unica para analisis (explore_ en vuelo, docs raiz durable, archivo al cumplirse); plantilla de history a 3 campos; grafo refrescado al cierre.",
-      "acceptance": [
-        "preflight emite NOTE advisory cuando graph.json es mas viejo que el ultimo commit relevante; exit 0 se mantiene; test_preflight.sh lo cubre",
-        "conventions.md fija la regla de analisis; analisis-* cumplidos movidos a docs/archive/ y pull_request_* intactos",
-        "plantilla progress-history a 3 campos (que/evidencia/verifier); assets y test_docs alineados",
-        "graphify-out regenerado despues de los cambios de F0/F1 (mtime posterior)",
-        "./init.sh exits 0"
-      ],
-      "status": "done",
-      "sprint": "feat-rework-tools",
-      "meta": {
-        "started_at": "2026-07-21T21:47:08.812Z",
-        "done_at": "2026-07-21T22:39:45.946Z"
-      }
-    },
-    {
-      "id": 71,
-      "name": "discovery_declared_paths",
-      "title": "Discovery declara ubicaciones reales; models con default y overrides",
-      "description": "F2 del rework: harness.config.json relaciona declaracion con ubicacion (skills/.agents+lock, agents/.github/agents, mcps/config editor) y models pasa a default+overrides. Cambios aditivos en schema, tools_discovery y lectores.",
-      "acceptance": [
-        "tools_discovery check emite NOTE de instalada-no-declarada solo para skills en roots locales del proyecto; las de roots globales quedan fuera del reporte (son toolbox personal, no contrato del repo); --skills-dir hermetico conserva el reporte completo",
-        "test_tools_discovery.sh cubre: local no declarada -> NOTE; global no declarada -> sin NOTE; declarada global sigue resolviendo ok",
-        "el reporte impl documenta por que NO se persisten paths en discovery (decision de diseno existente: nombres portables, check resuelve paths) y por que models queda como esta (default+overrides es ceremonia sin consumidor)",
-        "./init.sh exits 0"
-      ],
-      "status": "done",
-      "sprint": "feat-rework-tools",
-      "meta": {
-        "started_at": "2026-07-21T22:40:13.338Z",
-        "done_at": "2026-07-21T22:42:14.498Z"
-      }
-    },
-    {
-      "id": 72,
-      "name": "handyman_mcp_server",
-      "title": "MCP de handyman: contrato en codigo y hub multi-repo",
-      "description": "F3 del rework: server MCP como wrapper delgado de handyman/src/core (misma fuente que la CLI). Tools: harness_list (registry), preflight, feature_next, feature_close (gated por verifier), report_write, verify; resources docs/* y current.md. Construir con mcp-builder. El valor: invariantes como precondiciones de codigo, superficie multi-repo para toolBox y portabilidad a cualquier cliente MCP.",
-      "acceptance": [
-        "server expone las 6 tools y resources; feature_close rechaza sin verifier verde (test)",
-        "harness_list lee HOME/HANDYMAN/registry.json y las tools aceptan project",
-        "skill adelgazada: mecanica via tools MCP, metodologia en prosa",
-        "registrado en discovery.mcp; ./init.sh exits 0"
-      ],
-      "status": "done",
-      "depends_on": [
-        69,
-        70,
-        71
-      ],
-      "sprint": "feat-rework-tools",
-      "meta": {
-        "started_at": "2026-07-21T22:55:29.842Z",
-        "done_at": "2026-07-21T23:09:49.403Z"
-      }
-    },
-    {
-      "id": 73,
-      "name": "workspace_memory_layout",
-      "title": "Workspace layout: docs/ -> memory/ y handoffs a progress/",
-      "description": "Reorden de carpetas del workspace: el directorio de conocimiento pasa de docs/ a memory/ con fallback de lectura para harnesses legacy (memory/ si existe, si no docs/); los handoffs de docs/current/ se fusionan en progress/ y la carpeta desaparece. Superficies estables: URIs MCP handyman://{project}/docs/* y endpoints del observer siguen llamandose docs, solo cambia el layout en disco. Plantillas y bootstrap emiten memory/.",
-      "acceptance": [
-        "core expone resolveDocsDir(workspace) con fallback memory/->docs/ y lo usan sprint.js, index_md.js, mcp.js y toolbox-core (state/retro/draft); harness legacy con docs/ sigue funcionando (test)",
-        ".handyman/docs migrado a .handyman/memory con handoffs en progress/; docs/current eliminado; links e index regenerados",
-        "plantillas (AGENTS/CHECKPOINTS/init/index) y verifier de este repo apuntan a memory/ con fallback",
-        "./init.sh exits 0"
-      ],
-      "status": "done",
-      "sprint": "feat-rework-tools",
-      "meta": {
-        "started_at": "2026-07-21T23:10:21.343Z",
-        "done_at": "2026-07-21T23:23:55.231Z"
-      }
-    },
-    {
-      "id": 74,
-      "name": "mcp_register_cli_helper",
-      "title": "MCP: helper registerCliTool para reducir boilerplate por tool",
-      "description": "Paso 1 del plan de docs/analisis-mcp-extension.md (seccion 3.3 y 5). Antes de crecer la superficie del MCP, extraer un helper registerCliTool(name, schema, script, argsFn, opts) que elimine la repeticion resolveProject -> runCli -> textResult -> errorResult que se repite en cada tool. Refactor interno: las 6 tools existentes migran al helper sin cambiar contrato ni comportamiento. Sin nuevas tools; es preparacion.",
-      "acceptance": [
-        "[\"helper registerCliTool definido y usado por las 6 tools existentes\", \"test_mcp.js (8 casos M1-M8) sigue verde byte-a-byte\", \"ningun comportamiento observable cambia (stdout/exit/json identicos)\", \"./init.sh exits 0\"]"
-      ],
-      "status": "done",
-      "sprint": "feat-rework-tools",
-      "meta": {
-        "started_at": "2026-07-22T02:39:27.811Z",
-        "done_at": "2026-07-22T02:53:58.168Z"
-      }
-    },
-    {
-      "id": 75,
-      "name": "mcp_feature_workflow_tools",
-      "title": "MCP P1: feature_start, feature_log, feature_next_step (ciclo implementer)",
-      "description": "Paso 2 del plan (P1, seccion 2.1). Cierra el ciclo del rol implementer dentro del MCP: hoy el agente debe salir del MCP para las operaciones del dia a dia (reclamar, loggear, marcar next step). Tres tools nuevas como wrappers delgados de feature.js (subprocess, cero segunda fuente de verdad). feature_start (feature.js start) marca in_progress, enforcea single-in_progress, corre preflight salvo --no-preflight, escribe progress/current.md con la rama git. feature_log (feature.js log) hace append al ## Log de current.md. feature_next_step (feature.js next) setea ## Next Step. Decision del operador: añadir write tools al MCP pese a references/mcp.md linea 43 (claiming stays on the CLI); se asume que el agente operador del MCP ya tiene permisos de implementer.",
-      "acceptance": [
-        "[\"feature_start, feature_log, feature_next_step expuestos como tools MCP con el patrón registerCliTool\", \"cada tool acepta project + los args del subcomando CLI correspondiente (start: name [+no-preflight]; log: line; next: step)\", \"test_mcp.js cubre las 3 tools nuevas (happy path + error project)\", \"references/mcp.md actualizado: retracta claiming stays on the CLI, documenta las 3 tools nuevas\", \"./init.sh exits 0\"]"
-      ],
-      "status": "done",
-      "sprint": "feat-rework-tools",
-      "depends_on": [
-        74
-      ],
-      "meta": {
-        "started_at": "2026-07-22T02:55:16.871Z",
-        "done_at": "2026-07-22T03:05:39.862Z"
-      }
-    },
-    {
-      "id": 76,
-      "name": "mcp_decouple_toolbox_core",
-      "title": "MCP: mover resolveWorkspace/resolveDocsDir a toolbox-core, declarar frontera",
-      "description": "Paso 4 del plan (seccion 4.4, descentralizacion suave). El MCP ya esta ~95 por ciento desacoplado de la skill (cero imports de SKILL.md/assets); el ultimo pegamento es ./core/index.js. Mover resolveWorkspace y resolveDocsDir al core compartido (@handyman/toolbox-core/workspace) para que mcp.ts dependa solo de toolbox-core, no de la skill. Declarar la frontera en docs/architecture.md: el MCP es un consumidor de toolbox-core igual que apps/web. Contrato shellear el CLI se preserva (no importar cmdStart/cmdLog como modulo; el paquete MCP dependeria de handyman-harness como dep npm y sigue shellear dist/feature.js). Preparacion para el Camino B (paquete packages/handyman-mcp/ postergado).",
-      "acceptance": [
-        "[\"resolveWorkspace y resolveDocsDir (o sus equivalentes) viven en packages/toolbox-core/src/workspace.ts y se exportan desde @handyman/toolbox-core\", \"mcp.ts importa de @handyman/toolbox-core/workspace (o el barrel), no de ./core/index.js\", \"apps/web y otras superficies que ya usaban toolbox-core siguen funcionando (sin cambio de contrato)\", \"docs/architecture.md declara que el MCP es consumidor de toolbox-core, no de la skill\", \"./init.sh exits 0\"]"
-      ],
-      "status": "done",
-      "sprint": "feat-rework-tools",
-      "depends_on": [
-        74
-      ],
-      "meta": {
-        "started_at": "2026-07-22T03:09:03.699Z",
-        "done_at": "2026-07-22T03:17:37.888Z"
-      }
-    },
-    {
-      "id": 77,
-      "name": "mcp_readonly_status_tools",
-      "title": "MCP P3: sprint_status y upgrade_check (read-only puros)",
-      "description": "Paso 5 del plan (P3 opcional, secciones 2.3 y 2.4). Dos tools read-only para el operador del MCP sin exponer subcomandos destructivos. sprint_status (sprint.js status) reporta el periodo abierto y sus features; read-only puro, safe. upgrade_check (upgrade_harness.js --check) resuelve workspace, lee harness_version instalada, la compara con metadata.version de la skill que corre el script, reporta migraciones pendientes; read-only. Exit non-zero cuando atras o sin sello. NUNCA exponer sprint open/close (destructivos: archivan features, compactan history) ni upgrade_harness apply/default (reescribe harness.config.json y archivos managed).",
-      "acceptance": [
-        "[\"sprint_status y upgrade_check expuestos como tools MCP read-only con el patrón registerCliTool\", \"sprint_status envuelve sprint.js status sin subcomandos destructivos\", \"upgrade_check envuelve upgrade_harness.js --check sin modo apply\", \"test_mcp.js cubre las 2 tools nuevas\", \"./init.sh exits 0\"]"
-      ],
-      "status": "done",
-      "sprint": "feat-rework-tools",
-      "depends_on": [
-        74
-      ],
-      "meta": {
-        "started_at": "2026-07-22T03:18:11.728Z",
-        "done_at": "2026-07-22T03:24:39.909Z"
-      }
-    }
-  ]
+  "features": []
 }
