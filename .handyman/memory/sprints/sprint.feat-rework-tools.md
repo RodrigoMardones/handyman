@@ -2,8 +2,8 @@
 type: Sprint
 sprint: feat-rework-tools
 status: closed
-updated: 2026-07-23
-closed_at: 2026-07-23T22:18:35.766Z
+updated: 2026-07-24
+closed_at: 2026-07-24T06:06:56.723Z
 tags: [handyman/sprint]
 ---
 
@@ -16,8 +16,8 @@ tags: [handyman/sprint]
 ## Identity
 
 - **Sprint:** feat-rework-tools
-- **Closed:** 2026-07-23
-- **Closed at:** 2026-07-23T22:18:35.766Z
+- **Closed:** 2026-07-24
+- **Closed at:** 2026-07-24T06:06:56.723Z
 - **Period:** 2026-07-21 to 2026-07-21
 - **Branches:** feat/rework-tools
 

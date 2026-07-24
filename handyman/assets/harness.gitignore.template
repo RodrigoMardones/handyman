@@ -1,9 +1,10 @@
 # Handyman local harness: keep the repo abstract from the work history.
 # Ignore the operational harness state (feature_list.json, progress/, backlog/,
-# index.md, Obsidian cache) but VERSION the conceptual docs layer
+# index.md, Obsidian cache) but VERSION the conceptual memory layer
 # (business, architecture, conventions, verification) and everything in it.
 .handyman/*
 !.handyman/memory/
+# legacy layout (skill <=2.x)
 !.handyman/docs/
 
 # Obsidian local cache (vault metadata), in the repo root or a global

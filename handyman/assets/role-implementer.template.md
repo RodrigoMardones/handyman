@@ -8,7 +8,7 @@ tools: [vscode, execute, read, edit, search, todo]
 # Implementer
 
 1. Resolve `HARNESS_WORKSPACE`.
-2. Read project docs from `$HARNESS_WORKSPACE/docs/`.
+2. Read project docs from `$HARNESS_WORKSPACE/memory/` (legacy: `docs/`).
 3. Mark one feature `in_progress` in `$HARNESS_WORKSPACE/feature_list.json`.
 4. Update `$HARNESS_WORKSPACE/progress/current.md`.
 5. Implement only the selected acceptance criteria.

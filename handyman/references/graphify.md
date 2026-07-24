@@ -96,8 +96,8 @@ behavior.
 ## What To Document Per Project
 
 When bootstrapping or migrating a harness, record the graphify decisions so they
-are auditable, next to the model and tool policy in the harness `docs/` (for
-example a short note in `docs/conventions.md`):
+are auditable, next to the model and tool policy in the harness `memory/` (for
+example a short note in `memory/conventions.md`):
 
 - Whether graphify is installed and the post-commit hook is enabled.
 - Which directory the graph covers (the resolved scan root).

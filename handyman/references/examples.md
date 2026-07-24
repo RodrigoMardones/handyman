@@ -22,10 +22,10 @@ Read this alongside [workflow.md](./workflow.md) for the full protocols and [tem
    ```
 
 3. Fill the copied templates with project-specific content instead of generic placeholders:
-   - `.handyman/docs/business.md`: the domain and use cases the notes CLI serves.
-   - `.handyman/docs/architecture.md`: the CLI's module boundaries.
-   - `.handyman/docs/conventions.md`: Python style, `pytest` layout, error policy.
-   - `.handyman/docs/verification.md`: `pytest -q` as the test gate.
+   - `.handyman/memory/business.md`: the domain and use cases the notes CLI serves.
+   - `.handyman/memory/architecture.md`: the CLI's module boundaries.
+   - `.handyman/memory/conventions.md`: Python style, `pytest` layout, error policy.
+   - `.handyman/memory/verification.md`: `pytest -q` as the test gate.
 4. Replace the `run_lint`, `run_build`, and `run_test` placeholders in `init.sh` with the real commands (`ruff check .`, a no-op build, `pytest -q`).
 5. Seed `.handyman/feature_list.json` with at least one concrete feature.
 6. Materialize role files in the platform-discoverable path, never under `.handyman/`:
@@ -50,7 +50,7 @@ notes-cli/
 │   │   ├── current.md
 │   │   └── history.md
 │   ├── backlog/                   # task-detail reports land here
-│   ├── docs/
+│   ├── memory/
 │   │   ├── architecture.md
 │   │   ├── business.md
 │   │   ├── conventions.md

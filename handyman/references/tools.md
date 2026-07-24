@@ -42,7 +42,7 @@ Tool names below are logical capability groups, not a single vendor tool. Map ea
 | `reviewer` | `vscode`, `execute`, `read`, `edit`, `search`, `todo` | Inspects changes, runs the verifier, writes a verdict file; no delegation or web. |
 | `explorer` | `vscode`, `execute`, `read`, `search`, `todo` | Read-only research; no `edit` and no `agent`. |
 
-These are minimums. A project may grant additional groups, but should justify any expansion (for example, giving the explorer `web` for documentation research) in the harness `docs/`.
+These are minimums. A project may grant additional groups, but should justify any expansion (for example, giving the explorer `web` for documentation research) in the harness `memory/`.
 
 > The `edit` group for the `reviewer` exists so it can write `backlog/review_<feature>.md` and update harness state. It does not relax the role rule: the reviewer still never edits product code. The boundary between "edit harness reports" and "edit product code" is a protocol rule, not a tool restriction. See [workflow.md](./workflow.md).
 
@@ -132,4 +132,4 @@ When bootstrapping or migrating a harness, document the tool decisions so they a
 - Any group dropped because the host platform had no equivalent, recorded in `$HARNESS_WORKSPACE/progress/current.md`.
 - Any group added beyond the recommended minimum and why.
 
-Keep this next to the model policy in the harness `docs/` (for example a short note in `docs/conventions.md`) so future sessions reuse the same per-role tool policy.
+Keep this next to the model policy in the harness `memory/` (for example a short note in `memory/conventions.md`) so future sessions reuse the same per-role tool policy.

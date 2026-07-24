@@ -4,7 +4,7 @@ Use these as starting points. Adjust them to the project language, test runner, 
 
 The full template bodies live as standalone files under [`../assets/`](../assets/) so they can be copied directly into a target repo. Each section below explains a template and links to its asset file.
 
-To create the skeleton and copy these templates deterministically, run the bundled scaffold from the skill directory: `scripts/scaffold.sh <local|global> <project_root>`. It creates `progress/`, `backlog/`, and `docs/`, copies the mutable-state and bridge templates into the right locations, and never overwrites existing files. Then fill the copied templates with project-specific content. See [examples.md](./examples.md) for a full walkthrough.
+To create the skeleton and copy these templates deterministically, run the bundled scaffold from the skill directory: `scripts/scaffold.sh <local|global> <project_root>`. It creates `progress/`, `backlog/`, and `memory/`, copies the mutable-state and bridge templates into the right locations, and never overwrites existing files. Then fill the copied templates with project-specific content. See [examples.md](./examples.md) for a full walkthrough.
 
 `scaffold.sh` is the canonical way to lay down the file set, and it writes `harness.config.json` in both `local` and `global` scopes. Do not hand-create these files from the snippets below: the snippets exist for filling in content and per-file customization, while re-creating the layout by hand is the main cause of cross-model drift (for example `harness.config.json` appearing in one bootstrap and not another). See the Bootstrap Protocol in [workflow.md](./workflow.md).
 
@@ -95,29 +95,29 @@ Template: [../assets/index.template.md](../assets/index.template.md)
 
 ## .gitignore (Harness)
 
-Append to the project `.gitignore` so the local harness stays abstract from the repo: ignore the operational state under `.handyman/` and keep only the conceptual docs layer (`business`, `architecture`, `conventions`, `verification`) versioned. The same snippet also drops Obsidian's local cache (`.obsidian/`, `.trash/`). Global installs hold mutable state outside the repo, so only the cache lines apply there.
+Append to the project `.gitignore` so the local harness stays abstract from the repo: ignore the operational state under `.handyman/` and keep only the conceptual memory layer (`business`, `architecture`, `conventions`, `verification`) versioned — legacy harnesses used `docs/`. The same snippet also drops Obsidian's local cache (`.obsidian/`, `.trash/`). Global installs hold mutable state outside the repo, so only the cache lines apply there.
 
 Template: [../assets/harness.gitignore.template](../assets/harness.gitignore.template)
 
-## docs/business.md
+## memory/business.md
 
-Business domain and the use cases the project serves, filled from the business context provided at setup. Implementers and reviewers read it for the *why* behind a feature.
+Business domain and the use cases the project serves, filled from the business context provided at setup. Implementers and reviewers read it for the *why* behind a feature. The `docs-` prefix on the asset filenames is historical (kept for compatibility); the files they scaffold live under `memory/`.
 
 Template: [../assets/docs-business.template.md](../assets/docs-business.template.md)
 
-## docs/architecture.md
+## memory/architecture.md
 
 Defines what good work means in this repo. Reviewers evaluate code against it.
 
 Template: [../assets/docs-architecture.template.md](../assets/docs-architecture.template.md)
 
-## docs/conventions.md
+## memory/conventions.md
 
 Naming, style, structure, tests, error handling, and comment policy.
 
 Template: [../assets/docs-conventions.template.md](../assets/docs-conventions.template.md)
 
-## docs/verification.md
+## memory/verification.md
 
 Required verification commands, test levels, and anti-patterns.
 

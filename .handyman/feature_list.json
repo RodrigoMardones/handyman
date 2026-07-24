@@ -8,7 +8,7 @@
     "handyman_root": null,
     "harness_workspace": ".handyman",
     "harness_version": "1.20.20",
-    "current_sprint": "feat-reorganization",
+    "current_sprint": "feat-residual-memory-revision",
     "discovery": {
       "skills": [],
       "mcp": [],
@@ -66,6 +66,56 @@
         "started_at": "2026-07-23T23:36:45.606Z",
         "done_at": "2026-07-24T00:05:12.663Z"
       }
+    },
+    {
+      "id": 83,
+      "name": "memory_drift_templates_references",
+      "title": "Drift memory/: plantillas y referencias de la skill alineadas al layout memory/",
+      "description": "Drift residual que dejo F73 (workspace_memory_layout): los roles, la tabla resumen de feature-request, los mensajes de init.sh y varias references/*.md siguen apuntando a docs/ aunque scaffold y resolveDocsDir ya emiten/leen memory/. anatomy.md ademas describe docs/current (eliminado en F73, handoffs fusionados en progress/) y docs/sprints. Alcance: solo contenido de plantillas y documentacion de la skill; sin rename de assets docs-*.template.md (decision: prefijo historico, se documenta).",
+      "acceptance": [
+        "assets/role-implementer.template.md y role-reviewer.template.md leen de $HARNESS_WORKSPACE/memory/",
+        "feature-request.template.md: la tabla resumen apunta a memory/verification.md y memory/ + closeout (los ejemplos de docs/ del repo se conservan)",
+        "init.template.sh emite mensajes memory/business.md con fallback legacy a docs/ intacto; tests/fixtures/init.reference.sh sincronizado",
+        "references/ (workflow, checklists, examples, obsidian, templates, graphify, models, tools, anatomy) sin docs/ del harness salvo notas legacy explicitas; anatomy.md sin docs/current y con memory/sprints",
+        "harness.gitignore.template conserva !.handyman/docs/ anotada como legacy",
+        "bash tests/run_tests.sh pasa y ./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-24T06:08:31.631Z",
+        "done_at": "2026-07-24T15:16:47.464Z"
+      }
+    },
+    {
+      "id": 84,
+      "name": "upgrade_migration_docs_to_memory",
+      "title": "upgrade_harness: migracion docs/ -> memory/ para harnesses legacy",
+      "description": "El registry MIGRATIONS de src/upgrade_harness.ts no tiene entrada para el cambio de layout de F73: un harness legacy (skill <=2.x, p.ej. la instalada 2.1.1) scaffoldéa docs/ y el upgrade nunca lo mueve a memory/. Añadir una migracion que mueva los 4 archivos de conocimiento a memory/ cuando memory/ no exista, con backup en .upgrade-backups y advisories de gitignore/AGENTS.md. Incluye decidir la version de la entrada: el registry se detiene en 1.8.0 mientras los harnesses se sellan con metadata.version de la skill (3.6.0); documentar el criterio elegido en el reporte impl.",
+      "acceptance": [
+        "upgrade_harness migra docs/{business,architecture,conventions,verification}.md a memory/ cuando memory/ no existe, preservando contenido del usuario y con backup",
+        "advisories de gitignore (!.handyman/memory/) y AGENTS.md emitidos y visibles en --check",
+        "version de la entrada decidida y criterio documentado en backlog/impl_upgrade_migration_docs_to_memory.md",
+        "tests/test_upgrade.sh cubre: harness legacy con docs/ -> memory/ poblada, contenido preservado, segunda corrida idempotente",
+        "./init.sh exits 0"
+      ],
+      "status": "pending",
+      "sprint": "feat-residual-memory-revision",
+      "depends_on": [
+        83
+      ]
+    },
+    {
+      "id": 85,
+      "name": "src_comment_memory_drift",
+      "title": "Comentarios en src/ alineados a memory/ (sprint.ts, schema.ts)",
+      "description": "Follow-up no bloqueante de F78 (review_memory_drift_templates_references.md): handyman/src/sprint.ts (lineas 18, 58, 478) y handyman/src/core/schema.ts:79 siguen diciendo docs/sprints/sprint.<ID>.md en comentarios, mientras el runtime ya escribe memory/sprints/ via resolveDocsDir y assets/schemas/sprint.schema.json ya describe memory/sprints/. Solo comentarios/docstrings; cero cambio de comportamiento.",
+      "acceptance": [
+        "sprint.ts y core/schema.ts sin referencias docs/sprints en comentarios (memory-first con nota legacy si aplica)",
+        "bash tests/run_tests.sh pasa y ./init.sh exits 0"
+      ],
+      "status": "pending",
+      "sprint": "feat-residual-memory-revision"
     },
     {
       "id": 80,

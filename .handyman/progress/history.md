@@ -1124,3 +1124,9 @@ Append-only. Do not edit earlier entries during normal work.
 - **Tools:** mcp-builder
 - **Evidence:** backlog/impl_scaffold_mcp_registration.md · review: APPROVED -> backlog/review_scaffold_mcp_registration.md
 - **Verification:** verifier exit 0 · closure done
+
+## 2026-07-24 - Feature 83: memory_drift_templates_references
+- **Branch:** feat/residual-memory-revision
+- **Tools:** ...
+- **Evidence:** backlog/impl_memory_drift_templates_references.md · review: APPROVED -> backlog/review_memory_drift_templates_references.md
+- **Verification:** verifier exit 0 · closure done

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/RodrigoMardones/handyman/assets/schemas/sprint.schema.json",
   "title": "Handyman sprint document frontmatter",
-  "description": "The derived docs/sprints/sprint.<ID>.md is written by `sprint.js close`. This schema describes its YAML frontmatter (the parsed key/value object), the state surface the observer reads. The markdown body is prose and is not schema-validated.",
+  "description": "The derived memory/sprints/sprint.<ID>.md is written by `sprint.js close`. This schema describes its YAML frontmatter (the parsed key/value object), the state surface the observer reads. The markdown body is prose and is not schema-validated.",
   "type": "object",
   "required": ["sprint", "status"],
   "additionalProperties": false,
