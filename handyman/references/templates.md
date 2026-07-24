@@ -44,10 +44,16 @@ Create this bridge file in the project root. In local mode it records the `.hand
 
 Use `"editor-default"` (or omit a key) to follow the model configured in the host editor. Omit the `tools` map (or a role key) to fall back to the Handyman per-role tool defaults.
 
-The optional `discovery` block declares the skills and MCP servers the harness relies on (see [discovery.md](./discovery.md)). The optional `post_run` list declares shell commands that run automatically after a feature closes via `npx handyman-harness@3 feature done` (for example regenerating `index.md` or refreshing a context graph); each step runs with exit 0, so a failing custom step only WARNs and never reverts a verified close.
+The optional `discovery` block declares the skills and MCP servers the harness relies on (see [discovery.md](./discovery.md)); the scaffold templates pre-declare the `handyman` server under `discovery.mcp` so the MCP connection verifies from the first run. The optional `post_run` list declares shell commands that run automatically after a feature closes via `npx handyman-harness@3 feature done` (for example regenerating `index.md` or refreshing a context graph); each step runs with exit 0, so a failing custom step only WARNs and never reverts a verified close.
 
 - Local install: [../assets/harness.config.local.template.json](../assets/harness.config.local.template.json)
 - Global install: [../assets/harness.config.global.template.json](../assets/harness.config.global.template.json)
+
+## .vscode/mcp.json
+
+Editor-side registration of the handyman MCP server, placed in `PROJECT_ROOT/.vscode/`. The scaffold copies it only when the file does not exist; a pre-existing `mcp.json` is kept (merging JSON in bash is out of scope) and the operator adds the `handyman` server entry by hand. The matching `discovery.mcp` declaration lives in `harness.config.json`, so `npx handyman-harness@3 tools_discovery check` verifies the registration (see [discovery.md](./discovery.md) and [mcp.md](./mcp.md)).
+
+Template: [../assets/vscode-mcp.template.json](../assets/vscode-mcp.template.json)
 
 ## progress/current.md
 
