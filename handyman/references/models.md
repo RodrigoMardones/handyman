@@ -119,4 +119,4 @@ When bootstrapping or migrating a harness, document the model decisions so they 
 - Any substitution made because the requested model was unavailable, recorded in `$HARNESS_WORKSPACE/progress/current.md`.
 - Cost or rate-limit constraints that justify a non-default choice.
 
-Keep this in the harness `docs/` (for example a short note in `docs/conventions.md`) so future sessions reuse the same per-role model policy.
+Keep this in the harness `memory/` (for example a short note in `memory/conventions.md`) so future sessions reuse the same per-role model policy.

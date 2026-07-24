@@ -20,7 +20,7 @@ A feature moves through seven stages (0-6), and a work period closes with one mo
 | 4 | Verification | `./init.sh` | exit code and suite counts | runs until green |
 | 5 | Review | `npx handyman-harness@3 backlog review` | `review_<feature>.md` frontmatter `status:` | first-pass approval rate |
 | 6 | Closure | `npx handyman-harness@3 feature done` | dated heading in `progress/history.md` | throughput per date |
-| 7 | Period close | `npx handyman-harness@3 sprint close` | `docs/sprints/sprint.<id>.md` | features and tools per sprint |
+| 7 | Period close | `npx handyman-harness@3 sprint close` | `memory/sprints/sprint.<id>.md` | features and tools per sprint |
 
 The protocols below walk these stages role by role.
 
@@ -56,9 +56,9 @@ Before selecting a feature, confirm the harness is well-formed and stable across
 Creating a harness is deterministic. Run the scaffold first and always; do not hand-create the files it produces. Hand-creation is the main source of cross-model drift: `harness.config.json` appearing in one bootstrap and not another, or a `feature_list.json` that gains keys outside the contract.
 
 1. Confirm the target repo, the install scope (`local` or `global`), and whether existing files may change.
-2. Run `scripts/scaffold.sh <local|global> <project_root>` from the skill directory. It creates `progress/`, `backlog/`, and `docs/`, copies the mutable-state and bridge templates, stamps `harness_version`, and never overwrites existing files. It writes `harness.config.json` into the project root in **both** scopes (the scope only changes the template and the workspace location), so do not treat the config as global-only.
+2. Run `scripts/scaffold.sh <local|global> <project_root>` from the skill directory. It creates `progress/`, `backlog/`, and `memory/`, copies the mutable-state and bridge templates, stamps `harness_version`, and never overwrites existing files. It writes `harness.config.json` into the project root in **both** scopes (the scope only changes the template and the workspace location), so do not treat the config as global-only.
 3. Do not reconstruct scaffolded files by hand. The script is the single source of truth for the file set; the templates in [templates.md](./templates.md) are for filling in content and per-file customization, not for re-creating the layout from memory.
-4. **Interview the user about the business layer before filling `docs/business.md`.** Do not invent or infer the domain from code — ask. At minimum gather the domain and the problem it solves, the stakeholders, the central use case (actor → goal → flow → rules), what is deliberately out of scope, and the glossary; the `docs/business.md` template carries the exact prompts under each section. Architecture, conventions, and verification can be read from the repo, but the business domain usually lives only in the user's head, so the bootstrap is not complete until `docs/business.md` reflects real business context from the user, not the template.
+4. **Interview the user about the business layer before filling `memory/business.md`.** Do not invent or infer the domain from code — ask. At minimum gather the domain and the problem it solves, the stakeholders, the central use case (actor → goal → flow → rules), what is deliberately out of scope, and the glossary; the `memory/business.md` template carries the exact prompts under each section. Architecture, conventions, and verification can be read from the repo, but the business domain usually lives only in the user's head, so the bootstrap is not complete until `memory/business.md` reflects real business context from the user, not the template.
 5. Fill the copied templates with project-specific content; do not leave placeholders.
 6. Replace the `run_lint` / `run_build` / `run_test` placeholders in `init.sh` with the project's real commands.
 7. Materialize role files in the platform path (`.github/agents/` or `.claude/agents/`), never inside `HARNESS_WORKSPACE`.
@@ -83,7 +83,7 @@ The leader coordinates. It does not implement product code and does not mark a f
 
 The implementer owns exactly one feature. It runs under its assigned model, which defaults to a cheaper, faster model, and a restricted tool set (`vscode`, `execute`, `read`, `edit`, `search`, `todo`; no delegation or web) (see [models.md](./models.md) and [tools.md](./tools.md)).
 
-1. Read `AGENTS.md`, resolve `HARNESS_WORKSPACE`, and read `$HARNESS_WORKSPACE/docs/business.md` (domain and use cases), `$HARNESS_WORKSPACE/docs/architecture.md`, `$HARNESS_WORKSPACE/docs/conventions.md`, and the selected feature acceptance criteria.
+1. Read `AGENTS.md`, resolve `HARNESS_WORKSPACE`, and read `$HARNESS_WORKSPACE/memory/business.md` (domain and use cases), `$HARNESS_WORKSPACE/memory/architecture.md`, `$HARNESS_WORKSPACE/memory/conventions.md`, and the selected feature acceptance criteria.
 2. Change that feature from `pending` to `in_progress` in `$HARNESS_WORKSPACE/feature_list.json`.
 3. Update `$HARNESS_WORKSPACE/progress/current.md` with feature, start time, plan, and live log. Append log bullets with `npx handyman-harness@3 feature log "<line>"` and set the resume point with `npx handyman-harness@3 feature next "<step>"`, which keep the section format and the `updated:` stamp consistent instead of hand-editing.
 4. Implement the smallest code change that satisfies the acceptance criteria.
@@ -99,7 +99,7 @@ The implementer does not self-approve. It can mark `done` only if the local prot
 The reviewer validates and does not edit code. It runs under its assigned model, which defaults to a cheaper, faster model, and a restricted tool set (`vscode`, `execute`, `read`, `edit`, `search`, `todo`); its `edit` access is for the verdict file and harness state only, never product code (see [models.md](./models.md) and [tools.md](./tools.md)).
 
 1. Resolve `HARNESS_WORKSPACE`.
-2. Read `$HARNESS_WORKSPACE/docs/business.md`, `$HARNESS_WORKSPACE/docs/architecture.md`, `$HARNESS_WORKSPACE/docs/conventions.md`, `$HARNESS_WORKSPACE/docs/verification.md`, and `$PROJECT_ROOT/CHECKPOINTS.md`.
+2. Read `$HARNESS_WORKSPACE/memory/business.md`, `$HARNESS_WORKSPACE/memory/architecture.md`, `$HARNESS_WORKSPACE/memory/conventions.md`, `$HARNESS_WORKSPACE/memory/verification.md`, and `$PROJECT_ROOT/CHECKPOINTS.md`.
 3. Read `$HARNESS_WORKSPACE/progress/current.md` and the implementation report.
 4. Inspect changed files.
 5. Run the verifier from `PROJECT_ROOT`.
@@ -149,9 +149,9 @@ Keep `npx handyman-harness@3 preflight --strict` in the loop's CI so drift stops
 A sprint is a work period: a declared partition label on features, opened and closed deterministically by `npx handyman-harness@3 sprint` (stage 7 in the table above). The label says which period a feature belongs to — it is not a date, and the contract stays a four-state machine; everything in the sprint document is derived at close time from the artifacts stages 0-6 already left on disk.
 
 1. **Open** — `npx handyman-harness@3 sprint open <id>` (id format `2026-SP1`): stamps every unlabeled `pending`/`in_progress` feature with the sprint label, records `current_sprint` in `harness.config.json` (mirrored to the `feature_list.json` config block), and rejects a second open sprint.
-2. **Work** — features flow through stages 0-6 unchanged. `npx handyman-harness@3 feature add` during the sprint leaves new features unlabeled; re-running `open` is not needed — label membership is decided at open time, and unlabeled features simply carry over to the next period. Unreviewed period documentation drafts belong in `docs/current/`.
-3. **Close** — `npx handyman-harness@3 sprint close` (preview with `--dry-run`): derives `docs/sprints/sprint.<id>.md` from `feature_list.json`, `progress/history.md`, and `backlog/` frontmatter (features table, period, throughput, review verdicts, tools and branch provenance, carry-over); archives the sprint's `done` features to `archive/feature_archive.json` and removes them from `feature_list.json`; compacts the archived features' `history.md` entries to one-line stubs (the dated heading stays, so throughput remains derivable; the narrative lives on in the sprint document); strips the label from carry-over features; clears `current_sprint`. It refuses to close while a labeled feature is `in_progress`.
-4. **Manual pass** — the generated document leaves two sections for the operator: achievements and lessons. Fill them from the period's history entries, then empty `docs/current/` by compressing what mattered into the sprint document.
+2. **Work** — features flow through stages 0-6 unchanged. `npx handyman-harness@3 feature add` during the sprint leaves new features unlabeled; re-running `open` is not needed — label membership is decided at open time, and unlabeled features simply carry over to the next period. Unreviewed period notes live in `progress/` (the `docs/current/` folder was retired with the memory layout).
+3. **Close** — `npx handyman-harness@3 sprint close` (preview with `--dry-run`): derives `memory/sprints/sprint.<id>.md` from `feature_list.json`, `progress/history.md`, and `backlog/` frontmatter (features table, period, throughput, review verdicts, tools and branch provenance, carry-over); archives the sprint's `done` features to `archive/feature_archive.json` and removes them from `feature_list.json`; compacts the archived features' `history.md` entries to one-line stubs (the dated heading stays, so throughput remains derivable; the narrative lives on in the sprint document); strips the label from carry-over features; clears `current_sprint`. It refuses to close while a labeled feature is `in_progress`.
+4. **Manual pass** — the generated document leaves two sections for the operator: achievements and lessons. Fill them from the period's history entries, then compress what mattered from the period's `progress/` notes into the sprint document.
 
 The derived sections are regenerated, never hand-maintained; a hand-kept copy of state the artifacts already carry is the drift the harness exists to avoid. See the research and data-shape rationale in `docs/archive/analisis-sprints-cierre-periodo.md` at the skill repo root.
 

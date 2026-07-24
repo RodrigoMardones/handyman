@@ -163,8 +163,8 @@ docs/analisis-acciones-deterministas-por-capa.md.
 | Context | Background | The "why", not the acceptance criteria |
 | Scope | One feature at a time | No unrelated work; state whether touching the model is allowed |
 | Acceptance criteria | `acceptance[]` | Observable + success and failure tests |
-| Verification | Verifier / `docs/verification.md` | No `done` without a green verifier |
+| Verification | Verifier / `memory/verification.md` | No `done` without a green verifier |
 | Considerations | Core rules + skills | ponytail, untrusted data |
-| Post-feature | `docs/` + closeout | business / architecture / conventions / verification |
+| Post-feature | `memory/` + closeout | business / architecture / conventions / verification |
 | Tools | skills + subagents | The leader delegates; the subagent is read-only advice |
 | Questions | Parallel exploration | Open questions -> explorer before implementing |

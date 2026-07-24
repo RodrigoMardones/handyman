@@ -11,7 +11,7 @@ This document covers how to open the workspace as a vault, the conventions Handy
    - Global mode: `$HOME/HANDYMAN/<project_name>` (the resolved `HARNESS_WORKSPACE`).
 2. In Obsidian choose **Open folder as vault** and point it to that folder.
 3. Trust the vault when prompted.
-4. Confirm the file tree shows `docs/`, `progress/`, `backlog/`, `feature_list.json` and (optionally) `index.md`. In both modes the repo-root bridge files such as `AGENTS.md` and `CHECKPOINTS.md` live outside the vault, since the vault is `.handyman` (local) or the external HANDYMAN workspace (global).
+4. Confirm the file tree shows `memory/`, `progress/`, `backlog/`, `feature_list.json` and (optionally) `index.md`. In both modes the repo-root bridge files such as `AGENTS.md` and `CHECKPOINTS.md` live outside the vault, since the vault is `.handyman` (local) or the external HANDYMAN workspace (global).
 
 The harness keeps editing markdown the same way as before. Obsidian only adds visualization, search, backlinks, and tag navigation.
 
@@ -27,7 +27,7 @@ Handyman files carry minimal YAML frontmatter so Obsidian can index them by feat
 | `backlog/review_<feature>.md` | `feature`, `status: approved` or `status: changes_requested`, `role: reviewer`, `updated`, `tags` | Written by the reviewer. |
 | `backlog/explore_<topic>.md` | `topic`, `role: explorer`, `updated`, `tags` | Written by read-only exploration subagents. |
 | `index.md` | `tags: [handyman/moc]` | Optional MOC at the workspace root. |
-| `docs/business.md`, `docs/architecture.md`, `docs/conventions.md`, `docs/verification.md` | `tags: [handyman/docs]` (optional) | Plain markdown otherwise. |
+| `memory/business.md`, `memory/architecture.md`, `memory/conventions.md`, `memory/verification.md` | `tags: [handyman/docs]` (optional) | Plain markdown otherwise. |
 
 See [templates.md](./templates.md) for ready-to-copy frontmatter blocks.
 
@@ -62,8 +62,8 @@ Regenerate it from live state with `npx handyman-harness@3 index_md` (source `sr
 
 Handyman accepts both styles:
 
-- Markdown: `[architecture](docs/architecture.md)`. Always works in any tool.
-- Wikilinks: `[[docs/architecture]]`. Resolves natively in Obsidian.
+- Markdown: `[architecture](memory/architecture.md)`. Always works in any tool.
+- Wikilinks: `[[memory/architecture]]`. Resolves natively in Obsidian.
 
 Use wikilinks for cross-references inside the vault and markdown links for anything that is also read by non-Obsidian readers (CLI, GitHub, agent file viewers).
 For non-markdown files inside the vault, include the extension or use a markdown link, such as `[feature_list.json](feature_list.json)`. Do not add wikilinks to files outside the opened vault.

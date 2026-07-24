@@ -219,7 +219,7 @@ check_graphify_context() {
   fi
 }
 
-# A docs/business.md that still matches the starter template means the mandatory
+# A business.md (memory/, legacy docs/) that still matches the starter template means the mandatory
 # bootstrap business interview was skipped. The business domain cannot be inferred
 # from code, so flag it for the user to fill. Never changes EXIT_CODE.
 check_business_context() {
@@ -227,7 +227,7 @@ check_business_context() {
   [ -f "$biz" ] || biz="$HARNESS_WORKSPACE/docs/business.md"
   [ -f "$biz" ] || return 0
   if grep -qE 'Describe the business, the problem it solves|Define domain terms so code' "$biz"; then
-    echo "NOTE: docs/business.md still matches the starter template - the bootstrap business interview looks skipped." >&2
+    echo "NOTE: business.md still matches the starter template - the bootstrap business interview looks skipped." >&2
     echo "      interview the user and fill it with real domain context (see references/workflow.md Bootstrap Protocol)." >&2
   fi
 }

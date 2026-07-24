@@ -17,10 +17,10 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] Pending features are identifiable.
 - [ ] `$HARNESS_WORKSPACE/progress/current.md` exists and is either a clean template or an active session.
 - [ ] `$HARNESS_WORKSPACE/progress/history.md` exists and is append-only in practice.
-- [ ] `$HARNESS_WORKSPACE/docs/business.md` describes the business domain and use cases.
-- [ ] `$HARNESS_WORKSPACE/docs/architecture.md` defines project-specific boundaries.
-- [ ] `$HARNESS_WORKSPACE/docs/conventions.md` defines style and error handling.
-- [ ] `$HARNESS_WORKSPACE/docs/verification.md` defines required commands.
+- [ ] `$HARNESS_WORKSPACE/memory/business.md` describes the business domain and use cases.
+- [ ] `$HARNESS_WORKSPACE/memory/architecture.md` defines project-specific boundaries.
+- [ ] `$HARNESS_WORKSPACE/memory/conventions.md` defines style and error handling.
+- [ ] `$HARNESS_WORKSPACE/memory/verification.md` defines required commands.
 - [ ] `CHECKPOINTS.md` gives objective pass/fail criteria and points to `HARNESS_WORKSPACE` for mutable state.
 - [ ] A verifier such as `./init.sh` exists and can be run.
 - [ ] Role files exist if the project claims multi-agent orchestration.
@@ -77,10 +77,10 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 
 - [ ] No labeled feature is `in_progress` (finish or block it first; `npx handyman-harness@3 sprint close` refuses otherwise).
 - [ ] `npx handyman-harness@3 sprint close --dry-run` previewed the close before applying it.
-- [ ] `docs/sprints/sprint.<id>.md` exists with the derived sections (features, metrics, tools and branch provenance, carry-over).
+- [ ] `memory/sprints/sprint.<id>.md` exists with the derived sections (features, metrics, tools and branch provenance, carry-over).
 - [ ] The manual sections (achievements, lessons) are filled from the period's history entries.
 - [ ] The sprint's `done` features moved to `archive/feature_archive.json` and left `feature_list.json`; carry-over features lost the label.
-- [ ] `current_sprint` is cleared and `docs/current/` was compressed into the sprint document (see the Sprint Protocol in [workflow.md](./workflow.md)).
+- [ ] `current_sprint` is cleared and the period's `progress/` notes were compressed into the sprint document (see the Sprint Protocol in [workflow.md](./workflow.md)).
 
 ## Review Checklist
 
@@ -104,7 +104,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 - [ ] `backlog/impl_<feature>.md` and `backlog/review_<feature>.md` carry frontmatter with `feature`, `status`, `role`, `updated`, `tags`.
 - [ ] `backlog/explore_<topic>.md` reports carry frontmatter with `topic`, `role`, `updated`, `tags`.
 - [ ] Tags use the documented `#handyman/...` namespace, including `feature`, `role`, `review`, `session/current`, `history`, `docs`, `blocked`, and `moc` as applicable.
-- [ ] An `index.md` MOC at the workspace root links `feature_list.json`, `docs/`, `progress/current`, and `progress/history`; it links `AGENTS` or `CHECKPOINTS` only when those files exist inside the same vault.
+- [ ] An `index.md` MOC at the workspace root links `feature_list.json`, `memory/`, `progress/current`, and `progress/history`; it links `AGENTS` or `CHECKPOINTS` only when those files exist inside the same vault.
 - [ ] `.obsidian/` and `.trash/` are gitignored and not committed; in local installs the operational state (`.handyman/*`) is ignored while `.handyman/memory/` stays versioned.
 - [ ] Wikilinks (`[[...]]`) used in markdown still resolve to existing files.
 
@@ -116,7 +116,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 | Split scope | More than one feature changed | Stop, document, and split into separate sessions. |
 | Chat carries artifacts | Subagent returns long report in chat | Reject and ask for a `$HARNESS_WORKSPACE/backlog/` file reference. |
 | False green | Feature marked `done` but verifier was not run | Reopen or block until verifier output exists. |
-| Missing architecture contract | `$HARNESS_WORKSPACE/docs/architecture.md` is generic | Write project-specific boundaries before coding. |
+| Missing architecture contract | `$HARNESS_WORKSPACE/memory/architecture.md` is generic | Write project-specific boundaries before coding. |
 | Reviewer edits code | Review pass includes fixes | Separate roles again; reviewer files findings only. |
 | History drift | `$HARNESS_WORKSPACE/feature_list.json` and `$HARNESS_WORKSPACE/progress/history.md` disagree | Report the inconsistency before closing new work. |
 | Verifier too weak | It checks files but not tests | Add test execution before trusting closure. |
@@ -132,7 +132,7 @@ Use these checklists while analyzing, bootstrapping, running, or reviewing a har
 
 A correct `analyze` pass on a well-formed harness should be able to confirm each of the following. Use it as the shape of a good analysis report, independent of the host project. For a concrete walkthrough, see [examples.md](./examples.md).
 
-- Core files exist in the resolved mode: `AGENTS.md`, `feature_list.json`, `progress/`, `docs/`, `CHECKPOINTS.md`, and a verifier such as `init.sh`.
+- Core files exist in the resolved mode: `AGENTS.md`, `feature_list.json`, `progress/`, `memory/`, `CHECKPOINTS.md`, and a verifier such as `init.sh`.
 - Role files, if present, live in the platform-discoverable path (`.github/agents/` or `.claude/agents/`), not inside `HARNESS_WORKSPACE`.
 - The verifier runs the project tests from `PROJECT_ROOT` and validates feature state from `HARNESS_WORKSPACE`.
 - `$HARNESS_WORKSPACE/feature_list.json` parses, declares valid statuses, and has at most one `in_progress` feature.
