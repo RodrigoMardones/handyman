@@ -154,8 +154,28 @@ echo "==> copying repo-root bridge files"
 copy_template "$ASSETS_DIR/AGENTS.template.md"      "$PROJECT_ROOT/AGENTS.md"
 copy_template "$ASSETS_DIR/CHECKPOINTS.template.md" "$PROJECT_ROOT/CHECKPOINTS.md"
 copy_template "$ASSETS_DIR/init.template.sh"        "$PROJECT_ROOT/init.sh"
+config_existed=0
+[ -e "$PROJECT_ROOT/harness.config.json" ] && config_existed=1
 copy_and_stamp "$CONFIG_TEMPLATE"                  "$PROJECT_ROOT/harness.config.json" "$HARNESS_VERSION"
 [ -f "$PROJECT_ROOT/init.sh" ] && chmod +x "$PROJECT_ROOT/init.sh"
+
+# --- MCP server registration --------------------------------------------------
+# A fresh bootstrap leaves the handyman MCP server connected: .vscode/mcp.json
+# carries the server entry and the config template already declares it under
+# discovery.mcp. Pre-existing files are kept (never-overwrite); merging JSON in
+# bash is out of scope, so the NOTEs point at the manual fallback instead.
+echo "==> registering the handyman MCP server"
+if [ -e "$PROJECT_ROOT/.vscode/mcp.json" ]; then
+  echo "    KEEP (already exists):   $PROJECT_ROOT/.vscode/mcp.json"
+  echo "    NOTE: add the handyman server to it by hand:"
+  echo '          "handyman": { "type": "stdio", "command": "npx", "args": ["-y", "handyman-harness@3", "mcp"] }'
+else
+  copy_template "$ASSETS_DIR/vscode-mcp.template.json" "$PROJECT_ROOT/.vscode/mcp.json"
+fi
+if [ "$config_existed" -eq 1 ]; then
+  echo "    NOTE: harness.config.json pre-exists; declare the server in discovery.mcp with:"
+  echo "          node handyman/dist/tools_discovery.js declare mcp handyman"
+fi
 
 cat <<EOF
 

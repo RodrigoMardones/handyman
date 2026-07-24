@@ -1095,7 +1095,37 @@ Append-only. Do not edit earlier entries during normal work.
 ## 2026-07-21 - Feature 77: mcp_readonly_status_tools
 - archived to sprint feat-rework-tools; narrative in memory/sprints/sprint.feat-rework-tools.md
 
-## 2026-07-24 - Feature 78: memory_drift_templates_references
+## 2026-07-23 - Feature 78: mcp_feature_state_verbs
+- **Branch:** feat/reorganization
+- **Tools:** mcp-builder
+- **Evidence:** backlog/impl_mcp_feature_state_verbs.md · review: APPROVED -> backlog/review_mcp_feature_state_verbs.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-23 - Feature 79: mcp_backlog_review_tool
+- **Branch:** feat/reorganization
+- **Tools:** mcp-builder
+- **Evidence:** backlog/impl_mcp_backlog_review_tool.md · review: APPROVED -> backlog/review_mcp_backlog_review_tool.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-23 - Feature 80: mcp_observability_tools
+- **Branch:** feat/reorganization
+- **Tools:** mcp-builder
+- **Evidence:** backlog/impl_mcp_observability_tools.md · review: APPROVED -> backlog/review_mcp_observability_tools.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-23 - Feature 81: skill_mcp_first_prose
+- **Branch:** feat/reorganization
+- **Tools:** mcp-builder
+- **Evidence:** backlog/impl_skill_mcp_first_prose.md · review: APPROVED -> backlog/review_skill_mcp_first_prose.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-24 - Feature 82: scaffold_mcp_registration
+- **Branch:** feat/reorganization
+- **Tools:** mcp-builder
+- **Evidence:** backlog/impl_scaffold_mcp_registration.md · review: APPROVED -> backlog/review_scaffold_mcp_registration.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-24 - Feature 83: memory_drift_templates_references
 - **Branch:** feat/residual-memory-revision
 - **Tools:** ...
 - **Evidence:** backlog/impl_memory_drift_templates_references.md · review: APPROVED -> backlog/review_memory_drift_templates_references.md

@@ -29,6 +29,46 @@
   "features": [
     {
       "id": 78,
+      "name": "mcp_feature_state_verbs",
+      "title": "MCP: feature_add/block/unblock/acceptance (recoge WIP) + suite verde",
+      "description": "Recoge trabajo sin commitear en handyman/src/mcp.ts: 4 tools nuevas (feature_add, feature_block, feature_unblock, feature_acceptance) que compilan pero rompen tests/test_mcp.js ('tools/list exposes the 11 contract tools'). Completar lo iniciado: actualizar el contrato de la suite (11 a 15 tools), casos de comportamiento para las 4 tools y docs (references/mcp.md). El flag --force de acceptance NO se expone en el MCP (consistente con la decision de backlog review): queda en el CLI donde el operador lo registra en history.md.",
+      "acceptance": [
+        "tests/test_mcp.js: tools/list espera las 15 tools del contrato y la suite pasa completa",
+        "casos nuevos cubren: feature_add happy path, feature_block/feature_unblock transicion de estado, feature_acceptance rechazo sobre feature done",
+        "references/mcp.md lista las 4 tools nuevas en la tabla y actualiza el encabezado de superficie",
+        "./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-reorganization",
+      "meta": {
+        "started_at": "2026-07-23T22:23:37.068Z",
+        "done_at": "2026-07-23T23:28:42.685Z"
+      }
+    },
+    {
+      "id": 79,
+      "name": "mcp_backlog_review_tool",
+      "title": "MCP: tool backlog_review (veredicto del reviewer dentro del MCP)",
+      "description": "Cierra el ultimo gap del ciclo de roles en el MCP: el veredicto del reviewer (stage 5 de workflow.md) hoy exige salir a backlog.js review o escribir frontmatter a mano. Exponer backlog_review como wrapper registerCliTool de 'backlog.js review <feature> --status approved|changes_requested'. El flag --force NO se expone (re-stamp de veredicto queda en el CLI, consistente con feature_acceptance). Actualizar references/mcp.md (tabla) y workflow.md (guardian del stage 5).",
+      "acceptance": [
+        "backlog_review expuesta en mcp.ts con patron registerCliTool: args project, name (feature), status (enum approved|changes_requested); sin flag force",
+        "conflicto de veredicto (segundo veredicto distinto sin --force) sale con exit 1 y el error llega al payload MCP",
+        "tests/test_mcp.js cubre la tool nueva (happy path + conflicto) y la suite sigue verde",
+        "references/mcp.md lista backlog_review; workflow.md stage 5 nombra la tool MCP como guardian",
+        "./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-reorganization",
+      "depends_on": [
+        78
+      ],
+      "meta": {
+        "started_at": "2026-07-23T23:36:45.606Z",
+        "done_at": "2026-07-24T00:05:12.663Z"
+      }
+    },
+    {
+      "id": 83,
       "name": "memory_drift_templates_references",
       "title": "Drift memory/: plantillas y referencias de la skill alineadas al layout memory/",
       "description": "Drift residual que dejo F73 (workspace_memory_layout): los roles, la tabla resumen de feature-request, los mensajes de init.sh y varias references/*.md siguen apuntando a docs/ aunque scaffold y resolveDocsDir ya emiten/leen memory/. anatomy.md ademas describe docs/current (eliminado en F73, handoffs fusionados en progress/) y docs/sprints. Alcance: solo contenido de plantillas y documentacion de la skill; sin rename de assets docs-*.template.md (decision: prefijo historico, se documenta).",
@@ -48,7 +88,7 @@
       }
     },
     {
-      "id": 79,
+      "id": 84,
       "name": "upgrade_migration_docs_to_memory",
       "title": "upgrade_harness: migracion docs/ -> memory/ para harnesses legacy",
       "description": "El registry MIGRATIONS de src/upgrade_harness.ts no tiene entrada para el cambio de layout de F73: un harness legacy (skill <=2.x, p.ej. la instalada 2.1.1) scaffoldéa docs/ y el upgrade nunca lo mueve a memory/. Añadir una migracion que mueva los 4 archivos de conocimiento a memory/ cuando memory/ no exista, con backup en .upgrade-backups y advisories de gitignore/AGENTS.md. Incluye decidir la version de la entrada: el registry se detiene en 1.8.0 mientras los harnesses se sellan con metadata.version de la skill (3.6.0); documentar el criterio elegido en el reporte impl.",
@@ -62,11 +102,11 @@
       "status": "pending",
       "sprint": "feat-residual-memory-revision",
       "depends_on": [
-        78
+        83
       ]
     },
     {
-      "id": 80,
+      "id": 85,
       "name": "src_comment_memory_drift",
       "title": "Comentarios en src/ alineados a memory/ (sprint.ts, schema.ts)",
       "description": "Follow-up no bloqueante de F78 (review_memory_drift_templates_references.md): handyman/src/sprint.ts (lineas 18, 58, 478) y handyman/src/core/schema.ts:79 siguen diciendo docs/sprints/sprint.<ID>.md en comentarios, mientras el runtime ya escribe memory/sprints/ via resolveDocsDir y assets/schemas/sprint.schema.json ya describe memory/sprints/. Solo comentarios/docstrings; cero cambio de comportamiento.",
@@ -76,6 +116,70 @@
       ],
       "status": "pending",
       "sprint": "feat-residual-memory-revision"
+    },
+    {
+      "id": 80,
+      "name": "mcp_observability_tools",
+      "title": "MCP P2: metrics + fleet_status/health/timeline (observabilidad read-only)",
+      "description": "Paso P2 de docs/analisis-mcp-extension.md, propuesto y nunca ejecutado. metrics envuelve metrics.js --json (status_counts, throughput, approval_rate, coverage; read-only puro, 'observes, never gates'). fleet_status/fleet_health/fleet_timeline envuelven toolbox.js status|health|timeline --json sobre la flota del registry. Si toolbox.js no acepta --root (es multi-repo), registrarlas con needsProject:false como harness_list; decision a tomar leyendo toolbox.ts. Todo read-only, riesgo cero.",
+      "acceptance": [
+        "metrics expuesta como tool MCP con project; el JSON de metrics.js --json llega parseado a structuredContent",
+        "fleet_status, fleet_health y fleet_timeline expuestas read-only; si toolbox.js no traga --root se registran con needsProject:false",
+        "tests/test_mcp.js cubre las 4 tools nuevas y la suite sigue verde",
+        "references/mcp.md actualizado con las 4 tools y sus notas",
+        "./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-reorganization",
+      "depends_on": [
+        79
+      ],
+      "meta": {
+        "started_at": "2026-07-24T00:07:16.831Z",
+        "done_at": "2026-07-24T00:46:48.528Z"
+      }
+    },
+    {
+      "id": 81,
+      "name": "skill_mcp_first_prose",
+      "title": "Skill MCP-first de verdad: prosa invertida y superficie actualizada",
+      "description": "SKILL.md 'Mechanics: MCP First' lista solo 6 tools (tras F0-F2 habra ~20); references/workflow.md esta escrito CLI-first con el MCP como nota al margen. Invertir la prosa: cada stage 0-7 nombra la tool MCP como guardian primario y el CLI como fallback portable; los protocolos leader/implementer/reviewer/closure referencian tools MCP primero; SKILL.md lista la superficie completa agrupada por ciclo. Sin cambio funcional de codigo; test_docs y los token budgets deben seguir verdes.",
+      "acceptance": [
+        "SKILL.md Mechanics lista todas las tools MCP vigentes agrupadas por ciclo de rol",
+        "workflow.md tabla stages 0-7 con guardian MCP primario + fallback CLI por stage, y protocolos actualizados",
+        "ninguna referencia a tools MCP queda desactualizada respecto a mcp.ts (conteo y nombres)",
+        "./init.sh exits 0 (test_docs y token budgets verdes)"
+      ],
+      "status": "done",
+      "sprint": "feat-reorganization",
+      "depends_on": [
+        80
+      ],
+      "meta": {
+        "started_at": "2026-07-24T00:47:47.605Z",
+        "done_at": "2026-07-24T02:32:55.339Z"
+      }
+    },
+    {
+      "id": 82,
+      "name": "scaffold_mcp_registration",
+      "title": "Bootstrap deja el MCP conectado: scaffold escribe mcp.json + declare",
+      "description": "Un harness nuevo recibe skill y CLIs pero el server MCP depende de registro manual en el editor (.vscode/mcp.json de este repo existe pero scaffold.sh no lo escribe). scaffold.sh debe crear <project_root>/.vscode/mcp.json con el server handyman (command npx -y handyman-harness@3 mcp) SOLO si no existe (regla never-overwrite del scaffold) y declarar discovery.mcp handyman en el harness.config.json generado (via tools_discovery declare o emision directa en la plantilla). Actualizar workflow.md bootstrap protocol y templates.md si aplica.",
+      "acceptance": [
+        "scaffold.sh crea .vscode/mcp.json con el server handyman cuando no existe; uno existente no se toca",
+        "el harness.config.json generado declara handyman en discovery.mcp (o scaffold imprime el comando declare como paso final obligado)",
+        "workflow.md bootstrap protocol incluye el paso de conexion MCP; templates.md actualizado si aplica",
+        "./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-reorganization",
+      "depends_on": [
+        81
+      ],
+      "meta": {
+        "started_at": "2026-07-24T02:43:38.088Z",
+        "done_at": "2026-07-24T05:00:10.064Z"
+      }
     }
   ]
 }

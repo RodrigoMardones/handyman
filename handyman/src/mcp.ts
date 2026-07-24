@@ -11,14 +11,23 @@
  *   harness_list        registered harnesses from $HANDYMAN_ROOT/registry.json
  *   preflight           read-only stability report (preflight.js)
  *   feature_next        claimable pending features (feature.js ready --json)
+ *   feature_add         intake a new pending feature (feature.js add)
  *   feature_start       claim a feature and mark it in_progress (feature.js start)
  *   feature_log         append to the session log (feature.js log)
  *   feature_next_step   set the next step to resume on (feature.js next)
+ *   feature_block       mark the active feature blocked (feature.js block)
+ *   feature_unblock     return a blocked feature to pending (feature.js unblock)
+ *   feature_acceptance  rewrite a feature's acceptance list (feature.js acceptance)
+ *   backlog_review      stamp the reviewer's verdict (backlog.js review --status)
  *   feature_close       verifier-gated close (feature.js done)
  *   report_write        impl_/review_/explore_ report into <workspace>/backlog/
  *   verify              run the project verifier (init.sh) and report the exit
  *   sprint_status       open period + its features (sprint.js status, read-only)
  *   upgrade_check       harness version drift (upgrade_harness.js --check, read-only)
+ *   metrics             derived workflow snapshot (metrics.js --json, read-only)
+ *   fleet_status        registry-wide live report (toolbox.js status --json, read-only)
+ *   fleet_health        derived fleet signals (toolbox.js health --json, read-only)
+ *   fleet_timeline      merged fleet closure chronology (toolbox.js timeline --json, read-only)
  *
  * Resources
  *   handyman://{project}/current      progress/current.md
@@ -26,6 +35,8 @@
  *
  * Every tool accepts `project`: a registered harness name (directory basename
  * in the registry), an absolute project root, or omitted for the server's cwd.
+ * The registry-wide tools (harness_list, fleet_status, fleet_health,
+ * fleet_timeline) take no `project` — they read $HANDYMAN_ROOT.
  */
 
 import { execFileSync } from "node:child_process";
@@ -132,6 +143,29 @@ function runCli(script: string, args: string[], project: Project): RunResult {
   );
 }
 
+/**
+ * Run a fleet-wide toolbox verb WITHOUT `--root`: status/health/timeline are
+ * registry-wide (the registry comes from $HANDYMAN_ROOT, inherited by the
+ * subprocess). toolbox.ts parseFlags would silently accept --root as a
+ * value-option and ignore it (only `heartbeat` reads it), so injecting it
+ * would produce fleet output that looks per-project — worse than erroring.
+ */
+function runToolbox(args: string[]): RunResult {
+  return run(process.execPath, [join(DIST_DIR, "toolbox.js"), ...args], process.cwd());
+}
+
+/**
+ * Parse a `--json` CLI payload into the structured result; on non-JSON output
+ * fall back to the raw { exit, output } shape so nothing is swallowed.
+ */
+function parseJsonResult(result: RunResult): Record<string, unknown> {
+  try {
+    return { exit: result.exit, ...(JSON.parse(result.output) as Record<string, unknown>) };
+  } catch {
+    return { exit: result.exit, output: result.output };
+  }
+}
+
 // --- tool handlers (exported for the black-box suite in tests/test_mcp.js) ---
 
 export function harnessList(): {
@@ -159,6 +193,32 @@ export function featureNext(project: Project): { drained: boolean; ready: unknow
   return { drained: result.exit === 3, ready };
 }
 
+export function featureAdd(
+  project: Project,
+  name: string,
+  options: {
+    title?: string;
+    description?: string;
+    acceptance?: string[];
+    dependsOn?: number[];
+  } = {},
+): RunResult {
+  const args = ["add", "--name", name];
+  if (options.title) {
+    args.push("--title", options.title);
+  }
+  if (options.description) {
+    args.push("--description", options.description);
+  }
+  for (const line of options.acceptance ?? []) {
+    args.push("--acceptance", line);
+  }
+  for (const id of options.dependsOn ?? []) {
+    args.push("--depends-on", String(id));
+  }
+  return runCli("feature.js", args, project);
+}
+
 export function featureClose(project: Project, name: string, verifier?: string): RunResult {
   const args = ["done", name];
   if (verifier) {
@@ -181,6 +241,30 @@ export function featureLog(project: Project, line: string): RunResult {
 
 export function featureNextStep(project: Project, step: string): RunResult {
   return runCli("feature.js", ["next", step], project);
+}
+
+export function featureBlock(project: Project, name: string, reason: string): RunResult {
+  return runCli("feature.js", ["block", name, "--reason", reason], project);
+}
+
+export function featureUnblock(project: Project, name: string): RunResult {
+  return runCli("feature.js", ["unblock", name], project);
+}
+
+export function featureAcceptance(project: Project, name: string, acceptance: string[]): RunResult {
+  const args = ["acceptance", name];
+  for (const line of acceptance) {
+    args.push("--acceptance", line);
+  }
+  return runCli("feature.js", args, project);
+}
+
+export function backlogReview(
+  project: Project,
+  name: string,
+  status: "approved" | "changes_requested",
+): RunResult {
+  return runCli("backlog.js", ["review", name, "--status", status], project);
 }
 
 const REPORT_KINDS = {
@@ -236,6 +320,26 @@ export function upgradeCheck(project: Project): RunResult {
   // behind or unsealed. The apply/default mode rewrites harness.config.json and
   // is deliberately NOT exposed here.
   return runCli("upgrade_harness.js", ["--check"], project);
+}
+
+export function metrics(project: Project): Record<string, unknown> {
+  // metrics.js exits 0 always (read-only observation); the --json payload
+  // (status_counts, throughput, review_verdicts, coverage) is the data.
+  return parseJsonResult(runCli("metrics.js", ["--json"], project));
+}
+
+export function fleetStatus(): Record<string, unknown> {
+  return parseJsonResult(runToolbox(["status", "--json"]));
+}
+
+export function fleetHealth(strict = false): Record<string, unknown> {
+  // health --strict exits 1 when at least one signal is present; the JSON is
+  // still printed, so the payload carries both the exit and total_signals.
+  return parseJsonResult(runToolbox(["health", "--json", ...(strict ? ["--strict"] : [])]));
+}
+
+export function fleetTimeline(): Record<string, unknown> {
+  return parseJsonResult(runToolbox(["timeline", "--json"]));
 }
 
 // --- MCP surface -------------------------------------------------------------
@@ -422,6 +526,52 @@ export function buildServer(): McpServer {
   });
 
   registerCliTool(server, {
+    name: "feature_add",
+    title: "Intake a new pending feature",
+    description:
+      "Append a new pending feature to feature_list.json (feature.js add). Writes only the contract " +
+      "keys (id, name, title, description, acceptance, status) validated against the schema — the " +
+      "leader's intake verb, so feature_list.json is never hand-edited.",
+    inputSchema: {
+      project: projectField,
+      name: featureNameField,
+      title: z.string().optional().describe("Short human title."),
+      description: z.string().optional().describe("What the feature is and why."),
+      acceptance: z
+        .array(z.string().min(1))
+        .optional()
+        .describe("Acceptance criteria; each entry is one criterion."),
+      depends_on: z
+        .array(z.number().int().positive())
+        .optional()
+        .describe("Feature ids that must be done before this one is claimable."),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+    script: "feature.js",
+    args: (input) => {
+      const argv = ["add", "--name", String(input.name)];
+      if (input.title) {
+        argv.push("--title", String(input.title));
+      }
+      if (input.description) {
+        argv.push("--description", String(input.description));
+      }
+      for (const line of (input.acceptance as string[] | undefined) ?? []) {
+        argv.push("--acceptance", line);
+      }
+      for (const id of (input.depends_on as number[] | undefined) ?? []) {
+        argv.push("--depends-on", String(id));
+      }
+      return argv;
+    },
+  });
+
+  registerCliTool(server, {
     name: "feature_start",
     title: "Claim a feature and mark it in_progress",
     description:
@@ -491,6 +641,105 @@ export function buildServer(): McpServer {
     },
     script: "feature.js",
     args: (input) => ["next", String(input.step)],
+  });
+
+  registerCliTool(server, {
+    name: "feature_block",
+    title: "Mark a feature blocked",
+    description:
+      "Mark a feature blocked with a reason (feature.js block). Use it when a required tool, file, " +
+      "test, or decision is missing: the reason lands in feature_list.json so the next session (or " +
+      "the preflight worklist report) surfaces why the work stopped.",
+    inputSchema: {
+      project: projectField,
+      name: featureNameField,
+      reason: z.string().min(1).describe("Why the feature is blocked and what unblocks it."),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    script: "feature.js",
+    args: (input) => ["block", String(input.name), "--reason", String(input.reason)],
+  });
+
+  registerCliTool(server, {
+    name: "feature_unblock",
+    title: "Return a blocked feature to pending",
+    description:
+      "Return a blocked feature to pending (feature.js unblock) once its blocker clears, so it " +
+      "becomes claimable by feature_next again.",
+    inputSchema: {
+      project: projectField,
+      name: featureNameField,
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    script: "feature.js",
+    args: (input) => ["unblock", String(input.name)],
+  });
+
+  registerCliTool(server, {
+    name: "feature_acceptance",
+    title: "Rewrite a feature's acceptance list",
+    description:
+      "Replace a feature's acceptance criteria wholesale (feature.js acceptance). Refused on a done " +
+      "feature — the reviewed contract stays immutable; the --force override is deliberately NOT " +
+      "exposed here and stays on the CLI where the operator records it in history.md.",
+    inputSchema: {
+      project: projectField,
+      name: featureNameField,
+      acceptance: z
+        .array(z.string().min(1))
+        .min(1)
+        .describe("The full new acceptance list; replaces the previous one."),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    script: "feature.js",
+    args: (input) => {
+      const argv = ["acceptance", String(input.name)];
+      for (const line of (input.acceptance as string[] | undefined) ?? []) {
+        argv.push("--acceptance", line);
+      }
+      return argv;
+    },
+  });
+
+  registerCliTool(server, {
+    name: "backlog_review",
+    title: "Stamp the reviewer's verdict",
+    description:
+      "Write backlog/review_<feature>.md with the reviewer's verdict (backlog.js review --status), " +
+      "the workflow stage-5 artifact. A second, different verdict on the same feature is refused: " +
+      "the non-zero exit and the CLI's conflict message land in the payload — nothing is silently " +
+      "flipped. The --force re-stamp is deliberately NOT exposed here and stays on the CLI, like " +
+      "feature_acceptance --force.",
+    inputSchema: {
+      project: projectField,
+      name: featureNameField,
+      status: z
+        .enum(["approved", "changes_requested"])
+        .describe("Reviewer verdict stamped into the report frontmatter."),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+    script: "backlog.js",
+    args: (input) => ["review", String(input.name), "--status", String(input.status)],
   });
 
   registerCliTool(server, {
@@ -630,6 +879,87 @@ export function buildServer(): McpServer {
     },
     script: "upgrade_harness.js",
     args: () => ["--check"],
+  });
+
+  registerCliTool(server, {
+    name: "metrics",
+    title: "Derived workflow metrics (read-only)",
+    description:
+      "Per-harness derived snapshot (metrics.js --json): status_counts from feature_list.json, " +
+      "throughput (closures per date from history.md), review_verdicts with approval_rate (from " +
+      "backlog review frontmatter), and coverage (done features with their impl+review reports). " +
+      "The JSON arrives parsed in structuredContent. Observes, never gates: exits 0 always.",
+    inputSchema: { project: projectField },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    script: "metrics.js",
+    args: () => ["--json"],
+    format: (result) => parseJsonResult(result),
+  });
+
+  registerTool(server, {
+    name: "fleet_status",
+    title: "Fleet-wide live status (read-only)",
+    description:
+      "Registry-wide live report (toolbox.js status --json) over every harness in " +
+      "$HANDYMAN_ROOT/registry.json: per-harness metrics, session, and version drift, plus the " +
+      "fleet rollup. Registry-wide, not per-project — takes no `project`; the JSON arrives " +
+      "parsed in structuredContent.",
+    inputSchema: {},
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    needsProject: false,
+    run: () => fleetStatus(),
+  });
+
+  registerTool(server, {
+    name: "fleet_health",
+    title: "Fleet-wide derived health signals (read-only)",
+    description:
+      "Derived health signals (toolbox.js health --json) for every registered harness: " +
+      "INVARIANT, STALE_WIP, BEHIND, IDLE, UNREADABLE, with total_signals across the fleet. " +
+      "Registry-wide, not per-project — takes no `project`. `strict` plumbs the CLI's --strict: " +
+      "exit is 1 exactly when at least one signal is present (the JSON is still returned).",
+    inputSchema: {
+      strict: z
+        .boolean()
+        .default(false)
+        .describe("Exit non-zero when at least one health signal is present."),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    needsProject: false,
+    run: (_target, input) => fleetHealth(input.strict === true),
+  });
+
+  registerTool(server, {
+    name: "fleet_timeline",
+    title: "Fleet-wide closure timeline (read-only)",
+    description:
+      "Merged closure chronology (toolbox.js timeline --json) across every registered harness: " +
+      "dated history closures plus pushed heartbeat events, newest first. Registry-wide, not " +
+      "per-project — takes no `project`; the JSON arrives parsed in structuredContent.",
+    inputSchema: {},
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    needsProject: false,
+    run: () => fleetTimeline(),
   });
 
   server.registerResource(
