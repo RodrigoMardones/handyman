@@ -1069,55 +1069,58 @@ Append-only. Do not edit earlier entries during normal work.
 - archived to sprint 2026-SP6; narrative in docs/sprints/sprint.2026-SP6.md
 
 ## 2026-07-21 - Feature 69: period_close_branch_unit
-- **Branch:** feat/rework-tools
-- **Tools:** skills: handyman, ponytail; sesion directa leader-implementer; suites test_sprint 13/13, test_feature 43/43, test_docs 219/219
-- **Evidence:** backlog/impl_period_close_branch_unit.md · review: NO REVIEW FILE -> backlog/review_period_close_branch_unit.md
-- **Verification:** verifier exit 0 · closure done
+- archived to sprint feat-rework-tools; narrative in memory/sprints/sprint.feat-rework-tools.md
 
 ## 2026-07-21 - Feature 70: graphify_freshness_gate
-- **Branch:** feat/rework-tools
-- **Tools:** skills: handyman, graphify, ponytail; 3 subagentes de extraccion paralelos; suites test_preflight 13/13, test_feature 43/43, test_docs 219/219
-- **Evidence:** backlog/impl_graphify_freshness_gate.md · review: NO REVIEW FILE -> backlog/review_graphify_freshness_gate.md
-- **Verification:** verifier exit 0 · closure done
+- archived to sprint feat-rework-tools; narrative in memory/sprints/sprint.feat-rework-tools.md
 
 ## 2026-07-21 - Feature 71: discovery_declared_paths
-- **Branch:** feat/rework-tools
-- **Tools:** skills: handyman, ponytail; sesion directa; suite test_tools_discovery 17/17
-- **Evidence:** backlog/impl_discovery_declared_paths.md · review: NO REVIEW FILE -> backlog/review_discovery_declared_paths.md
-- **Verification:** verifier exit 0 · closure done
+- archived to sprint feat-rework-tools; narrative in memory/sprints/sprint.feat-rework-tools.md
 
 ## 2026-07-21 - Feature 72: handyman_mcp_server
-- **Branch:** feat/rework-tools
-- **Tools:** ...
-- **Evidence:** backlog/impl_handyman_mcp_server.md · review: APPROVED -> backlog/review_handyman_mcp_server.md
-- **Verification:** verifier exit 0 · closure done
+- archived to sprint feat-rework-tools; narrative in memory/sprints/sprint.feat-rework-tools.md
 
 ## 2026-07-21 - Feature 73: workspace_memory_layout
-- **Branch:** feat/rework-tools
-- **Tools:** ...
-- **Evidence:** backlog/impl_workspace_memory_layout.md · review: APPROVED -> backlog/review_workspace_memory_layout.md
-- **Verification:** verifier exit 0 · closure done
+- archived to sprint feat-rework-tools; narrative in memory/sprints/sprint.feat-rework-tools.md
 
 ## 2026-07-21 - Feature 74: mcp_register_cli_helper
-- **Branch:** feat/rework-tools
-- **Tools:** ...
-- **Evidence:** backlog/impl_mcp_register_cli_helper.md · review: NO REVIEW FILE -> backlog/review_mcp_register_cli_helper.md
-- **Verification:** verifier exit 0 · closure done
+- archived to sprint feat-rework-tools; narrative in memory/sprints/sprint.feat-rework-tools.md
 
 ## 2026-07-21 - Feature 75: mcp_feature_workflow_tools
-- **Branch:** feat/rework-tools
-- **Tools:** ...
-- **Evidence:** backlog/impl_mcp_feature_workflow_tools.md · review: NO REVIEW FILE -> backlog/review_mcp_feature_workflow_tools.md
-- **Verification:** verifier exit 0 · closure done
+- archived to sprint feat-rework-tools; narrative in memory/sprints/sprint.feat-rework-tools.md
 
 ## 2026-07-21 - Feature 76: mcp_decouple_toolbox_core
-- **Branch:** feat/rework-tools
-- **Tools:** ...
-- **Evidence:** backlog/impl_mcp_decouple_toolbox_core.md · review: NO REVIEW FILE -> backlog/review_mcp_decouple_toolbox_core.md
-- **Verification:** verifier exit 0 · closure done
+- archived to sprint feat-rework-tools; narrative in memory/sprints/sprint.feat-rework-tools.md
 
 ## 2026-07-21 - Feature 77: mcp_readonly_status_tools
-- **Branch:** feat/rework-tools
-- **Tools:** ...
-- **Evidence:** backlog/impl_mcp_readonly_status_tools.md · review: NO REVIEW FILE -> backlog/review_mcp_readonly_status_tools.md
+- archived to sprint feat-rework-tools; narrative in memory/sprints/sprint.feat-rework-tools.md
+
+## 2026-07-23 - Feature 78: mcp_feature_state_verbs
+- **Branch:** feat/reorganization
+- **Tools:** mcp-builder
+- **Evidence:** backlog/impl_mcp_feature_state_verbs.md · review: APPROVED -> backlog/review_mcp_feature_state_verbs.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-23 - Feature 79: mcp_backlog_review_tool
+- **Branch:** feat/reorganization
+- **Tools:** mcp-builder
+- **Evidence:** backlog/impl_mcp_backlog_review_tool.md · review: APPROVED -> backlog/review_mcp_backlog_review_tool.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-23 - Feature 80: mcp_observability_tools
+- **Branch:** feat/reorganization
+- **Tools:** mcp-builder
+- **Evidence:** backlog/impl_mcp_observability_tools.md · review: APPROVED -> backlog/review_mcp_observability_tools.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-23 - Feature 81: skill_mcp_first_prose
+- **Branch:** feat/reorganization
+- **Tools:** mcp-builder
+- **Evidence:** backlog/impl_skill_mcp_first_prose.md · review: APPROVED -> backlog/review_skill_mcp_first_prose.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-24 - Feature 82: scaffold_mcp_registration
+- **Branch:** feat/reorganization
+- **Tools:** mcp-builder
+- **Evidence:** backlog/impl_scaffold_mcp_registration.md · review: APPROVED -> backlog/review_scaffold_mcp_registration.md
 - **Verification:** verifier exit 0 · closure done

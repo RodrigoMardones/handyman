@@ -9,7 +9,7 @@
  *   - Handlers: import dist/mcp.js and drive the exported functions against
  *     throwaway fixture harnesses (same shape test_feature.sh uses).
  * Covered:
- *   M1  tools/list exposes exactly the 11 contract tools
+ *   M1  tools/list exposes exactly the 20 contract tools
  *   M2  resources/templates/list exposes docs/* and current
  *   M3  feature_close REFUSES the close on a red verifier (state intact)
  *   M4  feature_close closes on a green verifier (history appended)
@@ -22,6 +22,15 @@
  *   M11 feature_next_step sets the ## Next Step section
  *   M12 sprint_status reports the open period and its features
  *   M13 upgrade_check reports harness version drift read-only
+ *   M14 feature_add appends a pending feature (acceptance + depends_on)
+ *   M15 feature_block/feature_unblock move a feature blocked <-> pending
+ *   M16 feature_acceptance refuses to rewrite a done feature's contract
+ *   M17 backlog_review stamps status: approved into backlog/review_<f>.md
+ *   M18 backlog_review refuses a conflicting verdict (no silent flip)
+ *   M19 metrics returns the parsed metrics.js --json snapshot
+ *   M20 fleet_status returns the registry-wide fleet view
+ *   M21 fleet_health reports signals; --strict drives the exit code
+ *   M22 fleet_timeline returns the merged closure chronology
  *
  * Exit code 0 when all pass, 1 otherwise.
  */
@@ -74,6 +83,11 @@ function writeVerifier(file, exitCode) {
 function statusOf(root, name) {
   const data = JSON.parse(fs.readFileSync(path.join(root, ".handyman", "feature_list.json"), "utf-8"));
   return (data.features.find((f) => f.name === name) || {}).status || "";
+}
+
+function featureOf(root, name) {
+  const data = JSON.parse(fs.readFileSync(path.join(root, ".handyman", "feature_list.json"), "utf-8"));
+  return data.features.find((f) => f.name === name) || {};
 }
 
 // --- minimal JSON-RPC client over stdio -------------------------------------
@@ -146,15 +160,24 @@ async function main() {
     const tools = (responses.find((r) => r.id === 2) || {}).result?.tools ?? [];
     const names = tools.map((t) => t.name).sort();
     check(
-      "tools/list exposes the 11 contract tools",
+      "tools/list exposes the 20 contract tools",
       JSON.stringify(names) ===
         JSON.stringify([
+          "backlog_review",
+          "feature_acceptance",
+          "feature_add",
+          "feature_block",
           "feature_close",
           "feature_log",
           "feature_next",
           "feature_next_step",
           "feature_start",
+          "feature_unblock",
+          "fleet_health",
+          "fleet_status",
+          "fleet_timeline",
           "harness_list",
+          "metrics",
           "preflight",
           "report_write",
           "sprint_status",
@@ -331,6 +354,188 @@ async function main() {
       /installed version:/.test(upgrade.output) && /current version:/.test(upgrade.output),
       `exit=${upgrade.exit} output=${upgrade.output.slice(0, 200)}`,
     );
+  }
+
+  // M14/M15/M16 — feature_add, feature_block/feature_unblock, feature_acceptance
+  //
+  // Their own throwaway harness: intake appends a pending feature, block and
+  // unblock round-trip a state transition, and acceptance exercises the refusal
+  // on a done feature — the CLI refuses without --force, which the MCP
+  // deliberately does not expose, so the non-zero exit is the contract.
+  {
+    const ROOT3 = fs.mkdtempSync(path.join(os.tmpdir(), "hmcp-state-"));
+    writeHarness(ROOT3);
+    const p3 = mcp.resolveProject(ROOT3);
+
+    // M14 — feature_add appends a pending feature with its contract keys
+    const added = mcp.featureAdd(p3, "c", {
+      title: "Third feature",
+      acceptance: ["does the third thing"],
+      dependsOn: [1],
+    });
+    const c = featureOf(ROOT3, "c");
+    check(
+      "feature_add appends a pending feature with acceptance and depends_on",
+      added.exit === 0 &&
+        c.id === 3 &&
+        c.status === "pending" &&
+        JSON.stringify(c.acceptance) === JSON.stringify(["does the third thing"]) &&
+        JSON.stringify(c.depends_on) === JSON.stringify([1]),
+      `exit=${added.exit} feature=${JSON.stringify(c)} output=${added.output.slice(0, 200)}`,
+    );
+
+    // M15 — feature_block/feature_unblock round-trip blocked -> pending
+    const blocked = mcp.featureBlock(p3, "b", "waiting on the panel API");
+    const bBlocked = featureOf(ROOT3, "b");
+    check(
+      "feature_block marks the feature blocked with the reason",
+      blocked.exit === 0 &&
+        bBlocked.status === "blocked" &&
+        bBlocked.blocked_reason === "waiting on the panel API",
+      `exit=${blocked.exit} feature=${JSON.stringify(bBlocked)} output=${blocked.output.slice(0, 200)}`,
+    );
+    const unblocked = mcp.featureUnblock(p3, "b");
+    const bUnblocked = featureOf(ROOT3, "b");
+    check(
+      "feature_unblock returns the feature to pending and drops the reason",
+      unblocked.exit === 0 && bUnblocked.status === "pending" && !("blocked_reason" in bUnblocked),
+      `exit=${unblocked.exit} feature=${JSON.stringify(bUnblocked)} output=${unblocked.output.slice(0, 200)}`,
+    );
+
+    // M16 — feature_acceptance refuses on a done feature
+    execFileSync(
+      process.execPath,
+      [path.join(DIST, "feature.js"), "--root", ROOT3, "start", "a", "--no-preflight"],
+      { stdio: "ignore" },
+    );
+    const green3 = path.join(ROOT3, "ok.sh");
+    writeVerifier(green3, 0);
+    mcp.featureClose(p3, "a", green3);
+    const refused = mcp.featureAcceptance(p3, "a", ["rewritten contract"]);
+    check(
+      "feature_acceptance refuses to rewrite a done feature's contract",
+      refused.exit !== 0 &&
+        statusOf(ROOT3, "a") === "done" &&
+        /acceptance list is the contract/.test(refused.output),
+      `exit=${refused.exit} status=${statusOf(ROOT3, "a")} output=${refused.output.slice(0, 200)}`,
+    );
+
+    fs.rmSync(ROOT3, { recursive: true, force: true });
+  }
+
+  // M17/M18 — backlog_review stamps the verdict and refuses a conflicting one
+  //
+  // Own throwaway harness: backlog.js review stamps the template regardless of
+  // feature state, so a bare fixture is enough. The conflict path is the
+  // contract the MCP must surface, not swallow: a second, different verdict
+  // without --force exits non-zero and the file keeps the original verdict.
+  {
+    const ROOT4 = fs.mkdtempSync(path.join(os.tmpdir(), "hmcp-review-"));
+    writeHarness(ROOT4);
+    const p4 = mcp.resolveProject(ROOT4);
+
+    // M17 — happy path stamps status: approved into the frontmatter
+    const stamped = mcp.backlogReview(p4, "a", "approved");
+    const reviewPath = path.join(ROOT4, ".handyman", "backlog", "review_a.md");
+    const reviewText = fs.existsSync(reviewPath) ? fs.readFileSync(reviewPath, "utf-8") : "";
+    check(
+      "backlog_review writes backlog/review_a.md with status: approved",
+      stamped.exit === 0 && /^status: approved$/m.test(reviewText),
+      `exit=${stamped.exit} output=${stamped.output.slice(0, 200)}`,
+    );
+
+    // M18 — a conflicting verdict exits non-zero and flips nothing
+    const conflict = mcp.backlogReview(p4, "a", "changes_requested");
+    const afterText = fs.readFileSync(reviewPath, "utf-8");
+    check(
+      "backlog_review surfaces the verdict conflict without flipping the file",
+      conflict.exit !== 0 &&
+        /declares 'approved' but --status asked for 'changes_requested'/.test(conflict.output) &&
+        /^status: approved$/m.test(afterText),
+      `exit=${conflict.exit} output=${conflict.output.slice(0, 200)}`,
+    );
+
+    fs.rmSync(ROOT4, { recursive: true, force: true });
+  }
+
+  // M19 — metrics parses the metrics.js --json snapshot into structured data
+  //
+  // Asserts against the fixture state built above: 'a' is done (M4), 'b' is
+  // still pending, and backlog/ holds only impl_a.md (M7) with no review
+  // counterpart — so coverage flags 'a' as missing its report pair.
+  {
+    const snap = mcp.metrics(project);
+    check(
+      "metrics returns the parsed per-harness snapshot",
+      snap.exit === 0 &&
+        snap.status_counts?.done === 1 &&
+        snap.status_counts?.pending === 1 &&
+        snap.coverage?.done === 1 &&
+        snap.coverage?.with_reports === 0 &&
+        JSON.stringify(snap.coverage?.missing) === JSON.stringify(["a"]),
+      JSON.stringify(snap).slice(0, 300),
+    );
+  }
+
+  // M20/M21/M22 — fleet_status, fleet_health, fleet_timeline over the registry
+  //
+  // Same registry fixture pattern as M5: point $HANDYMAN_ROOT at a throwaway
+  // dir whose registry.json registers ROOT. The fleet verbs are registry-wide
+  // (toolbox.ts parseFlags would ignore an injected --root), so the handlers
+  // shell out without --root and the registry alone decides the view.
+  {
+    const HROOT2 = fs.mkdtempSync(path.join(os.tmpdir(), "hmcp-fleet-"));
+    fs.writeFileSync(
+      path.join(HROOT2, "registry.json"),
+      JSON.stringify({ version: 1, harnesses: [{ project_root: ROOT, registered: "2026-07-21" }] }),
+    );
+    process.env.HANDYMAN_ROOT = HROOT2;
+
+    // M20 — fleet_status returns the live per-harness snapshots + fleet rollup
+    const status = mcp.fleetStatus();
+    check(
+      "fleet_status returns the fleet view with the fixture harness",
+      status.exit === 0 &&
+        status.fleet?.harnesses === 1 &&
+        Array.isArray(status.harnesses) &&
+        status.harnesses[0]?.project_name === "t" &&
+        status.harnesses[0]?.status_counts?.done === 1,
+      JSON.stringify(status).slice(0, 300),
+    );
+
+    // M21 — fleet_health returns per-harness signal lists and --strict plumbs
+    // through to the exit code (1 exactly when signals are present). Which
+    // signals fire depends on the skill version vs the unsealed fixture
+    // (BEHIND), so the case asserts the exit/total_signals contract rather
+    // than specific signals — that part is not deterministic in the fixture.
+    const health = mcp.fleetHealth();
+    const healthStrict = mcp.fleetHealth(true);
+    check(
+      "fleet_health reports signals and --strict drives the exit code",
+      health.exit === 0 &&
+        Array.isArray(health.harnesses) &&
+        health.harnesses[0]?.project_name === "t" &&
+        Array.isArray(health.harnesses[0]?.signals) &&
+        typeof health.total_signals === "number" &&
+        healthStrict.exit === (healthStrict.total_signals > 0 ? 1 : 0),
+      `exit=${health.exit} strict_exit=${healthStrict.exit} total=${health.total_signals}`,
+    );
+
+    // M22 — fleet_timeline merges the closure chronology: M4's close of 'a'
+    // is the single dated entry in the fixture history.
+    const timeline = mcp.fleetTimeline();
+    check(
+      "fleet_timeline returns the merged closure chronology",
+      timeline.exit === 0 &&
+        timeline.total === 1 &&
+        Array.isArray(timeline.entries) &&
+        timeline.entries[0]?.feature === "a" &&
+        timeline.entries[0]?.feature_id === 1 &&
+        timeline.entries[0]?.source === "history",
+      JSON.stringify(timeline).slice(0, 300),
+    );
+
+    fs.rmSync(HROOT2, { recursive: true, force: true });
   }
 
   fs.rmSync(ROOT, { recursive: true, force: true });

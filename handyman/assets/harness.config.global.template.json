@@ -20,7 +20,7 @@
   },
   "discovery": {
     "skills": [],
-    "mcp": [],
+    "mcp": ["handyman"],
     "agents": []
   },
   "post_run": []

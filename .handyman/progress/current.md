@@ -3,7 +3,7 @@ type: Session Log
 feature: none
 status: idle
 role: leader
-updated: 2026-07-21
+updated: 2026-07-24
 tags: [handyman/session/current]
 ---
 

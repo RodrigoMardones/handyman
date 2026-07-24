@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "handyman": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "handyman-harness@3", "mcp"]
+    }
+  }
+}

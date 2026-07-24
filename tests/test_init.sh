@@ -653,4 +653,70 @@ else
 fi
 rm -rf "$T29"
 
+# --- T30: scaffold creates .vscode/mcp.json with the handyman server ----------
+start_case "scaffold creates .vscode/mcp.json with the handyman server entry"
+T30="$(mktemp -d)"
+"$SUITE_DIR/../handyman/scripts/scaffold.sh" local "$T30" demo >/dev/null 2>&1
+if [ -f "$T30/.vscode/mcp.json" ] \
+  && [ "$(_json "$T30/.vscode/mcp.json" str servers.handyman.type 2>/dev/null)" = "stdio" ] \
+  && [ "$(_json "$T30/.vscode/mcp.json" str servers.handyman.command 2>/dev/null)" = "npx" ] \
+  && [ "$(_json "$T30/.vscode/mcp.json" str servers.handyman.args.1 2>/dev/null)" = "handyman-harness@3" ]; then
+  pass
+else
+  fail "expected .vscode/mcp.json with the handyman server under $T30"
+fi
+rm -rf "$T30"
+
+# --- T31: pre-existing .vscode/mcp.json is kept and NOTE'd --------------------
+start_case "scaffold keeps a pre-existing .vscode/mcp.json and prints a NOTE"
+T31="$(mktemp -d)"
+mkdir -p "$T31/.vscode"
+cat > "$T31/.vscode/mcp.json" <<'JSON'
+{
+  "servers": {
+    "other": { "type": "stdio", "command": "other" }
+  }
+}
+JSON
+BEFORE="$(cat "$T31/.vscode/mcp.json")"
+OUT="$("$SUITE_DIR/../handyman/scripts/scaffold.sh" local "$T31" demo 2>&1)"
+if [ "$(cat "$T31/.vscode/mcp.json")" = "$BEFORE" ] \
+  && printf '%s' "$OUT" | grep -q "NOTE" \
+  && printf '%s' "$OUT" | grep -q "add the handyman server"; then
+  pass
+else
+  fail "file changed or NOTE missing: $OUT"
+fi
+rm -rf "$T31"
+
+# --- T32: generated harness.config.json declares handyman (both scopes) -------
+start_case "scaffold declares handyman in discovery.mcp (local and global)"
+T32="$(mktemp -d)"
+mkdir -p "$T32/local" "$T32/global"
+"$SUITE_DIR/../handyman/scripts/scaffold.sh" local "$T32/local" demo >/dev/null 2>&1
+HANDYMAN_ROOT="$T32/handyman-root" "$SUITE_DIR/../handyman/scripts/scaffold.sh" global "$T32/global" demo >/dev/null 2>&1
+if [ "$(_json "$T32/local/harness.config.json" str discovery.mcp.0 2>/dev/null)" = "handyman" ] \
+  && [ "$(_json "$T32/global/harness.config.json" str discovery.mcp.0 2>/dev/null)" = "handyman" ]; then
+  pass
+else
+  fail "expected discovery.mcp[0]=handyman in both scopes"
+fi
+rm -rf "$T32"
+
+# --- T33: pre-existing harness.config.json is kept and the declare NOTE printed
+start_case "scaffold keeps a pre-existing harness.config.json and NOTEs the declare fallback"
+T33="$(mktemp -d)"
+cat > "$T33/harness.config.json" <<'JSON'
+{ "install_mode": "local", "project_name": "demo", "project_root": ".", "harness_workspace": ".handyman" }
+JSON
+BEFORE="$(cat "$T33/harness.config.json")"
+OUT="$("$SUITE_DIR/../handyman/scripts/scaffold.sh" local "$T33" demo 2>&1)"
+if [ "$(cat "$T33/harness.config.json")" = "$BEFORE" ] \
+  && printf '%s' "$OUT" | grep -q "tools_discovery.js declare mcp handyman"; then
+  pass
+else
+  fail "config changed or declare NOTE missing: $OUT"
+fi
+rm -rf "$T33"
+
 summary
