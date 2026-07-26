@@ -82,7 +82,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v8
+        # setup-uv publishes full-version tags only (no floating v9 major tag).
+        uses: astral-sh/setup-uv@v9.0.0
 
       - name: Scan the handyman skill
         # Scans the skill the same way skills.sh does on publish. Needs the
