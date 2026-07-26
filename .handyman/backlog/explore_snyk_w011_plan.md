@@ -126,7 +126,11 @@ Container 100 — [usage settings](https://docs.snyk.io/platform-administration/
 holgados para escanear una skill ocasionalmente. Los planes pagos (Team ~US$25/usuario/mes)
 apuntan a equipos y monitoreo centralizado (Evo); innecesarios aquí.
 
-**Integración CI sugerida (advisory, no gating):**
+**Integración CI (implementada 2026-07-26):** el job `snyk-agent-scan` vive en
+`.github/workflows/ci.yml` — advisory (`continue-on-error: true`), checkout +
+`astral-sh/setup-uv@v8` + `uvx snyk-agent-scan@latest handyman/SKILL.md`, con skip
+silencioso cuando `SNYK_TOKEN` no está disponible (PRs de fork). Requiere crear el
+secreto `SNYK_TOKEN` en Settings → Secrets and variables → Actions. Referencia:
 
 ```yaml
 - name: Snyk agent-scan (skills)
