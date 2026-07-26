@@ -764,4 +764,32 @@ else
 fi
 rm -rf "$F38"
 
+# --- F39: session verbs warn when the checked-out branch differs --------------
+# The workspace is shared across branches of a checkout: a session opened on
+# branch-a must not be mutated silently from branch-b. The advisory mirrors
+# the validate_harness NOTE at the moment of mutation and never blocks.
+start_case "log/done: warn when the session belongs to another branch, silent when it matches"
+F39="$(mktemp -d)"
+write_harness "$F39"
+write_verifier "$F39/pass.sh" 0
+git -C "$F39" init -q -b branch-a 2>/dev/null || {
+  git -C "$F39" init -q && git -C "$F39" checkout -q -b branch-a
+}
+node "$FEATURE" --root "$F39" start a --no-preflight >/dev/null 2>&1
+git -C "$F39" checkout -q -b branch-b
+LOG_OUT="$(node "$FEATURE" --root "$F39" log "line from branch-b" 2>&1)"; LOG_CODE=$?
+DONE_OUT="$(node "$FEATURE" --root "$F39" "done" a --verifier "$F39/pass.sh" 2>&1)"; DONE_CODE=$?
+# after the close resets the session, a fresh start+log on branch-b must NOT warn
+node "$FEATURE" --root "$F39" start b --no-preflight >/dev/null 2>&1
+SAME_OUT="$(node "$FEATURE" --root "$F39" log "same branch" 2>&1)"
+if [ "$LOG_CODE" -eq 0 ] && [ "$DONE_CODE" -eq 0 ] \
+  && printf '%s' "$LOG_OUT" | grep -q "WARN: session belongs to branch 'branch-a' but 'branch-b' is checked out" \
+  && printf '%s' "$DONE_OUT" | grep -q "WARN: session belongs to branch 'branch-a' but 'branch-b' is checked out" \
+  && ! printf '%s' "$SAME_OUT" | grep -q "WARN: session belongs"; then
+  pass
+else
+  fail "log=[$LOG_OUT] done=[$DONE_OUT] same-branch=[$SAME_OUT]"
+fi
+rm -rf "$F39"
+
 summary

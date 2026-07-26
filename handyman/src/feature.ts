@@ -397,6 +397,25 @@ function sessionBranch(workspace: string): string | null {
 }
 
 /**
+ * Advisory fired by the session-mutating verbs when the checked-out branch
+ * differs from the one the session recorded in current.md. The workspace is
+ * shared across every branch of a checkout, so without the warning the
+ * mutation lands silently on another line of work's session state. This is
+ * the validate_harness NOTE moved to the moment of mutation. It never blocks:
+ * git worktree is the supported answer for parallel branches.
+ */
+function warnBranchMismatch(root: string, workspace: string): void {
+  const recorded = sessionBranch(workspace);
+  const actual = gitBranch(root);
+  if (recorded && actual && recorded !== actual) {
+    process.stderr.write(
+      `WARN: session belongs to branch '${recorded}' but '${actual}' is checked out - ` +
+        `the change lands on that branch's session; use a git worktree for parallel work.\n`,
+    );
+  }
+}
+
+/**
  * The review verdict for a feature, read from the reviewer's own file.
  *
  * `done` used to assert `APPROVED` unconditionally, which put a claim the
@@ -568,7 +587,8 @@ interface CommonArgs {
   date: string | null;
 }
 
-function cmdLog(args: CommonArgs & { line: string }, workspace: string): number {
+function cmdLog(args: CommonArgs & { line: string }, workspace: string, root: string): number {
+  warnBranchMismatch(root, workspace);
   const [current, text] = currentText(workspace);
   if (text === null || current === null) {
     return err("progress/current.md not found");
@@ -583,7 +603,8 @@ function cmdLog(args: CommonArgs & { line: string }, workspace: string): number 
   return 0;
 }
 
-function cmdNext(args: CommonArgs & { step: string }, workspace: string): number {
+function cmdNext(args: CommonArgs & { step: string }, workspace: string, root: string): number {
+  warnBranchMismatch(root, workspace);
   const [current, text] = currentText(workspace);
   if (text === null || current === null) {
     return err("progress/current.md not found");
@@ -624,7 +645,6 @@ function archivedIds(workspace: string): Set<number> {
   }
   return ids;
 }
-
 
 function unmetDeps(feature: Feature, features: Feature[], archived: Set<number>): number[] {
   const byId = new Map<number, Feature>();
@@ -731,6 +751,7 @@ function cmdStart(
   if (!args.noPreflight) {
     runPreflight(root);
   }
+  warnBranchMismatch(root, workspace);
   const [data, path] = load(workspace);
   const features = (data.features as Feature[] | undefined) ?? [];
   const feature = find(features, args.name);
@@ -916,6 +937,7 @@ function cmdDone(
   if (feature === undefined) {
     return err(`feature '${args.name}' not found`);
   }
+  warnBranchMismatch(root, workspace);
 
   const verifier = args.verifier ? args.verifier : join(root, "init.sh");
   if (!isFile(verifier)) {
@@ -982,7 +1004,6 @@ function appendFileSync(path: string, text: string): void {
   const existing = isFile(path) ? readTextUniversal(path) : "";
   writeFileSync(path, existing + text, "utf-8");
 }
-
 
 // --- argparse-compatible CLI -------------------------------------------------
 
@@ -1631,9 +1652,9 @@ function dispatch(args: ParsedArgs, workspace: string, root: string): number {
       case "ready":
         return cmdReady({ json: args.json ?? false }, workspace);
       case "log":
-        return cmdLog({ line: args.line!, date: args.date ?? null }, workspace);
+        return cmdLog({ line: args.line!, date: args.date ?? null }, workspace, root);
       case "next":
-        return cmdNext({ step: args.step!, date: args.date ?? null }, workspace);
+        return cmdNext({ step: args.step!, date: args.date ?? null }, workspace, root);
       default:
         return 2;
     }

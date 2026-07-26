@@ -17,21 +17,48 @@
  *   feature_next_step   set the next step to resume on (feature.js next)
  *   feature_block       mark the active feature blocked (feature.js block)
  *   feature_unblock     return a blocked feature to pending (feature.js unblock)
- *   feature_acceptance  rewrite a feature's acceptance list (feature.js acceptance)
+ *   feature_acceptance  rewrite a feature's acceptance list (feature.js acceptance);
+ *                       the --force override on a done feature is gated by human
+ *                       confirmation (elicitation, or confirm:true as fallback)
  *   backlog_review      stamp the reviewer's verdict (backlog.js review --status)
- *   feature_close       verifier-gated close (feature.js done)
+ *   feature_close       verifier-gated close (feature.js done), blocking
+ *   feature_close_async detached verifier-gated close: returns task_id at once,
+ *                       poll with task_result (state lives in <workspace>/run/)
+ *   task_result         poll a detached task by id; reconciles from the feature
+ *                       state machine if the server died mid-run
  *   report_write        impl_/review_/explore_ report into <workspace>/backlog/
  *   verify              run the project verifier (init.sh) and report the exit
  *   sprint_status       open period + its features (sprint.js status, read-only)
+ *   sprint_close        period close gated by human confirmation: dry-run preview
+ *                       first, execute only after elicitation/confirm accepts
+ *   handoff_submit      record a role-to-role artifact handoff (disk queue in
+ *                       <workspace>/handoffs/, pending ones surface in /resume)
+ *   handoff_claim       claim the oldest pending handoff for a role
  *   upgrade_check       harness version drift (upgrade_harness.js --check, read-only)
  *   metrics             derived workflow snapshot (metrics.js --json, read-only)
  *   fleet_status        registry-wide live report (toolbox.js status --json, read-only)
  *   fleet_health        derived fleet signals (toolbox.js health --json, read-only)
  *   fleet_timeline      merged fleet closure chronology (toolbox.js timeline --json, read-only)
  *
+ * Transports
+ *   stdio (default)     node dist/mcp.js
+ *   Streamable HTTP     node dist/mcp.js --http [--host 127.0.0.1] [--port 8177]
+ *                       stateful sessions via Mcp-Session-Id (one McpServer per
+ *                       session), unknown session ids get a 404 so the client
+ *                       re-initializes per spec; DNS-rebinding protection on.
+ *                       Loopback only: no auth layer — front it if you expose it.
+ *
  * Resources
  *   handyman://{project}/current      progress/current.md
  *   handyman://{project}/docs/{doc}   files under <workspace>/docs/
+ *   handyman://{project}/resume       one-call restart briefing (branch check,
+ *                                     session, queue, history tail, memory index)
+ *
+ * Prompts
+ *   role_leader / role_implementer / role_reviewer / role_explorer
+ *                                     the role protocol from assets/role-*.template.md
+ *                                     with the invocation context (project, feature)
+ *                                     resolved and appended.
  *
  * Every tool accepts `project`: a registered harness name (directory basename
  * in the registry), an absolute project root, or omitted for the server's cwd.
@@ -39,15 +66,27 @@
  * fleet_timeline) take no `project` — they read $HANDYMAN_ROOT.
  */
 
-import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execFileSync, spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import {
+  closeSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { createServer } from "node:http";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { handymanRoot, loadRegistry } from "@handyman/toolbox-core/registry";
 import { resolveDocsDir, resolveWorkspace } from "@handyman/toolbox-core/workspace";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
 const DIST_DIR = dirname(fileURLToPath(import.meta.url));
@@ -342,6 +381,447 @@ export function fleetTimeline(): Record<string, unknown> {
   return parseJsonResult(runToolbox(["timeline", "--json"]));
 }
 
+// --- resume briefing (P1: session restart in one read) -----------------------
+
+/** The current git branch of the project root, or null outside a repo. */
+export function gitBranch(root: string): string | null {
+  try {
+    const out = execFileSync("git", ["symbolic-ref", "--short", "-q", "HEAD"], {
+      cwd: root,
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const branch = out.trim();
+    return branch.length > 0 ? branch : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The branch the active session recorded in current.md (mirrors feature.ts sessionBranch). */
+function sessionBranch(workspace: string): string | null {
+  const current = join(workspace, "progress", "current.md");
+  if (!existsSync(current)) {
+    return null;
+  }
+  for (const line of readFileSync(current, "utf-8").split("\n")) {
+    const stripped = line.trim();
+    if (stripped.startsWith("- **Branch:**")) {
+      const value = stripped.slice("- **Branch:**".length).trim();
+      return value && value !== "_-_" ? value : null;
+    }
+  }
+  return null;
+}
+
+const RESUME_HISTORY_ENTRIES = 5;
+
+/**
+ * The session-restart briefing as a single markdown document. Starting a
+ * session used to mean orchestrating five reads by hand (AGENTS.md, feature
+ * queue, current.md, history, memory index); this composes the harness-owned
+ * slice of that context in one call. Memory bodies stay out on purpose — the
+ * index says what exists, the docs/* resource reads what is relevant.
+ */
+export function buildResume(project: Project): string {
+  const out: string[] = [`# Resume — ${project.name}`, ""];
+
+  const actual = gitBranch(project.root);
+  const recorded = sessionBranch(project.workspace);
+  out.push("## Branch", "");
+  out.push(`- checked out: ${actual ?? "(none / not a repo)"}`);
+  out.push(`- session recorded: ${recorded ?? "(none)"}`);
+  if (recorded && actual && recorded !== actual) {
+    out.push(
+      `- **MISMATCH**: the session belongs to '${recorded}' but '${actual}' is checked out — ` +
+        `resume there, block the session, or use a git worktree.`,
+    );
+  }
+  out.push("");
+
+  const currentPath = join(project.workspace, "progress", "current.md");
+  out.push("## Active session (progress/current.md)", "");
+  out.push(existsSync(currentPath) ? readFileSync(currentPath, "utf-8").trim() : "(no session)");
+  out.push("");
+
+  out.push("## Queue", "");
+  const counts: Record<string, number> = {};
+  try {
+    const data = JSON.parse(
+      readFileSync(join(project.workspace, "feature_list.json"), "utf-8"),
+    ) as {
+      features?: { status?: string }[];
+    };
+    for (const f of data.features ?? []) {
+      const status = f.status ?? "unknown";
+      counts[status] = (counts[status] ?? 0) + 1;
+    }
+  } catch {
+    /* unreadable queue: counts stay empty */
+  }
+  out.push(
+    `- status counts: ${
+      Object.entries(counts)
+        .map(([status, n]) => `${status}=${n}`)
+        .join(", ") || "(unavailable)"
+    }`,
+  );
+  try {
+    const next = featureNext(project);
+    const names = (next.ready as { id?: number; name?: string }[]).map(
+      (f) => `${f.id ?? "?"}:${f.name ?? "?"}`,
+    );
+    out.push(
+      `- claimable now: ${names.join(", ") || (next.drained ? "(backlog drained)" : "(none)")}`,
+    );
+  } catch {
+    out.push("- claimable now: (unavailable)");
+  }
+  out.push("");
+
+  const pendingHandoffs = readHandoffs(project).filter((h) => h.status === "pending");
+  out.push("## Pending handoffs", "");
+  out.push(
+    pendingHandoffs.length > 0
+      ? pendingHandoffs
+          .map((h) => `- ${h.from} -> ${h.to}: ${h.artifact}${h.summary ? ` — ${h.summary}` : ""}`)
+          .join("\n")
+      : "(none)",
+  );
+  out.push("");
+
+  const historyPath = join(project.workspace, "progress", "history.md");
+  const entries = existsSync(historyPath)
+    ? readFileSync(historyPath, "utf-8")
+        .split(/(?=^## )/m)
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+    : [];
+  out.push(`## Recent history (last ${RESUME_HISTORY_ENTRIES} closures)`, "");
+  out.push(
+    entries.length > 0 ? entries.slice(-RESUME_HISTORY_ENTRIES).join("\n\n") : "(no history yet)",
+  );
+  out.push("");
+
+  const docsDir = resolveDocsDir(project.workspace);
+  let memory: string[] = [];
+  try {
+    memory = readdirSync(docsDir)
+      .filter((f) => f.endsWith(".md"))
+      .map((f) => `- ${f} (${statSync(join(docsDir, f)).size} B)`);
+  } catch {
+    /* project without memory dir */
+  }
+  out.push("## Memory index (read bodies via handyman://{project}/docs/{doc})", "");
+  out.push(memory.length > 0 ? memory.join("\n") : "(no memory files)");
+  out.push("");
+  return out.join("\n");
+}
+
+// --- role prompts (P1: role protocol as MCP prompts) -------------------------
+
+const ROLE_NAMES = ["leader", "implementer", "reviewer", "explorer"] as const;
+type RoleName = (typeof ROLE_NAMES)[number];
+
+interface RoleTemplate {
+  description: string;
+  body: string;
+}
+
+/**
+ * Read the canonical role protocol from the packaged assets (the same
+ * templates update_harness --sync renders into .github/agents/). The YAML
+ * frontmatter (model/tools for the agent host) is stripped; its description
+ * becomes the prompt's.
+ */
+function roleTemplate(role: RoleName): RoleTemplate {
+  const path = join(DIST_DIR, "..", "assets", `role-${role}.template.md`);
+  const text = readFileSync(path, "utf-8");
+  const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+  if (!match) {
+    return { description: `Handyman ${role} role protocol`, body: text.trim() };
+  }
+  const descLine = match[1]!.split("\n").find((l) => l.startsWith("description:"));
+  return {
+    description: descLine
+      ? descLine.slice("description:".length).trim()
+      : `Handyman ${role} role protocol`,
+    body: match[2]!.trim(),
+  };
+}
+
+// --- async tasks (P2: call-now, fetch-later) ---------------------------------
+//
+// `feature_close` pays the full verifier (lint+build+tests, up to 15 min) as a
+// blocking subprocess. The async variant detaches it: the tool call returns a
+// task_id immediately and the state lives in <workspace>/run/<task_id>.{json,
+// log} so it survives the server. When the server dies mid-run the exit
+// handler never fires, so task_result reconciles a stale "running" record
+// from the durable truth — the feature state machine (done means the gate
+// passed).
+
+const TASK_ID_PATTERN = /^[a-z0-9-]+$/;
+
+interface TaskRecord {
+  task_id: string;
+  kind: string;
+  feature?: string;
+  status: "running" | "completed" | "failed";
+  pid: number;
+  started_at: string;
+  finished_at?: string;
+  exit?: number;
+  reconciled?: boolean;
+  command: string[];
+}
+
+function taskDir(project: Project): string {
+  const dir = join(project.workspace, "run");
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+export function featureCloseAsync(
+  project: Project,
+  name: string,
+  verifier?: string,
+): { task_id: string; status: string; log: string; poll: string } {
+  const id = `close-${name}-${Date.now().toString(36)}`;
+  const dir = taskDir(project);
+  const log = join(dir, `${id}.log`);
+  const command = [
+    join(DIST_DIR, "feature.js"),
+    "--root",
+    project.root,
+    "done",
+    name,
+    ...(verifier ? ["--verifier", verifier] : []),
+  ];
+  const outFd = openSync(log, "a");
+  const child = spawn(process.execPath, command, {
+    cwd: project.root,
+    detached: true,
+    stdio: ["ignore", outFd, outFd],
+  });
+  closeSync(outFd);
+  const recordPath = join(dir, `${id}.json`);
+  const record: TaskRecord = {
+    task_id: id,
+    kind: "feature_close",
+    feature: name,
+    status: "running",
+    pid: child.pid ?? -1,
+    started_at: new Date().toISOString(),
+    command: [process.execPath, ...command],
+  };
+  writeFileSync(recordPath, JSON.stringify(record, null, 2), "utf-8");
+  child.on("exit", (code) => {
+    record.status = code === 0 ? "completed" : "failed";
+    record.exit = typeof code === "number" ? code : 1;
+    record.finished_at = new Date().toISOString();
+    try {
+      writeFileSync(recordPath, JSON.stringify(record, null, 2), "utf-8");
+    } catch {
+      /* workspace vanished mid-run */
+    }
+  });
+  child.unref();
+  return { task_id: id, status: "running", log, poll: `task_result { task_id: "${id}" }` };
+}
+
+function pidAlive(pid: number): boolean {
+  if (pid <= 0) {
+    return false;
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+export function taskResult(project: Project, taskId: string): Record<string, unknown> {
+  if (!TASK_ID_PATTERN.test(taskId)) {
+    throw new Error(`invalid task_id '${taskId}' (expected [a-z0-9-]+)`);
+  }
+  const dir = join(project.workspace, "run");
+  const recordPath = join(dir, `${taskId}.json`);
+  if (!existsSync(recordPath)) {
+    throw new Error(`unknown task '${taskId}' (no ${recordPath})`);
+  }
+  const record = JSON.parse(readFileSync(recordPath, "utf-8")) as TaskRecord;
+  if (record.status === "running" && !pidAlive(record.pid)) {
+    // The writer died with the server: reconcile from the feature state.
+    record.reconciled = true;
+    record.finished_at = new Date().toISOString();
+    let closed = false;
+    if (record.kind === "feature_close" && record.feature) {
+      try {
+        const data = JSON.parse(
+          readFileSync(join(project.workspace, "feature_list.json"), "utf-8"),
+        ) as { features?: { name?: string; status?: string }[] };
+        closed = (data.features ?? []).find((f) => f.name === record.feature)?.status === "done";
+      } catch {
+        /* unreadable queue: closed stays false */
+      }
+    }
+    record.status = closed ? "completed" : "failed";
+    record.exit = closed ? 0 : 1;
+    try {
+      writeFileSync(recordPath, JSON.stringify(record, null, 2), "utf-8");
+    } catch {
+      /* read-only workspace: report without persisting */
+    }
+  }
+  const logPath = join(dir, `${taskId}.log`);
+  const logTail = existsSync(logPath) ? readFileSync(logPath, "utf-8").slice(-4000) : "";
+  return {
+    ...record,
+    log_tail: logTail,
+    ...(record.kind === "feature_close" && record.status !== "running"
+      ? { closed: record.exit === 0 }
+      : {}),
+  };
+}
+
+// --- human confirmation for destructive verbs (P2: elicitation) ---------------
+
+type ConfirmOutcome =
+  | { decided: true; confirmed: boolean; via: "elicitation" | "param" }
+  | { decided: false };
+
+/**
+ * The human gate that lets a destructive verb live in the MCP. Preferred path
+ * is elicitation: the client asks the user mid-call and the tool acts on the
+ * answer. Clients that cannot elicit fall back to an explicit `confirm: true`
+ * argument — the tool never executes on the agent's say-so alone, and a call
+ * without either path returns the preview so the human can decide.
+ */
+async function confirmDestructive(
+  server: McpServer,
+  message: string,
+  confirmParam: boolean,
+): Promise<ConfirmOutcome> {
+  if (server.server.getClientCapabilities()?.elicitation) {
+    try {
+      const result = await server.server.elicitInput({
+        message,
+        requestedSchema: {
+          type: "object",
+          properties: {
+            confirm: { type: "boolean", title: "Confirm", description: "Execute the operation." },
+          },
+          required: ["confirm"],
+        },
+      });
+      return {
+        decided: true,
+        confirmed: result.action === "accept" && result.content?.confirm === true,
+        via: "elicitation",
+      };
+    } catch {
+      // Elicitation failed mid-call; fall through to the param path.
+    }
+  }
+  if (confirmParam) {
+    return { decided: true, confirmed: true, via: "param" };
+  }
+  return { decided: false };
+}
+
+function sprintCloseRun(project: Project, dryRun: boolean): RunResult {
+  return runCli("sprint.js", dryRun ? ["close", "--dry-run"] : ["close"], project);
+}
+
+// --- handoff queue (P3: structured role handoffs) -----------------------------
+//
+// The anti-telephone rule moves artifacts through backlog/ and chat carries
+// only short references; the handoff queue makes that pass-of-the-baton a
+// recorded state transition: who handed what artifact to which role, and when
+// it was claimed. One JSON file per handoff in <workspace>/handoffs/ — submit,
+// claim, done; no broker, same single-writer assumption as the workspace.
+
+const HANDOFF_ROLES = ["leader", "implementer", "reviewer", "explorer"] as const;
+type HandoffRole = (typeof HANDOFF_ROLES)[number];
+
+interface Handoff {
+  id: string;
+  from: HandoffRole;
+  to: HandoffRole;
+  artifact: string;
+  summary?: string;
+  status: "pending" | "claimed";
+  submitted_at: string;
+  claimed_at?: string;
+}
+
+function handoffDir(project: Project): string {
+  const dir = join(project.workspace, "handoffs");
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function readHandoffs(project: Project): Handoff[] {
+  let files: string[] = [];
+  try {
+    files = readdirSync(handoffDir(project));
+  } catch {
+    return [];
+  }
+  return files
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => {
+      try {
+        return JSON.parse(readFileSync(join(handoffDir(project), f), "utf-8")) as Handoff;
+      } catch {
+        return null;
+      }
+    })
+    .filter((h): h is Handoff => h !== null)
+    .sort((a, b) => a.submitted_at.localeCompare(b.submitted_at));
+}
+
+export function handoffSubmit(
+  project: Project,
+  from: HandoffRole,
+  to: HandoffRole,
+  artifact: string,
+  summary?: string,
+): Handoff {
+  const now = new Date().toISOString();
+  const id = `${now.replace(/[:.]/g, "-")}-${from}-to-${to}-` + `${randomUUID().slice(0, 8)}`;
+  const handoff: Handoff = {
+    id,
+    from,
+    to,
+    artifact,
+    ...(summary ? { summary } : {}),
+    status: "pending",
+    submitted_at: now,
+  };
+  writeFileSync(join(handoffDir(project), `${id}.json`), JSON.stringify(handoff, null, 2), "utf-8");
+  return handoff;
+}
+
+export function handoffClaim(
+  project: Project,
+  role: HandoffRole,
+): { claimed: boolean; handoff?: Handoff } {
+  const pending = readHandoffs(project).find((h) => h.to === role && h.status === "pending");
+  if (!pending) {
+    return { claimed: false };
+  }
+  pending.status = "claimed";
+  pending.claimed_at = new Date().toISOString();
+  writeFileSync(
+    join(handoffDir(project), `${pending.id}.json`),
+    JSON.stringify(pending, null, 2),
+    "utf-8",
+  );
+  return { claimed: true, handoff: pending };
+}
+
 // --- MCP surface -------------------------------------------------------------
 
 const projectField = z
@@ -389,14 +869,23 @@ function errorResult(e: unknown) {
 type Annotations = ToolAnnotations;
 type InputSchema = Record<string, z.ZodTypeAny>;
 
+/** Context handed to tool handlers that need the server itself (elicitation). */
+interface ToolContext {
+  server: McpServer;
+}
+
 interface ToolSpec {
   name: string;
   title: string;
   description: string;
   inputSchema: InputSchema;
   annotations?: Annotations;
-  /** Returns the structured payload (without `project`). */
-  run: (target: Project, input: Record<string, unknown>) => Record<string, unknown>;
+  /** Returns the structured payload (without `project`). May be async. */
+  run: (
+    target: Project,
+    input: Record<string, unknown>,
+    ctx: ToolContext,
+  ) => Record<string, unknown> | Promise<Record<string, unknown>>;
   /** Set false for project-agnostic tools (e.g. harness_list). Default true. */
   needsProject?: boolean;
 }
@@ -413,10 +902,10 @@ function registerTool(server: McpServer, spec: ToolSpec): void {
     async (input) => {
       try {
         if (spec.needsProject === false) {
-          return textResult(spec.run({} as Project, input));
+          return textResult(await spec.run({} as Project, input, { server }));
         }
         const target = resolveProject(input.project as string | undefined);
-        const payload = spec.run(target, input);
+        const payload = await spec.run(target, input, { server });
         return textResult({ project: target.name, ...payload });
       } catch (e) {
         return errorResult(e);
@@ -436,7 +925,11 @@ interface CliToolSpec {
   /** CLI args after the injected `--root <project.root>`. */
   args: (input: Record<string, unknown>) => string[];
   /** Override the default `{ ...runResult }` payload. */
-  format?: (result: RunResult, target: Project, input: Record<string, unknown>) => Record<string, unknown>;
+  format?: (
+    result: RunResult,
+    target: Project,
+    input: Record<string, unknown>,
+  ) => Record<string, unknown>;
 }
 
 function registerCliTool(server: McpServer, spec: CliToolSpec): void {
@@ -685,13 +1178,14 @@ export function buildServer(): McpServer {
     args: (input) => ["unblock", String(input.name)],
   });
 
-  registerCliTool(server, {
+  registerTool(server, {
     name: "feature_acceptance",
     title: "Rewrite a feature's acceptance list",
     description:
       "Replace a feature's acceptance criteria wholesale (feature.js acceptance). Refused on a done " +
-      "feature — the reviewed contract stays immutable; the --force override is deliberately NOT " +
-      "exposed here and stays on the CLI where the operator records it in history.md.",
+      "feature — the reviewed contract stays immutable. The --force override for that case IS exposed " +
+      "here but gated by human confirmation (elicitation, or confirm:true when the client cannot " +
+      "elicit): the override appends its own history.md entry, so the rewrite is a recorded fact.",
     inputSchema: {
       project: projectField,
       name: featureNameField,
@@ -699,6 +1193,16 @@ export function buildServer(): McpServer {
         .array(z.string().min(1))
         .min(1)
         .describe("The full new acceptance list; replaces the previous one."),
+      force: z
+        .boolean()
+        .default(false)
+        .describe(
+          "Rewrite the contract of a DONE feature (feature.js acceptance --force). Requires human confirmation.",
+        ),
+      confirm: z
+        .boolean()
+        .default(false)
+        .describe("Explicit confirmation for force when the client cannot elicit mid-call."),
     },
     annotations: {
       readOnlyHint: false,
@@ -706,13 +1210,32 @@ export function buildServer(): McpServer {
       idempotentHint: true,
       openWorldHint: false,
     },
-    script: "feature.js",
-    args: (input) => {
+    run: async (target, input, ctx) => {
       const argv = ["acceptance", String(input.name)];
       for (const line of (input.acceptance as string[] | undefined) ?? []) {
         argv.push("--acceptance", line);
       }
-      return argv;
+      if (input.force !== true) {
+        return { ...runCli("feature.js", argv, target) };
+      }
+      const decision = await confirmDestructive(
+        ctx.server,
+        `Rewrite the ACCEPTED contract of done feature '${String(input.name)}' via --force? ` +
+          `The rewrite lands in history.md and the signed review (backlog/review_${String(input.name)}.md) ` +
+          `attests to the previous contract.`,
+        input.confirm === true,
+      );
+      if (!decision.decided) {
+        return {
+          forced: false,
+          hint: "human confirmation required; re-call with confirm: true to execute the --force rewrite",
+        };
+      }
+      if (!decision.confirmed) {
+        return { forced: false, aborted: true, confirmed_via: decision.via };
+      }
+      argv.push("--force");
+      return { forced: true, confirmed_via: decision.via, ...runCli("feature.js", argv, target) };
     },
   });
 
@@ -783,6 +1306,56 @@ export function buildServer(): McpServer {
   });
 
   registerTool(server, {
+    name: "feature_close_async",
+    title: "Close a feature in the background (verifier-gated)",
+    description:
+      "The call-now, fetch-later variant of feature_close for the slow path: detaches feature.js done " +
+      "(which runs the full verifier, up to 15 min) and returns a task_id immediately. State lives in " +
+      "<workspace>/run/<task_id>.{json,log}, so it survives this server; poll with task_result. The " +
+      "verifier gate is unchanged — a red verifier still refuses the close, you just learn it later.",
+    inputSchema: {
+      project: projectField,
+      name: featureNameField,
+      verifier: z
+        .string()
+        .optional()
+        .describe("Absolute path to an alternative verifier script (default: <root>/init.sh)."),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+    run: (target, input) =>
+      featureCloseAsync(target, String(input.name), input.verifier as string | undefined),
+  });
+
+  registerTool(server, {
+    name: "task_result",
+    title: "Poll a background task",
+    description:
+      "Read the state of a task started by feature_close_async (or any future async verb) from " +
+      "<workspace>/run/<task_id>.json plus the tail of its log. A stale 'running' record whose " +
+      "process is gone (server died mid-run) is reconciled from the feature state machine: done " +
+      "means the verifier gate passed.",
+    inputSchema: {
+      project: projectField,
+      task_id: z
+        .string()
+        .regex(/^[a-z0-9-]+$/, "task_id must be [a-z0-9-]+")
+        .describe("The task_id returned by feature_close_async."),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    run: (target, input) => taskResult(target, String(input.task_id)),
+  });
+
+  registerTool(server, {
     name: "report_write",
     title: "Write a backlog report",
     description:
@@ -825,10 +1398,7 @@ export function buildServer(): McpServer {
       "green. Output is tail-truncated; the failing gate is always at the end. May take several minutes.",
     inputSchema: {
       project: projectField,
-      verifier: z
-        .string()
-        .optional()
-        .describe("Absolute path to an alternative verifier script."),
+      verifier: z.string().optional().describe("Absolute path to an alternative verifier script."),
     },
     annotations: {
       readOnlyHint: true,
@@ -848,9 +1418,8 @@ export function buildServer(): McpServer {
     description:
       "Read-only snapshot of the open work period (sprint.js status): the branch slug, open/close " +
       "timestamps when present, and every feature attached to it with its status. Safe to call anytime; " +
-      "does not touch disk. Deliberately does NOT expose `sprint open` or `sprint close` — those archive " +
-      "features, compact history, and derive the period doc, so they stay on the CLI where the operator " +
-      "runs them at branch milestones.",
+      "does not touch disk. `sprint open` stays CLI-only (branch milestone); `sprint close` is the " +
+      "sprint_close tool, gated by human confirmation.",
     inputSchema: { project: projectField },
     annotations: {
       readOnlyHint: true,
@@ -860,6 +1429,111 @@ export function buildServer(): McpServer {
     },
     script: "sprint.js",
     args: () => ["status"],
+  });
+
+  registerTool(server, {
+    name: "sprint_close",
+    title: "Close the open period (human-confirmed)",
+    description:
+      "Close the open work period (sprint.js close): archives done features, compacts their history.md " +
+      "entries, and derives memory/sprints/sprint.<id>.md. Because that is destructive, the call always " +
+      "runs the --dry-run preview first and executes only after explicit human confirmation — MCP " +
+      "elicitation when the client supports it, otherwise re-call with confirm: true after reviewing " +
+      "the preview. `sprint open` stays on the CLI by design.",
+    inputSchema: {
+      project: projectField,
+      confirm: z
+        .boolean()
+        .default(false)
+        .describe(
+          "Execute the close after reviewing the preview (fallback when the client cannot elicit mid-call).",
+        ),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+    run: async (target, input, ctx) => {
+      const preview = sprintCloseRun(target, true);
+      if (preview.exit !== 0) {
+        return { closed: false, ...preview, hint: "dry-run refused; nothing was written" };
+      }
+      const decision = await confirmDestructive(
+        ctx.server,
+        `sprint close will archive done features, compact history.md, and derive the period doc.\n\n` +
+          `Dry-run preview:\n${preview.output.slice(-3000)}\n\nExecute the close?`,
+        input.confirm === true,
+      );
+      if (!decision.decided) {
+        return {
+          closed: false,
+          preview: preview.output,
+          hint: "review the dry-run preview and re-call with confirm: true to execute",
+        };
+      }
+      if (!decision.confirmed) {
+        return { closed: false, aborted: true, confirmed_via: decision.via };
+      }
+      const applied = sprintCloseRun(target, false);
+      return { closed: applied.exit === 0, confirmed_via: decision.via, ...applied };
+    },
+  });
+
+  registerTool(server, {
+    name: "handoff_submit",
+    title: "Hand an artifact to another role",
+    description:
+      "Record a role-to-role handoff in <workspace>/handoffs/ — the structured form of the " +
+      "anti-telephone rule: the artifact travels by reference (e.g. backlog/impl_<feature>.md), " +
+      "never as a chat diff. The target role picks it up with handoff_claim; pending handoffs " +
+      "also surface in the resume briefing.",
+    inputSchema: {
+      project: projectField,
+      from: z.enum(HANDOFF_ROLES).describe("Role handing the work off."),
+      to: z.enum(HANDOFF_ROLES).describe("Role the work is addressed to."),
+      artifact: z
+        .string()
+        .min(1)
+        .describe("Reference to the artifact (path or URI), not its content."),
+      summary: z.string().optional().describe("One-line context for the receiver."),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+    run: (target, input) => ({
+      ...handoffSubmit(
+        target,
+        input.from as HandoffRole,
+        input.to as HandoffRole,
+        String(input.artifact),
+        input.summary as string | undefined,
+      ),
+    }),
+  });
+
+  registerTool(server, {
+    name: "handoff_claim",
+    title: "Claim the oldest pending handoff for a role",
+    description:
+      "Claim the oldest pending handoff addressed to `role`, marking it claimed on disk so a second " +
+      "claim never hands the same work twice (the handoff event becomes a fact in the workspace, " +
+      "like a feature state transition). claimed:false means the queue has nothing for that role.",
+    inputSchema: {
+      project: projectField,
+      role: z.enum(HANDOFF_ROLES).describe("Role claiming its next handoff."),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+    run: (target, input) => ({ ...handoffClaim(target, input.role as HandoffRole) }),
   });
 
   registerCliTool(server, {
@@ -1026,10 +1700,217 @@ export function buildServer(): McpServer {
     },
   );
 
+  server.registerResource(
+    "resume",
+    new ResourceTemplate("handyman://{project}/resume", {
+      list: async () => ({
+        resources: listHarnesses().map((h) => ({
+          uri: `handyman://${h.name}/resume`,
+          name: `${h.name} resume briefing`,
+          mimeType: "text/markdown",
+        })),
+      }),
+    }),
+    {
+      title: "Session resume briefing",
+      description:
+        "One-call session restart: branch check, active session, feature queue, recent history, memory index.",
+      mimeType: "text/markdown",
+    },
+    async (uri, { project }) => {
+      const target = resolveProject(String(project));
+      return {
+        contents: [{ uri: uri.href, mimeType: "text/markdown", text: buildResume(target) }],
+      };
+    },
+  );
+
+  for (const role of ROLE_NAMES) {
+    const template = roleTemplate(role);
+    server.registerPrompt(
+      `role_${role}`,
+      {
+        title: `Handyman ${role} role`,
+        description: template.description,
+        argsSchema: {
+          project: z
+            .string()
+            .optional()
+            .describe(
+              "Registered harness name or absolute project root (omit for the server's cwd).",
+            ),
+          feature: z
+            .string()
+            .optional()
+            .describe("Feature name to work on (from feature_list.json)."),
+        },
+      },
+      (args) => {
+        const context: string[] = [];
+        try {
+          const target = resolveProject(args.project);
+          context.push(
+            `- PROJECT_ROOT: ${target.root}`,
+            `- HARNESS_WORKSPACE: ${target.workspace}`,
+          );
+        } catch {
+          context.push("- (project unresolved: resolve HARNESS_WORKSPACE per AGENTS.md)");
+        }
+        if (args.feature) {
+          context.push(`- Feature: ${args.feature}`);
+        }
+        const text = `${template.body}\n\n## Invocation context\n${context.join("\n")}\n`;
+        return { messages: [{ role: "user" as const, content: { type: "text" as const, text } }] };
+      },
+    );
+  }
+
   return server;
 }
 
+// --- Streamable HTTP transport (P2: multi-client stateful sessions) ----------
+
+const DEFAULT_HTTP_PORT = 8177;
+
+interface HttpArgs {
+  http: boolean;
+  host: string;
+  port: number;
+}
+
+function parseHttpArgs(argv: string[]): HttpArgs {
+  let http = false;
+  let host = "127.0.0.1";
+  let port = DEFAULT_HTTP_PORT;
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i]!;
+    if (arg === "--http") {
+      http = true;
+    } else if (arg === "--host") {
+      host = argv[++i] ?? host;
+    } else if (arg.startsWith("--host=")) {
+      host = arg.slice("--host=".length);
+    } else if (arg === "--port") {
+      port = Number(argv[++i]);
+    } else if (arg.startsWith("--port=")) {
+      port = Number(arg.slice("--port=".length));
+    }
+  }
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    process.stderr.write(`invalid --port (expected 0-65535)\n`);
+    process.exit(2);
+  }
+  return { http, host, port };
+}
+
+/**
+ * Stateful Streamable HTTP mode: one McpServer+transport per Mcp-Session-Id.
+ * The state that matters (features, session, history) lives on disk, so the
+ * per-session server instances are disposable coordinators, not state owners.
+ * Unknown session ids get a 404 — per spec the client then re-initializes.
+ * Binds loopback by default and enforces DNS-rebinding protection; there is
+ * no auth layer, so a non-loopback bind needs a fronting proxy that adds one.
+ */
+async function runHttp(host: string, port: number): Promise<void> {
+  const sessions = new Map<string, { transport: StreamableHTTPServerTransport }>();
+  let allowedHosts: string[] = [];
+  let allowedOrigins: string[] = [];
+
+  const httpServer = createServer((req, res) => {
+    void (async () => {
+      const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+      if (url.pathname !== "/mcp") {
+        res
+          .writeHead(404, { "content-type": "application/json" })
+          .end(JSON.stringify({ error: "not found; the MCP endpoint is /mcp" }));
+        return;
+      }
+      const sessionId = req.headers["mcp-session-id"];
+      const sessionKey = Array.isArray(sessionId) ? sessionId[0] : sessionId;
+      if (sessionKey) {
+        const session = sessions.get(sessionKey);
+        if (!session) {
+          // Spec: an unknown session id is a 404, and the client MUST start a
+          // new session (initialize without the dead id).
+          res.writeHead(404, { "content-type": "application/json" }).end(
+            JSON.stringify({
+              jsonrpc: "2.0",
+              error: { code: -32001, message: "session not found; re-initialize" },
+              id: null,
+            }),
+          );
+          return;
+        }
+        await session.transport.handleRequest(req, res);
+        return;
+      }
+      if (req.method !== "POST") {
+        res
+          .writeHead(400, { "content-type": "application/json" })
+          .end(JSON.stringify({ error: "GET/DELETE require an Mcp-Session-Id header" }));
+        return;
+      }
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (id) => {
+          sessions.set(id, { transport });
+          console.error(`handyman-mcp-server session initialized: ${id} (${sessions.size} active)`);
+        },
+        onsessionclosed: (id) => {
+          sessions.delete(id);
+          console.error(`handyman-mcp-server session closed: ${id} (${sessions.size} active)`);
+        },
+        enableDnsRebindingProtection: true,
+        allowedHosts,
+        allowedOrigins,
+      });
+      transport.onclose = () => {
+        if (transport.sessionId) {
+          sessions.delete(transport.sessionId);
+        }
+      };
+      const server = buildServer();
+      await server.connect(transport);
+      await transport.handleRequest(req, res);
+    })().catch((e) => {
+      if (!res.headersSent) {
+        res.writeHead(500, { "content-type": "application/json" });
+      }
+      res.end(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }));
+    });
+  });
+
+  await new Promise<void>((resolveListen, rejectListen) => {
+    httpServer.once("error", rejectListen);
+    httpServer.listen(port, host, resolveListen);
+  });
+  const address = httpServer.address();
+  const boundPort = typeof address === "object" && address !== null ? address.port : port;
+  allowedHosts = [
+    ...new Set([`${host}:${boundPort}`, `localhost:${boundPort}`, `127.0.0.1:${boundPort}`]),
+  ];
+  allowedOrigins = [
+    ...new Set([
+      `http://${host}:${boundPort}`,
+      `http://localhost:${boundPort}`,
+      `http://127.0.0.1:${boundPort}`,
+      `https://${host}:${boundPort}`,
+      `https://localhost:${boundPort}`,
+      `https://127.0.0.1:${boundPort}`,
+    ]),
+  ];
+  console.error(
+    `handyman-mcp-server listening on http://${host}:${boundPort}/mcp ` +
+      `(streamable HTTP, stateful sessions, loopback-only)`,
+  );
+}
+
 async function main(): Promise<void> {
+  const args = parseHttpArgs(process.argv.slice(2));
+  if (args.http) {
+    await runHttp(args.host, args.port);
+    return;
+  }
   const server = buildServer();
   await server.connect(new StdioServerTransport());
   console.error("handyman-mcp-server running on stdio");

@@ -25,7 +25,7 @@ A feature moves through seven stages (0-6), and a work period closes with one mo
 | 4 | Verification | `verify` (MCP wraps the verifier; local fallback `./init.sh`) | exit code and suite counts | runs until green |
 | 5 | Review | `backlog_review` (MCP; fallback `npx handyman-harness@3 backlog review`) | `review_<feature>.md` frontmatter `status:` | first-pass approval rate |
 | 6 | Closure | `feature_close` (MCP; fallback `npx handyman-harness@3 feature done`) | dated heading in `progress/history.md` | throughput per date |
-| 7 | Period close | `npx handyman-harness@3 sprint close` (CLI-only; destructive period verbs stay out of the MCP — [mcp.md](./mcp.md)) | `memory/sprints/sprint.<id>.md` | features and tools per sprint |
+| 7 | Period close | `sprint_close` (MCP, human-confirmed; fallback `npx handyman-harness@3 sprint close`) | `memory/sprints/sprint.<id>.md` | features and tools per sprint |
 
 The protocols below walk these stages role by role.
 
@@ -152,7 +152,7 @@ Keep `npx handyman-harness@3 preflight --strict` in the loop's CI so drift stops
 
 ## Sprint Protocol
 
-A sprint is a work period: a declared partition label on features, opened and closed deterministically by `npx handyman-harness@3 sprint` (stage 7 in the table above) — deliberately CLI-only, since the destructive period verbs stay out of the MCP (see [mcp.md](./mcp.md)). The label says which period a feature belongs to — it is not a date, and the contract stays a four-state machine; everything in the sprint document is derived at close time from the artifacts stages 0-6 already left on disk.
+A sprint is a work period: a declared partition label on features, opened and closed deterministically by `npx handyman-harness@3 sprint` (stage 7 in the table above). The open stays CLI-only (a branch milestone); the close is also exposed as the `sprint_close` MCP tool, gated by human confirmation (dry-run preview first, elicitation or `confirm:true` to execute — see [mcp.md](./mcp.md)). The label says which period a feature belongs to — it is not a date, and the contract stays a four-state machine; everything in the sprint document is derived at close time from the artifacts stages 0-6 already left on disk.
 
 1. **Open** — `npx handyman-harness@3 sprint open <id>` (id format `2026-SP1`): stamps every unlabeled `pending`/`in_progress` feature with the sprint label, records `current_sprint` in `harness.config.json` (mirrored to the `feature_list.json` config block), and rejects a second open sprint.
 2. **Work** — features flow through stages 0-6 unchanged. `feature_add` (MCP; fallback `npx handyman-harness@3 feature add`) during the sprint leaves new features unlabeled; re-running `open` is not needed — label membership is decided at open time, and unlabeled features simply carry over to the next period. Unreviewed period notes live in `progress/` (the `docs/current/` folder was retired with the memory layout).
