@@ -180,6 +180,23 @@
         "started_at": "2026-07-24T02:43:38.088Z",
         "done_at": "2026-07-24T05:00:10.064Z"
       }
+    },
+    {
+      "id": 86,
+      "name": "research_two_topics_token_related",
+      "title": "Investigacion de topicos asociados al consumo y uso de tokens",
+      "description": "Investigacion (tipo Doc) de tres topicos: (1) impacto en tokens de handyman como skill y tamano ideal de tokens para SKILL.md, references, scripts y demas archivos de la skill; (2) estimado de tokens de entrada/salida generados por feature como metrica permanente, aplicable con cualquier modelo utilizado; (3) viabilidad de una descarga sugerida de skills usando find-skills (npx skills add https://github.com/vercel-labs/skills --skill find-skills). Entregables: reportes explore_ por topico en backlog/, documento consolidado en docs/ con plan de accion de mejoras, y registro del resultado real del comando de instalacion.",
+      "acceptance": [
+        "Existen reportes .handyman/backlog/explore_<topico>.md para los 3 topicos (tamano de tokens de la skill, metricas de tokens por feature, instalacion sugerida via find-skills), cada uno con al menos 2 fuentes externas citadas con URL y >=4 fuentes distintas en total",
+        "docs/analisis-tokens-consumo-y-metricas.md consolida los 3 topicos con mediciones reales de la skill y un plan de accion de mejoras por campo",
+        "La investigacion documenta el resultado real de ejecutar el comando npx skills add (exito/duplicado/error) y una recomendacion sobre declarar find-skills en discovery",
+        "./init.sh exits 0"
+      ],
+      "status": "in_progress",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-27T02:53:53.938Z"
+      }
     }
   ]
 }
