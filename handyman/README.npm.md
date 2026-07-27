@@ -17,10 +17,16 @@ executable verification gate before any feature is marked done.
 
 ## What it gives you
 
-- **13 verbs** (CLI) and **20 tools** (MCP) over the same `dist/*.js` code —
+- **13 verbs** (CLI) and **25 tools** (MCP) over the same `dist/*.js` code —
   zero second source of truth. `feature_close` inherits the verifier gate
   from `feature.js done`, so a close without a green verifier is refused by
   the subprocess, not by convention.
+- **Session workflow**: the `handyman://{project}/resume` resource restarts
+  work in one read (branch check, active session, queue, handoffs, history
+  tail, memory index), `role_*` prompts adopt a role from any client,
+  `feature_close_async`/`task_result` offload the slow verifier, and
+  destructive verbs (`sprint_close`, `acceptance --force`) run only behind
+  human confirmation (MCP elicitation or `confirm:true`).
 - **Atomic feature-state machine** (`pending` / `in_progress` / `done` /
   `blocked`) so agents never hand-edit `feature_list.json`.
 - **Multi-repo fleet**: reads `$HANDYMAN_ROOT/registry.json` (default
@@ -77,7 +83,7 @@ Each verb accepts `--help` and prints a `status: ok|warn|error` tail line
 | `metrics` | Per-harness derived snapshot (status counts, throughput, approval rate). |
 | `evals` | Run / list the bundled skill evals. |
 | `toolbox` | Fleet: `register` / `unregister` / `list` / `discover` / `status` / `health` / `timeline` / `serve`. |
-| `mcp` | Start the stdio MCP server (see below). |
+| `mcp` | Start the MCP server: stdio (default) or Streamable HTTP (`--http`). |
 
 Typical loop inside a harness project:
 
@@ -90,8 +96,11 @@ npx handyman-harness@3 feature done <name>  # refused unless verifier exits 0
 
 ## MCP server
 
-Thin stdio wrapper — 20 tools + 2 resources — over the same CLIs. Any MCP
-client gets the full feature cycle without the skill installed.
+Thin wrapper — 25 tools + 3 resources + 4 role prompts — over the same CLIs,
+served over stdio (default) or Streamable HTTP (`--http [--host] [--port]`:
+stateful `Mcp-Session-Id` sessions, unknown ids get a 404 so the client
+re-initializes, DNS-rebinding protection, loopback-only). Any MCP client gets
+the full feature cycle without the skill installed.
 
 Connect from the published package (no checkout):
 
@@ -116,11 +125,14 @@ or in VS Code `.vscode/mcp.json`:
 Every tool accepts `project` (a registered name, an absolute root, or omitted
 for cwd). Highlights: `feature_next` / `feature_add` / `feature_start` /
 `feature_log` / `feature_next_step` / `feature_block` / `feature_unblock` /
-`feature_acceptance` / `feature_close` (verifier-gated), `backlog_review`,
-`report_write`, `verify`, `preflight`, `metrics`, `sprint_status`,
-`upgrade_check`, `harness_list`, `fleet_status`, `fleet_health`,
-`fleet_timeline`. Resources: `handyman://{project}/current`,
-`handyman://{project}/docs/{doc}`. Full table in
+`feature_acceptance` / `feature_close` (verifier-gated) plus the background
+`feature_close_async` / `task_result` pair, `backlog_review`, `report_write`,
+`verify`, `preflight`, `metrics`, `sprint_status`, `sprint_close`
+(human-confirmed), `handoff_submit` / `handoff_claim`, `upgrade_check`,
+`harness_list`, `fleet_status`, `fleet_health`, `fleet_timeline`. Resources:
+`handyman://{project}/current`, `handyman://{project}/resume` (one-call
+restart briefing), `handyman://{project}/docs/{doc}`. Prompts: `role_leader`
+/ `role_implementer` / `role_reviewer` / `role_explorer`. Full table in
 [`references/mcp.md`](https://github.com/RodrigoMardones/handyman/blob/main/handyman/references/mcp.md).
 
 ## Programmatic API

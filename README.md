@@ -35,7 +35,7 @@ Handyman define un flujo de trabajo para agentes basado en tres roles:
 
 Cada rol puede correr bajo su propio modelo: el leader usa un modelo fuerte, mientras que implementer y reviewer prefieren un modelo barato ya configurado en el editor y, si no hay, caen a `GLM-5.2`. Mas detalles en [handyman/references/models.md](handyman/references/models.md). Ademas cada rol corre con un set de tools restringido segun el principio de menor privilegio; mas detalles en [handyman/references/tools.md](handyman/references/tools.md).
 
-Este patron evita que el trabajo viva solamente en mensajes largos de chat. Los agentes escriben reportes de detalle bajo `backlog/`, el estado vivo de la sesion vive en `progress/`, el backlog de features vive en `feature_list.json`, las reglas del proyecto viven en `docs/`, y el cierre de una feature depende de una verificacion real, normalmente `./init.sh`.
+Este patron evita que el trabajo viva solamente en mensajes largos de chat. Los agentes escriben reportes de detalle bajo `backlog/`, el estado vivo de la sesion vive en `progress/`, el backlog de features vive en `feature_list.json`, las reglas del proyecto viven en `memory/`, y el cierre de una feature depende de una verificacion real, normalmente `./init.sh`.
 
 ## 🎯 Para Que Sirve
 
@@ -94,12 +94,12 @@ Handyman soporta dos formas de organizar el harness.
 
 | Modo | Donde vive el estado mutable | Cuando conviene |
 |------|-------------------------------|-----------------|
-| `local` | En un directorio oculto `.handyman/` dentro del repositorio | Proyectos donde quieres mantener el root limpio y versionar solo la capa de docs junto al codigo, dejando el estado operativo fuera de git. |
-| `global` | En `$HOME/HANDYMAN/<project_name>` | Proyectos donde quieres mantener el repo limpio y guardar progreso, reportes y docs operativas fuera del codigo fuente. |
+| `local` | En un directorio oculto `.handyman/` dentro del repositorio | Proyectos donde quieres mantener el root limpio y versionar solo la capa de memory junto al codigo, dejando el estado operativo fuera de git. |
+| `global` | En `$HOME/HANDYMAN/<project_name>` | Proyectos donde quieres mantener el repo limpio y guardar progreso, reportes y memory operativas fuera del codigo fuente. |
 
-En modo local, el estado mutable y las docs operativas (`feature_list.json`, `progress/`, `backlog/`, `docs/`, `index.md`) viven bajo `.handyman/`, y el repo conserva en el root los archivos puente `AGENTS.md`, `CHECKPOINTS.md` e `init.sh`. En modo global, el repositorio conserva archivos puente como `AGENTS.md`, `CHECKPOINTS.md`, `init.sh` y `harness.config.json`, y el estado operativo vive en `HARNESS_WORKSPACE`.
+En modo local, el estado mutable y los documentos operativos (`feature_list.json`, `progress/`, `backlog/`, `memory/`, `index.md`) viven bajo `.handyman/`, y el repo conserva en el root los archivos puente `AGENTS.md`, `CHECKPOINTS.md` e `init.sh`. En modo global, el repositorio conserva archivos puente como `AGENTS.md`, `CHECKPOINTS.md`, `init.sh` y `harness.config.json`, y el estado operativo vive en `HARNESS_WORKSPACE`.
 
-> ⚠️ **Guia de decision:** usa `local` si quieres versionar la capa de docs junto al repo sin ensuciar el root y dejar el estado operativo fuera de git; usa `global` si quieres separar codigo fuente de historial operativo.
+> ⚠️ **Guia de decision:** usa `local` si quieres versionar la capa de memory junto al repo sin ensuciar el root y dejar el estado operativo fuera de git; usa `global` si quieres separar codigo fuente de historial operativo.
 
 ## 🗂️ Archivos Principales
 
@@ -111,32 +111,32 @@ En modo local, el estado mutable y las docs operativas (`feature_list.json`, `pr
 | `progress/current.md` | Estado vivo de la sesion actual. |
 | `progress/history.md` | Historial append-only de sesiones cerradas. |
 | `backlog/` | Reportes de detalle (`impl_<feature>.md`, `review_<feature>.md`, `explore_<topic>.md`), separados del estado importante en `progress/`. |
-| `docs/business.md` | Detalle del negocio y los casos de uso que aborda el proyecto. |
-| `docs/architecture.md` | Limites y principios de arquitectura del proyecto. |
-| `docs/conventions.md` | Convenciones de estilo, estructura, errores y tests. |
-| `docs/verification.md` | Comandos y evidencia requerida para cerrar trabajo. |
+| `memory/business.md` | Detalle del negocio y los casos de uso que aborda el proyecto. |
+| `memory/architecture.md` | Limites y principios de arquitectura del proyecto. |
+| `memory/conventions.md` | Convenciones de estilo, estructura, errores y tests. |
+| `memory/verification.md` | Comandos y evidencia requerida para cerrar trabajo. |
 | `CHECKPOINTS.md` | Checklist objetivo para revision y cierre. |
 | `init.sh` | Verificador ejecutable del harness y del proyecto. |
 | `index.md` | MOC opcional para navegar el workspace desde Obsidian. |
 
 > 🧭 **Ruta mental:** `AGENTS.md` orienta, `feature_list.json` decide, `progress/` registra y `init.sh` verifica.
 
-> 📁 **En modo local:** `AGENTS.md`, `CHECKPOINTS.md` e `init.sh` quedan en el root del repo; `feature_list.json`, `progress/`, `backlog/`, `docs/` e `index.md` viven bajo `.handyman/`.
+> 📁 **En modo local:** `AGENTS.md`, `CHECKPOINTS.md` e `init.sh` quedan en el root del repo; `feature_list.json`, `progress/`, `backlog/`, `memory/` e `index.md` viven bajo `.handyman/`.
 
 ## 🪨 Visualizar En Obsidian
 
 El `HARNESS_WORKSPACE` esta disenado para abrirse directamente como vault de Obsidian, sin duplicar archivos.
 
 1. Abre Obsidian y elige **Open folder as vault** apuntando al `HARNESS_WORKSPACE` (`PROJECT_ROOT/.handyman` en modo local o `$HOME/HANDYMAN/<project_name>` en modo global).
-2. Los reportes en `progress/` ya traen YAML frontmatter (`feature`, `status`, `role`, `updated`, `tags`); los documentos en `docs/` son markdown plano y, si usan frontmatter, solo incluyen `tags` opcional.
-3. El archivo `index.md` actua como MOC con enlaces a `feature_list.json`, `docs/`, `progress/current` y `progress/history`. Los archivos puente `AGENTS.md` y `CHECKPOINTS.md` viven en el root del repo, fuera del vault, en ambos modos.
+2. Los reportes en `progress/` ya traen YAML frontmatter (`feature`, `status`, `role`, `updated`, `tags`); los documentos en `memory/` son markdown plano y, si usan frontmatter, solo incluyen `tags` opcional.
+3. El archivo `index.md` actua como MOC con enlaces a `feature_list.json`, `memory/`, `progress/current` y `progress/history`. Los archivos puente `AGENTS.md` y `CHECKPOINTS.md` viven en el root del repo, fuera del vault, en ambos modos.
 4. Los tags siguen el namespace `#handyman/...` (ej: `#handyman/feature/in_progress`, `#handyman/review/approved`).
 5. Plugins recomendados: **Outline**, **Backlinks** y **Tags** (todos core). Opcionales: **Dataview** y **Templater**.
-6. Manten el harness abstracto del repo: en modo local ignora el estado operativo con `.handyman/*` y versiona solo la capa de docs con `!.handyman/docs/` (incluye `business.md`); el mismo snippet deja fuera `.obsidian/` y `.trash/`. Usa el de [handyman/references/templates.md](handyman/references/templates.md#gitignore-harness).
+6. Manten el harness abstracto del repo: en modo local ignora el estado operativo con `.handyman/*` y versiona solo la capa de memory con `!.handyman/memory/` (incluye `business.md`); el mismo snippet deja fuera `.obsidian/` y `.trash/`. Usa el de [handyman/references/templates.md](handyman/references/templates.md#gitignore-harness).
 
 Mas detalles en [handyman/references/obsidian.md](handyman/references/obsidian.md).
 
-> 🧹 **Ayuda de versionado:** en modo local solo `.handyman/docs/` se versiona; el estado operativo (`feature_list.json`, `progress/`, `backlog/`, cache de Obsidian) queda fuera para mantener el repo abstracto.
+> 🧹 **Ayuda de versionado:** en modo local solo `.handyman/memory/` se versiona; el estado operativo (`feature_list.json`, `progress/`, `backlog/`, cache de Obsidian) queda fuera para mantener el repo abstracto.
 
 ## 🧠 Modelos Y Tools Por Rol
 
@@ -155,7 +155,7 @@ Se declaran en el frontmatter del archivo de rol (`model:`, `tools:`) o en los m
 
 ### 🔎 Analizar Un Harness Existente
 
-Handyman puede inspeccionar un proyecto que ya tenga `AGENTS.md`, `feature_list.json`, `progress/`, `docs/` e `init.sh`, y reportar su estado: modo de instalacion, feature activa, riesgos, archivos faltantes y pasos recomendados.
+Handyman puede inspeccionar un proyecto que ya tenga `AGENTS.md`, `feature_list.json`, `progress/`, `memory/` e `init.sh`, y reportar su estado: modo de instalacion, feature activa, riesgos, archivos faltantes y pasos recomendados.
 
 ### 🏠 Bootstrap Local
 
@@ -171,7 +171,7 @@ Handyman selecciona una feature `pending`, la marca como `in_progress`, actualiz
 
 ### ✅ Revisar Trabajo Terminado
 
-Handyman puede revisar una implementacion usando `CHECKPOINTS.md`, los docs del harness y los reportes en `backlog/`. El resultado esperado es un veredicto claro: `APPROVED` o `CHANGES_REQUESTED`.
+Handyman puede revisar una implementacion usando `CHECKPOINTS.md`, la memory del harness y los reportes en `backlog/`. El resultado esperado es un veredicto claro: `APPROVED` o `CHANGES_REQUESTED`.
 
 ### 🔁 Migrar De Local A Global
 
