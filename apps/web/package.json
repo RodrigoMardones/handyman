@@ -13,7 +13,7 @@
   "dependencies": {
     "@handyman/toolbox-core": "workspace:*",
     "dompurify": "^3.2.0",
-    "handyman": "workspace:*",
+    "handyman": "workspace:handyman-harness@*",
     "marked": "^12.0.0",
     "minisearch": "^7.2.0",
     "next": "16.2.10",

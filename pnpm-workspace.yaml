@@ -1,4 +1,5 @@
 packages:
+  - "agents/*"
   - "apps/*"
   - "handyman"
   - "packages/*"
@@ -10,3 +11,11 @@ allowBuilds:
   # optionalDependencies; approved so the npm-pack staging build (feature 64)
   # runs the same locally and in CI.
   esbuild: true
+  # Below come via @flue/* (agents/flue-handyman). All declined: the spike
+  # targets the node runtime, so the Cloudflare workerd build and the optional
+  # native accelerators are not needed; protobufjs's postinstall is advisory.
+  '@google/genai': false
+  '@mongodb-js/zstd': false
+  node-liblzma: false
+  protobufjs: false
+  workerd: false

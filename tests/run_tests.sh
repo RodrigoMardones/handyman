@@ -85,6 +85,7 @@ run_suite bash "$SUITE_DIR/test_web_intake.sh"
 run_suite bash "$SUITE_DIR/test_web_intake_ask.sh"
 run_suite bash "$SUITE_DIR/test_web_feature.sh"
 run_suite bash "$SUITE_DIR/test_web_timeline_search.sh"
+run_suite bash "$SUITE_DIR/test_flue_agents.sh"
 
 echo "=============================================="
 if [ "$FAILED" -eq 0 ]; then

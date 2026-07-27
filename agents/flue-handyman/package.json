@@ -1,0 +1,19 @@
+{
+  "name": "@handyman/flue-handyman",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Custom handyman agent on the Flue runtime: leader + implementer/reviewer subagents driving the handyman harness through its MCP server.",
+  "scripts": {
+    "dev": "flue dev",
+    "build": "flue build --target node",
+    "run-feature": "node run-feature.mjs"
+  },
+  "dependencies": {
+    "@flue/cli": "1.0.0-beta.9",
+    "@flue/runtime": "1.0.0-beta.9",
+    "@flue/sdk": "1.0.0-beta.9",
+    "hono": "^4.8.3",
+    "valibot": "^1.1.0"
+  }
+}

@@ -20,6 +20,14 @@ registerProvider('anthropic', {
 });
 
 const app = new Hono();
+
+// The workspace token turned out to be a Kimi for Coding key (validated
+// against api.kimi.com/coding), stored as MOONSHOT_API_KEY. Feed it to the
+// catalog kimi-coding provider; KIMI_API_KEY wins when both are set.
+registerProvider('kimi-coding', {
+  apiKey: process.env.KIMI_API_KEY ?? process.env.MOONSHOT_API_KEY,
+});
+
 app.route('/', flue());
 
 export default app;

@@ -197,6 +197,18 @@
       "meta": {
         "started_at": "2026-07-27T02:53:53.938Z"
       }
+    },
+    {
+      "id": 87,
+      "name": "flue_custom_agent_v1",
+      "title": "Custom handyman agent on Flue",
+      "description": "Leader agent with implementer/reviewer subagents (defineAgentProfile) driving the handyman MCP, role prompts from assets/role-*.template.md.",
+      "acceptance": [
+        "leader delegates to implementer and reviewer subagents over MCP",
+        "toy feature closes green end-to-end on a scratch workspace"
+      ],
+      "status": "pending",
+      "sprint": "feat-residual-memory-revision"
     }
   ]
 }

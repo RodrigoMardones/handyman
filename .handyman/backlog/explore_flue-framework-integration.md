@@ -137,6 +137,44 @@ topología y reproducción). Resultado: **la integración vía MCP funciona end-
 - Patrón validado: una instancia de agente por feature (instance id = nombre del
   feature).
 
+### Agente personalizado v1 (leader + subagents)
+
+`spikes/flue-handyman/src/agents/handyman-leader.ts` evolucionado al diseño real:
+leader (`defineAgent`) con subagents `implementer` y `reviewer` (`defineAgentProfile`),
+prompts de rol cargados en runtime desde `handyman/assets/role-*.template.md` (los
+roles siguen siendo prompts; las plantillas del repo son la fuente única). Validado
+sobre `/tmp/hm-flue-spike` con el feature `flue_subagent_loop`:
+
+- El leader ejecutó el protocolo completo: `feature_add → feature_start →
+  task(implementer) → task(reviewer) → feature_close`.
+- En disco: `backlog/impl_*.md` (status implemented, role implementer),
+  `backlog/review_*.md` (status approved, role reviewer), history.md con
+  "review: APPROVED · verifier exit 0", feature en `done`.
+- **Hallazgo de cliente:** `agents.prompt` (bloqueante) muere con
+  `HeadersTimeoutError` (~300 s) en loops con delegación largos, **pero el backend
+  continúa y termina el trabajo** (la conexión observa, no posee — confirma la
+  tesis de Durable Streams). Driver corregido a `agents.send` + `agents.wait`.
+
+### Modelos por rol (multi-provider)
+
+Los `defineAgentProfile` aceptan `model` propio; el agente lee
+`HANDYMAN_{LEADER,IMPLEMENTER,REVIEWER}_MODEL` (default GLM-5.2 en los tres).
+Validado con corridas mixtas:
+
+- **Token Kimi:** el token del workspace es de **Kimi for Coding**
+  (`api.kimi.com/coding`, anthropic-messages), NO de la plataforma Moonshot:
+  `api.moonshot.ai` lo rechaza con 401. Provider correcto: `kimi-coding`
+  (modelos `k2p7`, `k3`) con `apiKey` desde env; `moonshotai`/`moonshotai-cn`
+  quedan disponibles para tokens de plataforma (`MOONSHOT_API_KEY`).
+- **Corrida mixta verde:** leader GLM-5.2, implementer GLM-5.2, reviewer
+  `kimi-coding/k2p7` → feature `done` con review `approved`. Evidencia A/B: con
+  `moonshotai` la delegación fallaba 401 ×3; con `kimi-coding` aprobó — el único
+  cambio fue el provider del reviewer.
+- **Gate de protocolo verificado bajo fallo real:** cuando el reviewer no pudo
+  dar veredicto (401), el leader NO cerró el feature y declinó explícitamente
+  auto-firmar la review. La independencia de revisión se sostiene incluso con
+  el modelo bajo presión.
+
 ## Open Questions
 
 - ¿Target de deploy del agente handyman personalizado: Node local (single-node, más simple, encaja con `local()` sobre el repo) o Cloudflare (multi-instancia real pero exige sandbox remoto para tocar el repo)?
