@@ -30,12 +30,12 @@ graphify-out/cost.json
 # Third-party skills installed locally by the skills CLI. Only skills that ship
 # an explicit license are tracked (redistribution right); the rest stay local.
 .agents/skills/*
-!.agents/skills/brand-guidelines
-!.agents/skills/frontend-design
-!.agents/skills/ponytail
 
 # Local editor / MCP config (machine-specific, may hold endpoints or keys)
 .vscode/
 
 # Local secrets (LLM provider API keys for the toolBox — never committed)
 .env
+
+# skills and tools config (may hold secrets, but is tracked for reproducibility)
+skills-lock.json

@@ -31,6 +31,12 @@
  *   M20 fleet_status returns the registry-wide fleet view
  *   M21 fleet_health reports signals; --strict drives the exit code
  *   M22 fleet_timeline returns the merged closure chronology
+ *   M23 resources/read serves the resume briefing (session + queue)
+ *   M24 prompts/list exposes the 4 role prompts; prompts/get renders the role
+ *   M25 feature_close_async + task_result close via background task
+ *   M26 streamable HTTP transport: stateful sessions, 404 on unknown id
+ *   M27 sprint_close: elicitation confirms, confirm:true fallback, preview first
+ *   M28 handoff_submit/handoff_claim round-trip the disk queue
  *
  * Exit code 0 when all pass, 1 otherwise.
  */
@@ -92,7 +98,7 @@ function featureOf(root, name) {
 
 // --- minimal JSON-RPC client over stdio -------------------------------------
 
-function rpcSession(requests, cwd) {
+function rpcSession(requests, cwd, opts = {}) {
   return new Promise((resolvePromise, reject) => {
     const child = spawn(process.execPath, [MCP], { cwd, stdio: ["pipe", "pipe", "ignore"] });
     const responses = [];
@@ -108,7 +114,20 @@ function rpcSession(requests, cwd) {
         const line = buffer.slice(0, idx).trim();
         buffer = buffer.slice(idx + 1);
         if (line) {
-          responses.push(JSON.parse(line));
+          const msg = JSON.parse(line);
+          if (msg.method === "elicitation/create" && msg.id !== undefined) {
+            // Server -> client request (elicitation): answer it with the
+            // scripted user decision; it is NOT one of the awaited responses.
+            child.stdin.write(
+              `${JSON.stringify({
+                jsonrpc: "2.0",
+                id: msg.id,
+                result: opts.elicitResult ?? { action: "accept", content: { confirm: true } },
+              })}\n`,
+            );
+          } else {
+            responses.push(msg);
+          }
         }
         idx = buffer.indexOf("\n");
       }
@@ -146,21 +165,44 @@ async function main() {
   const ROOT = fs.mkdtempSync(path.join(os.tmpdir(), "hmcp-"));
   writeHarness(ROOT);
 
-  // M1/M2 — wire surface over real stdio JSON-RPC
+  // M1/M2/M23/M24 — wire surface over real stdio JSON-RPC
   {
+    // Register the fixture so resource/prompt URIs resolve by harness name.
+    const WIRE_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), "hmcp-wire-root-"));
+    fs.writeFileSync(
+      path.join(WIRE_ROOT, "registry.json"),
+      JSON.stringify({ version: 1, harnesses: [{ project_root: ROOT, registered: "2026-07-26" }] }),
+    );
+    process.env.HANDYMAN_ROOT = WIRE_ROOT;
     const responses = await rpcSession(
       [
         INIT,
         INITIALIZED,
         { jsonrpc: "2.0", id: 2, method: "tools/list" },
         { jsonrpc: "2.0", id: 3, method: "resources/templates/list" },
+        {
+          jsonrpc: "2.0",
+          id: 4,
+          method: "resources/read",
+          params: { uri: `handyman://${path.basename(ROOT)}/resume` },
+        },
+        { jsonrpc: "2.0", id: 5, method: "prompts/list" },
+        {
+          jsonrpc: "2.0",
+          id: 6,
+          method: "prompts/get",
+          params: {
+            name: "role_leader",
+            arguments: { project: path.basename(ROOT), feature: "a" },
+          },
+        },
       ],
       ROOT,
     );
     const tools = (responses.find((r) => r.id === 2) || {}).result?.tools ?? [];
     const names = tools.map((t) => t.name).sort();
     check(
-      "tools/list exposes the 20 contract tools",
+      "tools/list exposes the 25 contract tools",
       JSON.stringify(names) ===
         JSON.stringify([
           "backlog_review",
@@ -168,6 +210,7 @@ async function main() {
           "feature_add",
           "feature_block",
           "feature_close",
+          "feature_close_async",
           "feature_log",
           "feature_next",
           "feature_next_step",
@@ -176,11 +219,15 @@ async function main() {
           "fleet_health",
           "fleet_status",
           "fleet_timeline",
+          "handoff_claim",
+          "handoff_submit",
           "harness_list",
           "metrics",
           "preflight",
           "report_write",
+          "sprint_close",
           "sprint_status",
+          "task_result",
           "upgrade_check",
           "verify",
         ]),
@@ -189,10 +236,37 @@ async function main() {
     const templates = (responses.find((r) => r.id === 3) || {}).result?.resourceTemplates ?? [];
     const uris = templates.map((t) => t.uriTemplate).sort();
     check(
-      "resource templates expose current and docs/*",
-      uris.length === 2 && uris[0].endsWith("/current") && uris[1].includes("/docs/"),
+      "resource templates expose current, docs/* and resume",
+      uris.length === 3 &&
+        uris[0].endsWith("/current") &&
+        uris[1].includes("/docs/") &&
+        uris[2].endsWith("/resume"),
       `got: ${uris.join(", ")}`,
     );
+    const resume = (responses.find((r) => r.id === 4) || {}).result?.contents?.[0]?.text ?? "";
+    check(
+      "resources/read serves the resume briefing",
+      resume.includes("## Active session") &&
+        resume.includes("## Queue") &&
+        resume.includes("## Branch") &&
+        resume.includes("## Pending handoffs") &&
+        resume.includes("## Memory index"),
+      resume.slice(0, 300),
+    );
+    const prompts = (responses.find((r) => r.id === 5) || {}).result?.prompts ?? [];
+    const promptNames = prompts.map((p) => p.name).sort();
+    const leaderText =
+      (responses.find((r) => r.id === 6) || {}).result?.messages?.[0]?.content?.text ?? "";
+    check(
+      "prompts/list exposes the 4 role prompts and prompts/get renders the role",
+      JSON.stringify(promptNames) ===
+        JSON.stringify(["role_explorer", "role_implementer", "role_leader", "role_reviewer"]) &&
+        leaderText.includes("# Leader") &&
+        leaderText.includes("- Feature: a") &&
+        leaderText.includes("- PROJECT_ROOT:"),
+      `prompts: ${promptNames.join(", ")}; leader body head: ${leaderText.slice(0, 200)}`,
+    );
+    fs.rmSync(WIRE_ROOT, { recursive: true, force: true });
   }
 
   // Claim feature 'a' so close cases operate on an in_progress feature.
@@ -536,6 +610,266 @@ async function main() {
     );
 
     fs.rmSync(HROOT2, { recursive: true, force: true });
+  }
+
+  // M25 — feature_close_async + task_result: the background close path
+  //
+  // Own throwaway harness: start 'b', detach the close against a green
+  // verifier, then poll task_result until the record flips. The verifier is
+  // instant, so a handful of 200ms polls is generous. Negative ids must throw
+  // before touching disk (traversal-shaped) or report unknown (well-formed).
+  {
+    const ROOT5 = fs.mkdtempSync(path.join(os.tmpdir(), "hmcp-async-"));
+    writeHarness(ROOT5);
+    const p5 = mcp.resolveProject(ROOT5);
+    mcp.featureStart(p5, "b", true /* no_preflight */);
+    const green5 = path.join(ROOT5, "ok.sh");
+    writeVerifier(green5, 0);
+
+    const started = mcp.featureCloseAsync(p5, "b", green5);
+    let final = null;
+    for (let i = 0; i < 50 && (!final || final.status === "running"); i++) {
+      await new Promise((r) => setTimeout(r, 200));
+      final = mcp.taskResult(p5, started.task_id);
+    }
+    check(
+      "feature_close_async closes via background task and task_result reports it",
+      /^close-b-[a-z0-9]+$/.test(started.task_id) &&
+        started.status === "running" &&
+        final !== null &&
+        final.status === "completed" &&
+        final.closed === true &&
+        statusOf(ROOT5, "b") === "done",
+      `started=${JSON.stringify(started)} final=${JSON.stringify(final)} status=${statusOf(ROOT5, "b")}`,
+    );
+
+    let invalid = "";
+    let unknown = "";
+    try {
+      mcp.taskResult(p5, "../escape");
+    } catch (e) {
+      invalid = String(e.message || e);
+    }
+    try {
+      mcp.taskResult(p5, "close-nope-000");
+    } catch (e) {
+      unknown = String(e.message || e);
+    }
+    check(
+      "task_result rejects traversal-shaped and unknown ids",
+      invalid.includes("invalid task_id") && unknown.includes("unknown task"),
+      `invalid=${invalid} unknown=${unknown}`,
+    );
+    fs.rmSync(ROOT5, { recursive: true, force: true });
+  }
+
+  // M26 — Streamable HTTP transport over the wire
+  //
+  // Spawn dist/mcp.js --http --port 0 (OS-assigned port, announced on stderr),
+  // then drive the session lifecycle with fetch: initialize assigns an
+  // Mcp-Session-Id, tools/list with the id answers the full surface, and an
+  // unknown id gets a 404 so the client re-initializes per spec.
+  {
+    const httpChild = spawn(process.execPath, [MCP, "--http", "--port", "0"], {
+      cwd: ROOT,
+      stdio: ["ignore", "ignore", "pipe"],
+    });
+    try {
+      const port = await new Promise((resolvePort, rejectPort) => {
+        let errBuf = "";
+        const timer = setTimeout(
+          () => rejectPort(new Error(`http server did not announce its port; stderr: ${errBuf}`)),
+          15000,
+        );
+        httpChild.stderr.on("data", (chunk) => {
+          errBuf += chunk.toString();
+          const m = errBuf.match(/listening on http:\/\/127\.0\.0\.1:(\d+)\/mcp/);
+          if (m) {
+            clearTimeout(timer);
+            resolvePort(Number(m[1]));
+          }
+        });
+        httpChild.on("error", rejectPort);
+      });
+      const post = (body, sid) =>
+        fetch(`http://127.0.0.1:${port}/mcp`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            accept: "application/json, text/event-stream",
+            ...(sid ? { "mcp-session-id": sid } : {}),
+          },
+          body: JSON.stringify(body),
+        });
+      const initRes = await post(INIT);
+      const sid = initRes.headers.get("mcp-session-id");
+      const toolsRes = await post({ jsonrpc: "2.0", id: 2, method: "tools/list" }, sid);
+      const toolsBody = await toolsRes.text();
+      const deadRes = await post(
+        { jsonrpc: "2.0", id: 3, method: "tools/list" },
+        "deadbeef-dead-dead-dead-deaddeadbeef",
+      );
+      check(
+        "streamable HTTP assigns sessions, serves tools, 404s unknown ids",
+        initRes.status === 200 &&
+          typeof sid === "string" &&
+          sid.length > 0 &&
+          toolsRes.status === 200 &&
+          toolsBody.includes("feature_close_async") &&
+          deadRes.status === 404,
+        `init=${initRes.status} sid=${sid} tools=${toolsRes.status} dead=${deadRes.status}`,
+      );
+    } finally {
+      httpChild.kill();
+    }
+  }
+
+  // M27 — sprint_close: human confirmation gates the destructive period verb
+  //
+  // Two clients over stdio against fixtures with an open period
+  // (harness.config.json current_sprint). The eliciting client gets the
+  // mid-call elicitation/create request and its accept executes the close.
+  // The non-eliciting client gets the dry-run preview plus the confirm hint,
+  // and only the explicit confirm:true re-call executes.
+  {
+    const openPeriod = (root) => {
+      writeHarness(root);
+      fs.writeFileSync(
+        path.join(root, "harness.config.json"),
+        JSON.stringify({ project: "t", current_sprint: "test-period" }),
+      );
+    };
+    const sprintDocOf = (root) =>
+      [
+        path.join(root, ".handyman", "memory", "sprints", "sprint.test-period.md"),
+        path.join(root, ".handyman", "docs", "sprints", "sprint.test-period.md"),
+      ].find((p) => fs.existsSync(p)) ?? null;
+    const currentSprintOf = (root) =>
+      JSON.parse(fs.readFileSync(path.join(root, "harness.config.json"), "utf-8")).current_sprint ??
+      null;
+
+    // M27a — elicitation-capable client: mid-call confirm executes the close
+    const ROOT6 = fs.mkdtempSync(path.join(os.tmpdir(), "hmcp-elicit-"));
+    openPeriod(ROOT6);
+    const elicitResponses = await rpcSession(
+      [
+        {
+          ...INIT,
+          params: { ...INIT.params, capabilities: { elicitation: {} } },
+        },
+        INITIALIZED,
+        {
+          jsonrpc: "2.0",
+          id: 2,
+          method: "tools/call",
+          params: { name: "sprint_close", arguments: { project: ROOT6 } },
+        },
+      ],
+      ROOT,
+      { elicitResult: { action: "accept", content: { confirm: true } } },
+    );
+    const elicitResult = (elicitResponses.find((r) => r.id === 2) || {}).result?.structuredContent ?? {};
+    check(
+      "sprint_close executes after elicited human confirmation",
+      elicitResult.closed === true &&
+        elicitResult.confirmed_via === "elicitation" &&
+        currentSprintOf(ROOT6) === null &&
+        sprintDocOf(ROOT6) !== null,
+      `result=${JSON.stringify(elicitResult).slice(0, 300)} sprint=${currentSprintOf(ROOT6)} doc=${sprintDocOf(ROOT6)}`,
+    );
+    fs.rmSync(ROOT6, { recursive: true, force: true });
+
+    // M27b/c — non-eliciting client: preview first, confirm:true executes
+    // Two separate sessions: the "nothing written" state assertions must be
+    // evaluated AFTER the preview call but BEFORE the confirm call lands.
+    const ROOT7 = fs.mkdtempSync(path.join(os.tmpdir(), "hmcp-confirm-"));
+    openPeriod(ROOT7);
+    const previewResponses = await rpcSession(
+      [
+        INIT,
+        INITIALIZED,
+        {
+          jsonrpc: "2.0",
+          id: 2,
+          method: "tools/call",
+          params: { name: "sprint_close", arguments: { project: ROOT7 } },
+        },
+      ],
+      ROOT,
+    );
+    const previewResult = (previewResponses.find((r) => r.id === 2) || {}).result?.structuredContent ?? {};
+    check(
+      "sprint_close without confirmation returns the preview and writes nothing",
+      previewResult.closed === false &&
+        typeof previewResult.preview === "string" &&
+        previewResult.preview.includes("DRY RUN") &&
+        /confirm: true/.test(previewResult.hint ?? "") &&
+        currentSprintOf(ROOT7) === "test-period" &&
+        sprintDocOf(ROOT7) === null,
+      `result=${JSON.stringify(previewResult).slice(0, 300)} sprint=${currentSprintOf(ROOT7)}`,
+    );
+    const confirmResponses = await rpcSession(
+      [
+        INIT,
+        INITIALIZED,
+        {
+          jsonrpc: "2.0",
+          id: 2,
+          method: "tools/call",
+          params: { name: "sprint_close", arguments: { project: ROOT7, confirm: true } },
+        },
+      ],
+      ROOT,
+    );
+    const confirmResult = (confirmResponses.find((r) => r.id === 2) || {}).result?.structuredContent ?? {};
+    check(
+      "sprint_close with confirm:true executes via the param fallback",
+      confirmResult.closed === true &&
+        confirmResult.confirmed_via === "param" &&
+        currentSprintOf(ROOT7) === null &&
+        sprintDocOf(ROOT7) !== null,
+      `result=${JSON.stringify(confirmResult).slice(0, 300)} sprint=${currentSprintOf(ROOT7)}`,
+    );
+    fs.rmSync(ROOT7, { recursive: true, force: true });
+  }
+
+  // M28 — handoff_submit/handoff_claim: the structured role handoff queue
+  //
+  // Own throwaway harness: submit leader -> implementer, claim as the
+  // implementer (oldest pending wins, marked claimed on disk), then claim
+  // again to prove a claimed handoff is never handed out twice. The pending
+  // entry also surfaces in the resume briefing while unclaimed.
+  {
+    const ROOT8 = fs.mkdtempSync(path.join(os.tmpdir(), "hmcp-handoff-"));
+    writeHarness(ROOT8);
+    const p8 = mcp.resolveProject(ROOT8);
+
+    const submitted = mcp.handoffSubmit(
+      p8,
+      "leader",
+      "implementer",
+      "backlog/impl_a.md",
+      "impl ready for review",
+    );
+    const inResume = mcp.buildResume(p8).includes("leader -> implementer: backlog/impl_a.md");
+    const claimed = mcp.handoffClaim(p8, "implementer");
+    const second = mcp.handoffClaim(p8, "implementer");
+    const otherRole = mcp.handoffClaim(p8, "reviewer");
+    check(
+      "handoff_submit/handoff_claim round-trip the disk queue",
+      submitted.status === "pending" &&
+        submitted.from === "leader" &&
+        submitted.to === "implementer" &&
+        inResume &&
+        claimed.claimed === true &&
+        claimed.handoff.artifact === "backlog/impl_a.md" &&
+        claimed.handoff.status === "claimed" &&
+        typeof claimed.handoff.claimed_at === "string" &&
+        second.claimed === false &&
+        otherRole.claimed === false,
+      `submitted=${JSON.stringify(submitted)} claimed=${JSON.stringify(claimed)} second=${JSON.stringify(second)}`,
+    );
+    fs.rmSync(ROOT8, { recursive: true, force: true });
   }
 
   fs.rmSync(ROOT, { recursive: true, force: true });

@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # main + feature branches: CI (and the Snyk scan) runs on the branch
+    # under test even before a PR exists.
+    branches: [main, "feat/**"]
   pull_request:
 
 permissions:
@@ -65,3 +67,40 @@ jobs:
         run: |
           shellcheck --version
           find init.sh tests handyman/scripts -name '*.sh' -print0 | xargs -0 -r shellcheck -S warning
+
+  snyk-agent-scan:
+    name: Snyk agent scan (advisory)
+    runs-on: ubuntu-latest
+    # Advisory only — never gate merges on this job:
+    # - The scanner's CLI output (issue codes, severities) is experimental and
+    #   its analysis API has returned transient 503s (observed 2026-07-26).
+    # - Two design-level false positives are expected on this repo: W008 (the
+    #   SHA-256 integrity hashes in handyman/skills-lock.json) and W012 (the
+    #   project's own pinned CLI, `npx handyman-harness@3`). Background:
+    #   docs/archive/analisis-snyk-w011.md.
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Scan the exact branch head under test (the PR head SHA on
+          # pull_request events), never the base; falls back to the event
+          # SHA on push triggers.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up uv
+        # setup-uv publishes full-version tags only (no floating v9 major tag).
+        uses: astral-sh/setup-uv@v9.0.0
+
+      - name: Scan the handyman skill
+        # Scans the skill the same way skills.sh does on publish. Needs the
+        # SNYK_TOKEN Actions secret (a free Snyk account token suffices);
+        # skipped quietly on fork PRs, where secrets are not available.
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          if [ -z "$SNYK_TOKEN" ]; then
+            echo "::notice::SNYK_TOKEN not available (fork PR or missing secret) — skipping Snyk scan"
+            exit 0
+          fi
+          uvx snyk-agent-scan@latest handyman/SKILL.md

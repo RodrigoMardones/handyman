@@ -4,7 +4,7 @@ description: 'Install, analyze, bootstrap, run, review, or migrate a Handyman ag
 argument-hint: 'analyze | bootstrap local|global | run-feature | review | migrate-global | upgrade'
 user-invocable: true
 metadata:
-  version: 3.7.0
+  version: 3.7.5
 ---
 
 # Handyman
@@ -64,7 +64,7 @@ During `bootstrap`, if the user did not specify a scope, ask `local` or `global`
 
 ## Mechanics: MCP First
 
-Prefer the `handyman` MCP server's 20 tools when connected: feature cycle `feature_next`, `feature_add`, `feature_start`, `feature_log`, `feature_next_step`, `feature_block`, `feature_unblock`, `feature_acceptance`, `feature_close` (verifier-gated); review `backlog_review`, `report_write`; observability `metrics`, `sprint_status`, `fleet_status`, `fleet_health`, `fleet_timeline`; ops `harness_list`, `preflight`, `verify`, `upgrade_check`; plus resources `handyman://{project}/current`, `handyman://{project}/docs/{doc}`. Fallback: the `npx handyman-harness@3` CLIs. Surface: [references/mcp.md](./references/mcp.md).
+Prefer the `handyman` MCP server's 25 tools: cycle `feature_next`, `feature_add`, `feature_start`, `feature_log`, `feature_next_step`, `feature_block`, `feature_unblock`, `feature_acceptance`, `feature_close` (verifier-gated), `feature_close_async`/`task_result`; review `backlog_review`/`report_write`; handoffs `handoff_submit`/`handoff_claim`; period `sprint_status`, `sprint_close`; observability `metrics`, `fleet_status`, `fleet_health`, `fleet_timeline`; ops `harness_list`, `preflight`, `verify`, `upgrade_check`; resources `handyman://{project}/current|resume|docs/{doc}`; prompts `role_*`. Fallback: `npx handyman-harness@3` CLIs. Surface: [references/mcp.md](./references/mcp.md).
 
 ## Workflow
 
