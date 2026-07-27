@@ -104,3 +104,53 @@ jobs:
             exit 0
           fi
           uvx snyk-agent-scan@latest handyman/SKILL.md
+
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    # Publishes handyman-harness only after a push lands on main and the test
+    # suite is green; shellcheck/snyk stay out of the gate (snyk is advisory).
+    needs: [tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    concurrency:
+      # A second push to main must not cancel an in-flight publish.
+      group: publish-npm-main
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        # registry-url makes setup-node write the npmrc entry that
+        # NODE_AUTH_TOKEN fills at publish time.
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build, pack and publish
+        # Mirrors the manual flow exactly: tsc -b, pack_npm.mjs staging, then
+        # npm publish from handyman/.pack-staging/. Publishing a version that
+        # already exists on npm would 403, so a main merge without a version
+        # bump (package.json == SKILL.md, enforced by the pack script) skips
+        # instead of failing.
+        working-directory: handyman
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "handyman-harness@$VERSION" version >/dev/null 2>&1; then
+            echo "handyman-harness@$VERSION already on npm — nothing to publish"
+            exit 0
+          fi
+          npm run build
+          node scripts/pack_npm.mjs
+          cd .pack-staging
+          npm publish --access public
