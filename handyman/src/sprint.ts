@@ -15,7 +15,7 @@
  *              sprint label and record `current_sprint` in harness.config.json
  *              (mirrored to the feature_list config block when present).
  *              Rejects a second open sprint and malformed ids.
- *   close      Derive docs/sprints/sprint.<ID>.md inside the workspace,
+ *   close      Derive memory/sprints/sprint.<ID>.md inside the workspace,
  *              archive the sprint's done features to archive/feature_archive.json,
  *              compact the archived features' history entries to one-line stubs
  *              (the narrative just moved into the sprint document), strip the
@@ -55,7 +55,7 @@ import {
  *  location (mirrors Python `Path(__file__).resolve().parent.parent / "assets"`). */
 const ASSETS_DIR = fileURLToPath(new URL("../assets", import.meta.url));
 
-// Any filesystem-safe slug: the id becomes `docs/sprints/sprint.<ID>.md`, so
+// Any filesystem-safe slug: the id becomes `memory/sprints/sprint.<ID>.md`, so
 // no slashes or spaces. Branch-as-unit labels slugify `/` to `-`
 // (feat/rework-tools -> feat-rework-tools); calendar ids stay valid.
 const SPRINT_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
@@ -475,7 +475,7 @@ not when anything happened. Operations: open ID Stamp every unlabeled
 pending/in_progress feature with the sprint label and record \`current_sprint\`
 in harness.config.json (mirrored to the feature_list config block when
 present). Rejects a second open sprint and malformed ids. close Derive
-docs/sprints/sprint.<ID>.md inside the workspace, archive the sprint's done
+memory/sprints/sprint.<ID>.md inside the workspace, archive the sprint's done
 features to archive/feature_archive.json, compact the archived features'
 history entries to one-line stubs (the narrative just moved into the sprint
 document), strip the label from carry-over features, and clear

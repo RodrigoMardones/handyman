@@ -169,4 +169,21 @@ else
   fail "error taxonomy missing, driver not reconnecting, or unit tests red"
 fi
 
+# --- TFA14: subagent grounding (feature 97) ------------------------------------
+start_case "subagent grounding: sandbox local(PROJECT) + reviewer read-only tool set"
+ROLE_TOOLS="$AGENTS_DIR/src/domain/role-tools.ts"
+BLOCKS="$(sed -n '/READ_ONLY_PROBES/,/] as const/p;/REVIEWER_EXTRA/,/] as const/p' "$ROLE_TOOLS")"
+if grep -q "sandbox: local({ cwd: PROJECT })" "$AGENT_FILE" \
+  && grep -q "domain/role-tools" "$AGENT_FILE" \
+  && grep -q "toolsForVerbs(handyman.tools, reviewerVerbs())" "$AGENT_FILE" \
+  && grep -q "toolsForVerbs(handyman.tools, implementerVerbs())" "$AGENT_FILE" \
+  && printf '%s' "$BLOCKS" | grep -q "'backlog_review'" \
+  && ! printf '%s' "$BLOCKS" | grep -qE "'(feature_(add|start|close|close_async|block|unblock|acceptance|log|next_step)|sprint_close|report_write|handoff_(submit|claim))'" \
+  && grep -q 'MCP_PREFIX}\${v}' "$ROLE_TOOLS" \
+  && ! grep -q 'MCP_PREFIX}__\${v}' "$ROLE_TOOLS"; then
+  pass
+else
+  fail "sandbox grounding, reviewer read-only set, or prefix building broken"
+fi
+
 summary

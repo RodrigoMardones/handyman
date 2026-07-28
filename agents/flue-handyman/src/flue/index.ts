@@ -13,6 +13,7 @@
 export {
   defineAgent,
   defineAgentProfile,
+  defineTool,
   connectMcpServer,
   registerProvider,
   observe,
@@ -22,10 +23,11 @@ export type {
   AgentProfile,
   FlueEvent,
   FlueEventSubscriber,
+  JsonValue,
   McpServerConnection,
   ToolDefinition,
 } from '@flue/runtime';
 export { flue } from '@flue/runtime/routing';
-export { sqlite } from '@flue/runtime/node';
+export { sqlite, local } from '@flue/runtime/node';
 export { createFlueClient } from '@flue/sdk';
 export type { FlueConversationMessage } from '@flue/sdk';

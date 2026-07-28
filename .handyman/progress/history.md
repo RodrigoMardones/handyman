@@ -1196,3 +1196,21 @@ Append-only. Do not edit earlier entries during normal work.
 - **Tools:** memory/architecture.md seccion Flue · docs/adr-flue-harness-architecture.md · AGENTS.md
 - **Evidence:** backlog/impl_architecture_memory_update.md · review: APPROVED -> backlog/review_architecture_memory_update.md
 - **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 84: upgrade_migration_docs_to_memory
+- **Branch:** feat/flue-spike
+- **Tools:** upgrade_harness.ts registry 3.7.5 + apply hook · test_upgrade.sh 15/15
+- **Evidence:** backlog/impl_upgrade_migration_docs_to_memory.md · review: APPROVED -> backlog/review_upgrade_migration_docs_to_memory.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 85: src_comment_memory_drift
+- **Branch:** feat/flue-spike
+- **Tools:** sprint.ts + core/schema.ts comentarios memory/sprints
+- **Evidence:** backlog/impl_src_comment_memory_drift.md · review: APPROVED -> backlog/review_src_comment_memory_drift.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 97: flue_subagent_grounding
+- **Branch:** feat/flue-spike
+- **Tools:** domain/role-tools.ts + sandbox local · demo_grounding_3 validada (MCP por rol)
+- **Evidence:** backlog/impl_flue_subagent_grounding.md · review: APPROVED -> backlog/review_flue_subagent_grounding.md
+- **Verification:** verifier exit 0 · closure done

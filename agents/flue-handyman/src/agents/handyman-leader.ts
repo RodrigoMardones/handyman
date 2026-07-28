@@ -1,5 +1,6 @@
-import { defineAgent, defineAgentProfile, connectMcpServer } from '../flue';
+import { defineAgent, defineAgentProfile, connectMcpServer, local } from '../flue';
 import { AGENT_TUNING, resolveRoleModels } from '../ports/model-catalog';
+import { implementerVerbs, reviewerVerbs, toolsForVerbs } from '../domain/role-tools';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -20,6 +21,11 @@ const MCP_URL = process.env.HANDYMAN_MCP_URL ?? 'http://127.0.0.1:8177/mcp';
 // Per-role model specs resolve through the model catalog (env-overridable,
 // default GLM-5.2 on Z.AI for every role).
 const MODELS = resolveRoleModels();
+
+// Per-role MCP tool sets live in src/domain/role-tools.ts (feature 97):
+// leader = all 25; implementer = probes + feature_log + report_write;
+// reviewer = probes + backlog_review. Roles are prompts, but the tool set is
+// code — a reviewer cannot mutate feature state by construction.
 
 /** Role prompt body from handyman/assets/role-<role>.template.md (frontmatter stripped). */
 function roleBody(role: string): string {
@@ -80,8 +86,11 @@ For the feature named in the task: log each step with
 mcp__handyman__feature_log, then write the implementation report with
 mcp__handyman__report_write (kind "impl", feature = the name, content =
 what you did and why it meets the acceptance criteria). Reply with the
-report path.`,
-    tools: handyman.tools,
+report path. Write the report ONLY through mcp__handyman__report_write —
+never create impl_<feature>.md with the sandbox write/edit/bash tools:
+the MCP tool stamps the house frontmatter and enforces the
+never-overwrite policy.`,
+    tools: toolsForVerbs(handyman.tools, implementerVerbs()),
     model: MODELS.implementer,
   });
 
@@ -93,12 +102,21 @@ report path.`,
 ${roleBody('reviewer')}
 
 ## Concrete protocol (this deployment)
-You operate ONLY through mcp__handyman__ tools on project "${PROJECT}".
+You operate ONLY through your mcp__handyman__ tools on project "${PROJECT}"
+(read-only probes plus backlog_review) — you have NO state-mutation verbs,
+by design.
 For the feature named in the task: assess the implementation against the
 acceptance criteria, then stamp your verdict with
 mcp__handyman__backlog_review (status "approved" or "changes_requested").
-Reply with the verdict and one line of justification.`,
-    tools: handyman.tools,
+Ground the verdict in the real artifacts: your read/bash tools operate on
+the REAL project filesystem (the sandbox is local, cwd = the project root),
+so read the impl report at ${PROJECT}/.handyman/backlog/impl_<feature>.md
+before deciding. Stamp the verdict ONLY through
+mcp__handyman__backlog_review; afterwards you may enrich the review body
+with edit, but never create review_<feature>.md from scratch with sandbox
+tools — the MCP stamp carries verdict-conflict protection. Reply with the
+verdict and one line of justification.`,
+    tools: toolsForVerbs(handyman.tools, reviewerVerbs()),
     model: MODELS.reviewer,
   });
 
@@ -107,6 +125,11 @@ Reply with the verdict and one line of justification.`,
     tools: handyman.tools,
     subagents: [implementer, reviewer],
     instructions: leaderInstructions,
+    // Ground the whole instance in the real project filesystem (feature 97):
+    // with the default virtual sandbox, subagents' read/bash saw an empty
+    // in-memory FS that does not match what the MCP writes on the host —
+    // a reviewer once concluded an on-disk impl report "did not exist".
+    sandbox: local({ cwd: PROJECT }),
     ...AGENT_TUNING,
   };
 });

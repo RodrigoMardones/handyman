@@ -21,3 +21,8 @@ allowBuilds:
   workerd: false
 minimumReleaseAgeExclude:
   - '@types/node@26.1.2'
+  - '@ai-sdk/anthropic@4.0.23'
+  - '@ai-sdk/provider-utils@5.0.14'
+  - '@ai-sdk/provider@4.0.4'
+  - '@mastra/core@1.53.0'
+  - '@mastra/libsql@1.17.1'

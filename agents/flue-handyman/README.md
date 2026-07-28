@@ -176,6 +176,32 @@ la adaptación toca un solo archivo.
 - Las plantillas se leen del repo en el initializer (fs), no se copian:
   un cambio en `assets/role-*.template.md` cambia el comportamiento del agente.
 
+### Anclaje de subagentes (feature 97)
+
+Dos decisiones de grounding, tomadas tras la corrida `demo_estable`
+(2026-07-28), en la que un reviewer concluyó que un impl report "no existía"
+(estando en disco) y dejó la feature en `pending`+`started_at` tras sondear
+con `feature_block`/`feature_unblock`:
+
+1. **`sandbox: local({ cwd: PROJECT })` en el leader** — toda la instancia
+   pisa el filesystem real del proyecto. Con el sandbox virtual por defecto
+   (FS en memoria), los `read`/`bash` de los subagentes veían un filesystem
+   distinto del host donde escribe el MCP. Elegimos `local()` sobre quitar
+   las sandbox tools: el reviewer NECESITA leer el impl report para
+   fundamentar el veredicto, y el MCP no expone lectura de backlog (solo
+   resources de current/docs/resume). Riesgo aceptado y acotado: `local()`
+   da acceso al host sin aislamiento — encaja porque el deployment es
+   single-node en la máquina del operador, sobre proyectos propios
+   (la guía oficial de Flue: `local()` solo en hosts confiables). `env` no
+   se pasa (allowlist vacía por defecto).
+2. **Tool sets por rol** — los roles son prompts, pero el tool set es
+   código: leader = las 25 tools; implementer = probes read-only +
+   `feature_log` + `report_write`; reviewer = probes read-only +
+   `backlog_review` (`READ_ONLY_PROBES`/`IMPLEMENTER_EXTRA`/`REVIEWER_EXTRA`
+   + `toolsForVerbs` en el agente; TFA14 lo enforcea). Un reviewer ya no
+   PUEDE mutar estado de features: las tools simplemente no existen para
+   ese profile.
+
 ## Modelos por rol (multi-provider)
 
 Cada rol resuelve su modelo en `src/ports/model-catalog.ts` (único módulo que

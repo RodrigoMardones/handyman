@@ -1,0 +1,29 @@
+{
+  "name": "@handyman/mastra-handyman",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Custom handyman agent on the Mastra runtime: leader (+ implementer/reviewer subagents) driving the handyman harness through its MCP server.",
+  "scripts": {
+    "run-feature": "tsx run-feature.ts",
+    "run-workflow": "tsx run-workflow.ts",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "4.0.23",
+    "@mastra/core": "1.53.0",
+    "@mastra/duckdb": "1.5.1",
+    "@mastra/libsql": "1.17.1",
+    "@mastra/loggers": "1.2.0",
+    "@mastra/mcp": "1.15.0",
+    "@mastra/memory": "1.23.1",
+    "@mastra/observability": "1.16.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.10"
+  }
+}

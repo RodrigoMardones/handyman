@@ -38,6 +38,7 @@ import {
   mkdirSync,
   readFileSync,
   realpathSync,
+  renameSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -66,6 +67,16 @@ interface Migration {
   summary: string;
   ensures: ReadonlyArray<readonly [string, string]>;
   advisories: readonly string[];
+  /** Custom migration logic beyond template ensures (e.g. moving user
+   *  content). Runs after `ensures`, before `advisories` are printed. Must
+   *  be idempotent and honor `dryRun` (report `would ...`, write nothing). */
+  apply?: (ctx: MigrationCtx) => void;
+}
+
+interface MigrationCtx {
+  root: string;
+  workspace: string;
+  dryRun: boolean;
 }
 
 /**
@@ -96,6 +107,25 @@ const MIGRATIONS: readonly Migration[] = [
     advisories: [
       "verifier: add the `validate` phase; validate_harness.py / feature.py / schemas ship with the skill",
     ],
+  },
+  {
+    // Version criterion: the entry carries the skill version that SHIPS THE
+    // FIX, not the one that introduced the change (the memory/ layout landed
+    // in 3.5.0, commit b4abf51) and not the legacy 1.x sequence (dead since
+    // seals use skill versions: a 2.1.1 harness compares above every 1.x
+    // entry and would skip them all). Carrying the fix version offers the
+    // migration to every harness sealed before the fix existed — including
+    // the 3.5.0+ seals that still carry docs/ — and the migration's own
+    // guard (memory/ missing AND docs/ files present) keeps it safe and
+    // idempotent for everyone else.
+    version: "3.7.5",
+    summary: "memory/ layout: move docs/{business,architecture,conventions,verification}.md to memory/",
+    ensures: [],
+    advisories: [
+      "gitignore: add `!.handyman/memory/` (legacy `!.handyman/docs/` stays; see assets/harness.gitignore.template)",
+      "AGENTS.md: read knowledge files from $HARNESS_WORKSPACE/memory/ (docs/ is the legacy fallback)",
+    ],
+    apply: migrateDocsToMemory,
   },
 ];
 
@@ -301,6 +331,9 @@ function printPending(pending: readonly Migration[]): void {
     print("    pending structural upgrades:");
     for (const migration of pending) {
       print(`      ${migration.version}  ${migration.summary}`);
+      for (const advisory of migration.advisories) {
+        print(`        manual: ${advisory}`);
+      }
     }
   }
   print("    apply: scripts/upgrade_harness.py --root <root> (use --dry-run to preview)");
@@ -374,6 +407,7 @@ function apply(root: string, dryRun: boolean): number {
     for (const [destRel, templateName] of migration.ensures) {
       ensureManagedFile(workspace, destRel, templateName, dryRun);
     }
+    migration.apply?.({ root, workspace, dryRun });
     for (const advisory of migration.advisories) {
       print(`    manual: ${advisory}`);
     }
@@ -389,14 +423,49 @@ function apply(root: string, dryRun: boolean): number {
   return 0;
 }
 
+/** Knowledge files moved by the docs/ -> memory/ layout migration (F73). */
+const KNOWLEDGE_FILES = ["business.md", "architecture.md", "conventions.md", "verification.md"] as const;
+
+/** docs/ -> memory/ migration (entry 3.7.5): move the four knowledge files
+ *  when memory/ does not exist, preserving user content byte-for-byte and
+ *  backing up the originals under .upgrade-backups/<stamp>/docs/ first.
+ *  Idempotent: an existing memory/ (or no docs/ files) is a no-op. */
+function migrateDocsToMemory({ workspace, dryRun }: MigrationCtx): void {
+  const docsDir = join(workspace, "docs");
+  const memoryDir = join(workspace, "memory");
+  if (existsSync(memoryDir)) {
+    print("    ok (exists): memory/");
+    return;
+  }
+  const present = KNOWLEDGE_FILES.filter((name) => isFile(join(docsDir, name)));
+  if (present.length === 0) {
+    print("    skip: no docs/ knowledge files to move");
+    return;
+  }
+  if (dryRun) {
+    for (const name of present) {
+      print(`    would move: docs/${name} -> memory/${name}`);
+    }
+    return;
+  }
+  const backupDir = join(workspace, ".upgrade-backups", backupStamp(new Date()), "docs");
+  mkdirSync(backupDir, { recursive: true });
+  mkdirSync(memoryDir, { recursive: true });
+  for (const name of present) {
+    copyFileSync(join(docsDir, name), join(backupDir, name));
+    renameSync(join(docsDir, name), join(memoryDir, name));
+    print(`    moved: docs/${name} -> memory/${name}`);
+  }
+  print(`    backup: ${backupDir}`);
+}
+
 /** Copy a managed template only when the destination is missing. */
 function ensureManagedFile(
   workspace: string,
   destRel: string,
   templateName: string,
   dryRun: boolean,
-): void {
-  const dest = join(workspace, destRel);
+): void {  const dest = join(workspace, destRel);
   const template = join(ASSETS, templateName);
   if (existsSync(dest)) {
     print(`    ok (exists): ${destRel}`);

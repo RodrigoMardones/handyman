@@ -76,7 +76,8 @@ export function validateHarnessConfig(data: unknown): ValidationResult {
 
 /**
  * Validate the parsed YAML frontmatter of a derived sprint document
- * (`docs/sprints/sprint.<ID>.md`, written by `sprint.js close`). The document
+ * (`memory/sprints/sprint.<ID>.md`, written by `sprint.js close`; the legacy
+ * pre-F73 path was `docs/sprints/`). The document
  * body is prose and is not validated; pass the frontmatter object only.
  */
 export function validateSprint(data: unknown): ValidationResult {

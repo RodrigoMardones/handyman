@@ -99,11 +99,15 @@
         "tests/test_upgrade.sh cubre: harness legacy con docs/ -> memory/ poblada, contenido preservado, segunda corrida idempotente",
         "./init.sh exits 0"
       ],
-      "status": "pending",
+      "status": "done",
       "sprint": "feat-residual-memory-revision",
       "depends_on": [
         83
-      ]
+      ],
+      "meta": {
+        "started_at": "2026-07-28T02:23:41.000Z",
+        "done_at": "2026-07-28T02:37:31.084Z"
+      }
     },
     {
       "id": 85,
@@ -114,8 +118,12 @@
         "sprint.ts y core/schema.ts sin referencias docs/sprints en comentarios (memory-first con nota legacy si aplica)",
         "bash tests/run_tests.sh pasa y ./init.sh exits 0"
       ],
-      "status": "pending",
-      "sprint": "feat-residual-memory-revision"
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-28T02:37:55.460Z",
+        "done_at": "2026-07-28T02:40:02.393Z"
+      }
     },
     {
       "id": 80,
@@ -396,6 +404,24 @@
       "meta": {
         "started_at": "2026-07-28T02:02:14.620Z",
         "done_at": "2026-07-28T02:05:07.615Z"
+      }
+    },
+    {
+      "id": 97,
+      "name": "flue_subagent_grounding",
+      "title": "Subagentes anclados: sandbox local(PROJECT) + reviewer con tools read-only",
+      "description": "La corrida demo_estable (2026-07-28, evidencia en /tmp/hm-flue-spike y logs/agent-demo_estable.jsonl) destapo dos agujeros de protocolo. (1) Sandbox mismatch: los profiles heredan las tools del sandbox VIRTUAL de Flue (FS en memoria); el reviewer verifico la existencia del impl report con read/bash y vio un filesystem distinto del host donde escribe el MCP - concluyo 'no existe' estando en disco (el propio leader diagnostico 'sandbox/filesystem mismatch'). (2) El reviewer tiene los 25 verbs MCP incluidos los de estado: hizo feature_block/feature_unblock de sondeo durante la review y dejo la feature en pending+started_at. Fix: (a) sandbox local({cwd: PROJECT}) para que bash/read de los subagentes pisen el proyecto real (o quitar las sandbox tools de los profiles si basta MCP); (b) el profile reviewer recibe un subset read-only de tools MCP (sin verbs de estado ni sprint_close); (c) validacion de que el reviewer cita el impl report real.",
+      "acceptance": [
+        "el agente configura sandbox local({cwd: PROJECT}) (o profiles sin sandbox tools, decision documentada en README)",
+        "tools del profile reviewer = subset read-only de mcp__handyman__* (sin feature_add/start/block/unblock/close/acceptance ni sprint_close); test estructural que lo enforcea en test_flue_agents.sh",
+        "validacion (eval o corrida documentada): el reviewer cita el impl report real en su veredicto y no llama verbs de estado durante la review",
+        "./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-28T02:44:46.463Z",
+        "done_at": "2026-07-28T03:13:37.274Z"
       }
     }
   ]
