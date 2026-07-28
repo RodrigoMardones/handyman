@@ -209,6 +209,18 @@
       ],
       "status": "pending",
       "sprint": "feat-residual-memory-revision"
+    },
+    {
+      "id": 88,
+      "name": "flue_agent_evals",
+      "title": "Evals for the Flue handyman agent",
+      "description": "vitest-evals suite over the live agent loop (tool sequence + verifier-gate behavior) against a scratch workspace.",
+      "acceptance": [
+        "eval suite runs via vitest-evals against flue dev and passes",
+        "no API calls in structural tests; evals documented as API-cost tests"
+      ],
+      "status": "pending",
+      "sprint": "feat-residual-memory-revision"
     }
   ]
 }

@@ -12,7 +12,7 @@ importers:
     dependencies:
       '@flue/cli':
         specifier: 1.0.0-beta.9
-        version: 1.0.0-beta.9(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(@types/node@26.1.1)(esbuild@0.28.1)(hono@4.12.31)(typebox@1.1.38)(typescript@7.0.2)(wrangler@4.114.0)(ws@8.21.1)(yaml@2.9.0)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3)
+        version: 1.0.0-beta.9(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(@types/node@26.1.2)(esbuild@0.28.1)(hono@4.12.31)(typebox@1.1.38)(typescript@7.0.2)(wrangler@4.114.0)(ws@8.21.1)(yaml@2.9.0)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3)
       '@flue/runtime':
         specifier: 1.0.0-beta.9
         version: 1.0.0-beta.9(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(typebox@1.1.38)(typescript@7.0.2)(ws@8.21.1)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3)
@@ -25,6 +25,16 @@ importers:
       valibot:
         specifier: ^1.1.0
         version: 1.4.2(typescript@7.0.2)
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.2
+        version: 26.1.2
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.1.2)(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0))
+      vitest-evals:
+        specifier: ^0.15.0
+        version: 0.15.0(tinyrainbow@3.1.0)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.1.2)(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0)))(zod@4.4.3)
 
   apps/web:
     dependencies:
@@ -1286,6 +1296,9 @@ packages:
   '@types/node@26.1.1':
     resolution: {integrity: sha512-nxAkRSVkN1Y0JC1W8ky/fTfkGsMmcrRsbx+3XoZE+rMOX71kLYTV7fLXpqud1GpbpP5TuffXFqfX7fH2GgZREw==}
 
+  '@types/node@26.1.2':
+    resolution: {integrity: sha512-Vu4a5UFA9rIIFJ7rB/Vaafh9lrCQszopTCx6KjFboXTGQbPNasehVR5TEiithSDGyd1DEiUByggTZsg8jukeIg==}
+
   '@types/react-dom@19.2.3':
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
     peerDependencies:
@@ -1428,6 +1441,12 @@ packages:
   '@vercel/detect-agent@1.2.3':
     resolution: {integrity: sha512-VYNCgUc0nOmC4WJmWw9GkrKdfr8Zl4/rxhC5SvgacBgxiW9W/9NRttUoHHXV8xdII3MaRgkZZVX8Ikzc/Jmjag==}
     engines: {node: '>=14'}
+
+  '@vitest-evals/core@0.15.0':
+    resolution: {integrity: sha512-kqyg3ocVtZxr3rP9oh01oAycRgXNRasvTgLZ8MbFGBJ4BRd4tk7Bgww253HY7fw7ZFUp4UPYNmDp5AcHajm++w==}
+
+  '@vitest-evals/report-ui@0.15.0':
+    resolution: {integrity: sha512-icrutiRhZ2T1MrHo2RW09hcEwfi/tV/FgsGAE76Wd0C02tZyCleQRjt11RWhBJiYDPpsjjjTHGCHIO6tmtX5zQ==}
 
   '@vitest/expect@4.1.10':
     resolution: {integrity: sha512-YsCn+qAk1GWjQOWFEsEcL2gNQ0zmVmQu3T03qP6UyjhtmdtwtbuI+DASn/7iQB3HGTXkdBwGddzxPlmiql5vlA==}
@@ -2576,6 +2595,20 @@ packages:
       yaml:
         optional: true
 
+  vitest-evals@0.15.0:
+    resolution: {integrity: sha512-bOYALQdLXKYFRCV8aQ+yLeH7XkmYsTxUWQxLHzJdIEcIBx2v/kPgG3Zg6m231jMCphuoM6xH4YQB3+0pDP7LLw==}
+    hasBin: true
+    peerDependencies:
+      ai: '>=4 <7'
+      tinyrainbow: '>=2 <4'
+      vitest: '>=4 <5'
+      zod: '>=3 <5'
+    peerDependenciesMeta:
+      ai:
+        optional: true
+      zod:
+        optional: true
+
   vitest@4.1.10:
     resolution: {integrity: sha512-R9jUTe5S4Qb0HCd4TNqpC7oGcrMssMRGXLW80ubjWsW9VH5GF8y1Y0SFLY9AbqSk6nt0PnOx4H4WNJYZ13GUPw==}
     engines: {node: ^20.0.0 || ^22.0.0 || >=24.0.0}
@@ -2965,12 +2998,12 @@ snapshots:
     optionalDependencies:
       workerd: 1.20260722.1
 
-  '@cloudflare/vite-plugin@1.47.0(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(yaml@2.9.0))(wrangler@4.114.0)':
+  '@cloudflare/vite-plugin@1.47.0(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0))(wrangler@4.114.0)':
     dependencies:
       '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260722.1)
       miniflare: 4.20260722.0
       unenv: 2.0.0-rc.24
-      vite: 8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(yaml@2.9.0)
+      vite: 8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0)
       workerd: 1.20260722.1
       wrangler: 4.114.0
       ws: 8.21.0
@@ -3140,9 +3173,9 @@ snapshots:
   '@esbuild/win32-x64@0.28.1':
     optional: true
 
-  '@flue/cli@1.0.0-beta.9(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(@types/node@26.1.1)(esbuild@0.28.1)(hono@4.12.31)(typebox@1.1.38)(typescript@7.0.2)(wrangler@4.114.0)(ws@8.21.1)(yaml@2.9.0)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3)':
+  '@flue/cli@1.0.0-beta.9(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(@types/node@26.1.2)(esbuild@0.28.1)(hono@4.12.31)(typebox@1.1.38)(typescript@7.0.2)(wrangler@4.114.0)(ws@8.21.1)(yaml@2.9.0)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3)':
     dependencies:
-      '@cloudflare/vite-plugin': 1.47.0(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(yaml@2.9.0))(wrangler@4.114.0)
+      '@cloudflare/vite-plugin': 1.47.0(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0))(wrangler@4.114.0)
       '@flue/runtime': 1.0.0-beta.9(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(typebox@1.1.38)(typescript@7.0.2)(ws@8.21.1)(zod-to-json-schema@3.25.2(zod@4.4.3))(zod@4.4.3)
       '@flue/sdk': 1.0.0-beta.9
       '@hono/node-server': 2.0.12(hono@4.12.31)
@@ -3153,7 +3186,7 @@ snapshots:
       picocolors: 1.1.1
       ulidx: 2.4.1
       valibot: 1.4.2(typescript@7.0.2)
-      vite: 8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(yaml@2.9.0)
+      vite: 8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0)
     transitivePeerDependencies:
       - '@cfworker/json-schema'
       - '@standard-schema/spec'
@@ -3765,6 +3798,10 @@ snapshots:
     dependencies:
       undici-types: 8.3.0
 
+  '@types/node@26.1.2':
+    dependencies:
+      undici-types: 8.3.0
+
   '@types/react-dom@19.2.3(@types/react@19.2.17)':
     dependencies:
       '@types/react': 19.2.17
@@ -3844,6 +3881,14 @@ snapshots:
 
   '@vercel/detect-agent@1.2.3': {}
 
+  '@vitest-evals/core@0.15.0':
+    dependencies:
+      zod: 4.4.3
+
+  '@vitest-evals/report-ui@0.15.0':
+    dependencies:
+      '@vitest-evals/core': 0.15.0
+
   '@vitest/expect@4.1.10':
     dependencies:
       '@standard-schema/spec': 1.1.0
@@ -3860,6 +3905,14 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       vite: 8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(yaml@2.9.0)
+
+  '@vitest/mocker@4.1.10(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0))':
+    dependencies:
+      '@vitest/spy': 4.1.10
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0)
 
   '@vitest/pretty-format@4.1.10':
     dependencies:
@@ -5075,6 +5128,28 @@ snapshots:
       fsevents: 2.3.3
       yaml: 2.9.0
 
+  vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0):
+    dependencies:
+      lightningcss: 1.32.0
+      picomatch: 4.0.5
+      postcss: 8.5.19
+      rolldown: 1.1.5
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 26.1.2
+      esbuild: 0.28.1
+      fsevents: 2.3.3
+      yaml: 2.9.0
+
+  vitest-evals@0.15.0(tinyrainbow@3.1.0)(vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.1.2)(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0)))(zod@4.4.3):
+    dependencies:
+      '@vitest-evals/core': 0.15.0
+      '@vitest-evals/report-ui': 0.15.0
+      tinyrainbow: 3.1.0
+      vitest: 4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.1.2)(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0))
+    optionalDependencies:
+      zod: 4.4.3
+
   vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.1.1)(vite@8.1.5(@types/node@26.1.1)(esbuild@0.28.1)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.10
@@ -5100,6 +5175,34 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.9.0
       '@types/node': 26.1.1
+    transitivePeerDependencies:
+      - msw
+
+  vitest@4.1.10(@opentelemetry/api@1.9.0)(@types/node@26.1.2)(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0)):
+    dependencies:
+      '@vitest/expect': 4.1.10
+      '@vitest/mocker': 4.1.10(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0))
+      '@vitest/pretty-format': 4.1.10
+      '@vitest/runner': 4.1.10
+      '@vitest/snapshot': 4.1.10
+      '@vitest/spy': 4.1.10
+      '@vitest/utils': 4.1.10
+      es-module-lexer: 2.3.1
+      expect-type: 1.4.0
+      magic-string: 0.30.21
+      obug: 2.1.4
+      pathe: 2.0.3
+      picomatch: 4.0.5
+      std-env: 4.2.0
+      tinybench: 2.9.0
+      tinyexec: 1.2.4
+      tinyglobby: 0.2.17
+      tinyrainbow: 3.1.0
+      vite: 8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(yaml@2.9.0)
+      why-is-node-running: 2.3.0
+    optionalDependencies:
+      '@opentelemetry/api': 1.9.0
+      '@types/node': 26.1.2
     transitivePeerDependencies:
       - msw
 

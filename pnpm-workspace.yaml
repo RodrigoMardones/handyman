@@ -19,3 +19,5 @@ allowBuilds:
   node-liblzma: false
   protobufjs: false
   workerd: false
+minimumReleaseAgeExclude:
+  - '@types/node@26.1.2'

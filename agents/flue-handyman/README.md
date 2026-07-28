@@ -50,6 +50,31 @@ HANDYMAN_PROJECT_ROOT=/tmp/hm-flue-spike npx flue dev
 node run-feature.mjs <nombre_feature>     # o: pnpm agents:run -- <nombre>
 ```
 
+## Evals (vitest-evals)
+
+Suite viva sobre la frontera HTTP pública del agente (`src/evals/`), siguiendo
+el blueprint `flue add tooling vitest-evals` con dos adaptaciones: `send`+`wait`
+en vez de `prompt` bloqueante, y aserciones de verdad en disco (el
+`feature_list.json` del scratch), no solo en la prosa del modelo.
+
+```bash
+# con MCP :8177 y flue dev :3583 arriba (HANDYMAN_PROJECT_ROOT=/tmp/hm-flue-spike)
+cd agents/flue-handyman && pnpm evals        # o evals:json para reporte JSON
+```
+
+Casos (`src/evals/handyman-leader.eval.ts`, ~8 min, coste de API real):
+
+1. **Camino verde** — el loop cierra con la secuencia MCP completa
+   (`feature_add` < `feature_start` < `feature_close`, 5 tools) y el feature
+   queda `done` en disco.
+2. **Verifier en rojo** — con `init.sh` en `exit 1`, el close es rechazado, el
+   feature queda `in_progress` y el leader reporta la denegación; el cleanup
+   restaura el verifier y cierra el feature por CLI.
+
+Última corrida: 2/2 verdes (483 s, ~86k tokens). Sin jueces de modelo por
+ahora (aserciones deterministas); `toSatisfyJudge` con juez independiente es
+el siguiente paso natural.
+
 ## Agente personalizado v1 (leader + subagents)
 
 `src/agents/handyman-leader.ts` implementa el agente handyman personalizado:

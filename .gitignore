@@ -39,3 +39,4 @@ graphify-out/cost.json
 
 # skills and tools config (may hold secrets, but is tracked for reproducibility)
 skills-lock.json
+vitest-results.json
