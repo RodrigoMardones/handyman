@@ -1,10 +1,15 @@
-import { defineAgent, defineAgentProfile, connectMcpServer } from '@flue/runtime';
+import { defineAgent, defineAgentProfile, connectMcpServer } from '../flue';
+import { AGENT_TUNING, resolveRoleModels } from '../ports/model-catalog';
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
-// Repo root (this file lives in agents/flue-handyman/src/agents/).
-const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
+// Repo root. Both documented runtimes (flue dev via pnpm --filter, and the
+// built server via pnpm agents:start) run with cwd = this package's dir, so
+// cwd is the stable anchor — deriving from import.meta.url breaks under
+// bundling (dist/server.mjs sits shallower than src/agents/), which crashed
+// the stable server at boot looking for handyman/assets under the wrong root.
+// HANDYMAN_REPO_ROOT overrides when running from anywhere else.
+const REPO_ROOT = process.env.HANDYMAN_REPO_ROOT ?? join(process.cwd(), '..', '..');
 // Handyman project this agent drives: the monorepo itself by default, any
 // other handyman-scaffolded root via HANDYMAN_PROJECT_ROOT (e.g. a scratch
 // project for spikes).
@@ -12,15 +17,9 @@ const PROJECT = process.env.HANDYMAN_PROJECT_ROOT ?? REPO_ROOT;
 // Handyman MCP endpoint (node handyman/dist/mcp.js --http).
 const MCP_URL = process.env.HANDYMAN_MCP_URL ?? 'http://127.0.0.1:8177/mcp';
 
-// Per-role model specifiers, overridable via env. Defaults keep every role on
-// GLM-5.2 (Z.AI). Examples:
-//   HANDYMAN_IMPLEMENTER_MODEL=kimi-coding/k2p7   (Kimi for Coding, KIMI_API_KEY)
-//   HANDYMAN_REVIEWER_MODEL=moonshotai/kimi-k2-0905-preview  (MOONSHOT_API_KEY)
-const MODELS = {
-  leader: process.env.HANDYMAN_LEADER_MODEL ?? 'anthropic/glm-5.2',
-  implementer: process.env.HANDYMAN_IMPLEMENTER_MODEL ?? 'anthropic/glm-5.2',
-  reviewer: process.env.HANDYMAN_REVIEWER_MODEL ?? 'anthropic/glm-5.2',
-} as const;
+// Per-role model specs resolve through the model catalog (env-overridable,
+// default GLM-5.2 on Z.AI for every role).
+const MODELS = resolveRoleModels();
 
 /** Role prompt body from handyman/assets/role-<role>.template.md (frontmatter stripped). */
 function roleBody(role: string): string {
@@ -108,6 +107,6 @@ Reply with the verdict and one line of justification.`,
     tools: handyman.tools,
     subagents: [implementer, reviewer],
     instructions: leaderInstructions,
-    thinkingLevel: 'minimal',
+    ...AGENT_TUNING,
   };
 });

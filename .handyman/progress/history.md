@@ -1130,3 +1130,69 @@ Append-only. Do not edit earlier entries during normal work.
 - **Tools:** ...
 - **Evidence:** backlog/impl_memory_drift_templates_references.md · review: APPROVED -> backlog/review_memory_drift_templates_references.md
 - **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 86: research_two_topics_token_related
+- **Branch:** main
+- **Tools:** docs/analisis-tokens-consumo-y-metricas.md + 3 explore_ reports
+- **Evidence:** backlog/impl_research_two_topics_token_related.md · review: APPROVED -> backlog/review_research_two_topics_token_related.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 87: flue_custom_agent_v1
+- **Branch:** feat/flue-spike
+- **Tools:** agents/flue-handyman leader+subagents · tests/test_flue_agents.sh 9/9
+- **Evidence:** backlog/impl_flue_custom_agent_v1.md · review: APPROVED -> backlog/review_flue_custom_agent_v1.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 88: flue_agent_evals
+- **Branch:** feat/flue-spike
+- **Tools:** agents/flue-handyman/src/evals vitest-evals 2/2
+- **Evidence:** backlog/impl_flue_agent_evals.md · review: APPROVED -> backlog/review_flue_agent_evals.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 89: flue_runtime_api_architecture
+- **Branch:** feat/flue-spike
+- **Tools:** backlog/explore_flue_runtime_api.md
+- **Evidence:** backlog/impl_flue_runtime_api_architecture.md · review: APPROVED -> backlog/review_flue_runtime_api_architecture.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 90: flue_anti_volatility_layer
+- **Branch:** feat/flue-spike
+- **Tools:** src/flue barrel · test_flue_agents.sh TFA10 · flue build smoke
+- **Evidence:** backlog/impl_flue_anti_volatility_layer.md · review: APPROVED -> backlog/review_flue_anti_volatility_layer.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 91: flue_model_catalog
+- **Branch:** feat/flue-spike
+- **Tools:** src/ports/model-catalog.ts · TFA6/TFA8 · .env rename
+- **Evidence:** backlog/impl_flue_model_catalog.md · review: APPROVED -> backlog/review_flue_model_catalog.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 92: flue_telemetry_sink
+- **Branch:** feat/flue-spike
+- **Tools:** src/ports/telemetry-sink.ts · test:unit 4/4 · TFA11
+- **Evidence:** backlog/impl_flue_telemetry_sink.md · review: APPROVED -> backlog/review_flue_telemetry_sink.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 93: flue_stable_server
+- **Branch:** feat/flue-spike
+- **Tools:** src/db.ts sqlite · agents:build/start · boot smoke :3583 · fix REPO_ROOT cwd
+- **Evidence:** backlog/impl_flue_stable_server.md · review: APPROVED -> backlog/review_flue_stable_server.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 94: flue_error_taxonomy
+- **Branch:** feat/flue-spike
+- **Tools:** src/domain/errors.ts + client-error-classes.mjs · driver reconnect · 15 unit tests
+- **Evidence:** backlog/impl_flue_error_taxonomy.md · review: APPROVED -> backlog/review_flue_error_taxonomy.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 95: web_live_agent_view
+- **Branch:** feat/flue-spike
+- **Tools:** apps/web /agent + api/agent + test_web_agent.sh 10/10 · web build OK
+- **Evidence:** backlog/impl_web_live_agent_view.md · review: APPROVED -> backlog/review_web_live_agent_view.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-27 - Feature 96: architecture_memory_update
+- **Branch:** feat/flue-spike
+- **Tools:** memory/architecture.md seccion Flue · docs/adr-flue-harness-architecture.md · AGENTS.md
+- **Evidence:** backlog/impl_architecture_memory_update.md · review: APPROVED -> backlog/review_architecture_memory_update.md
+- **Verification:** verifier exit 0 · closure done

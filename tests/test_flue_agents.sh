@@ -11,6 +11,7 @@ SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SUITE_DIR/.." && pwd)"
 AGENTS_DIR="$REPO_ROOT/agents/flue-handyman"
 AGENT_FILE="$AGENTS_DIR/src/agents/handyman-leader.ts"
+CATALOG="$AGENTS_DIR/src/ports/model-catalog.ts"
 
 echo "agents/flue-handyman suite (test_flue_agents.sh)"
 
@@ -68,13 +69,15 @@ else
 fi
 
 # --- TFA6: per-role models via env -------------------------------------------
-start_case "agent: per-role models via HANDYMAN_{LEADER,IMPLEMENTER,REVIEWER}_MODEL"
-if grep -q 'HANDYMAN_LEADER_MODEL' "$AGENT_FILE" \
-  && grep -q 'HANDYMAN_IMPLEMENTER_MODEL' "$AGENT_FILE" \
-  && grep -q 'HANDYMAN_REVIEWER_MODEL' "$AGENT_FILE"; then
+start_case "model catalog: per-role models via HANDYMAN_{LEADER,IMPLEMENTER,REVIEWER}_MODEL"
+if [ -f "$CATALOG" ] \
+  && grep -q 'HANDYMAN_LEADER_MODEL' "$CATALOG" \
+  && grep -q 'HANDYMAN_IMPLEMENTER_MODEL' "$CATALOG" \
+  && grep -q 'HANDYMAN_REVIEWER_MODEL' "$CATALOG" \
+  && grep -q 'resolveRoleModels' "$AGENT_FILE"; then
   pass
 else
-  fail "per-role model env vars missing"
+  fail "per-role model resolution missing from the catalog or the agent"
 fi
 
 # --- TFA7: subagents + role templates ----------------------------------------
@@ -87,14 +90,16 @@ else
   fail "subagent profiles or role-template loading missing"
 fi
 
-# --- TFA8: providers registered in app.ts ------------------------------------
-start_case "app.ts: anthropic (Z.AI) and kimi-coding providers registered"
-if grep -q "registerProvider('anthropic'" "$AGENTS_DIR/src/app.ts" \
-  && grep -q 'api.z.ai/api/anthropic' "$AGENTS_DIR/src/app.ts" \
-  && grep -q "registerProvider('kimi-coding'" "$AGENTS_DIR/src/app.ts"; then
+# --- TFA8: providers registered via the model catalog -------------------------
+start_case "app.ts registers providers via model catalog (Z.AI + kimi-coding, no MOONSHOT fallback)"
+if grep -q "registerModelProviders" "$AGENTS_DIR/src/app.ts" \
+  && grep -q "registerProvider('anthropic'" "$CATALOG" \
+  && grep -q 'api.z.ai/api/anthropic' "$CATALOG" \
+  && grep -q "registerProvider('kimi-coding'" "$CATALOG" \
+  && ! grep -rq "MOONSHOT_API_KEY" "$AGENTS_DIR/src"; then
   pass
 else
-  fail "provider registrations missing"
+  fail "provider registrations missing from catalog, or MOONSHOT fallback still present"
 fi
 
 # --- TFA9: root scripts -------------------------------------------------------
@@ -108,6 +113,60 @@ process.exit(ok ? 0 : 1);
   pass
 else
   fail "agents:dev / agents:run missing in root package.json"
+fi
+
+# --- TFA10: anti-volatility barrel -------------------------------------------
+start_case "src/flue/: only @flue/* importer under src/; consumers use the barrel"
+OFFENDERS="$(grep -rln "from '@flue/" "$AGENTS_DIR/src" | grep -v "/src/flue/" || true)"
+if [ -f "$AGENTS_DIR/src/flue/index.ts" ] \
+  && [ -z "$OFFENDERS" ] \
+  && grep -q "from './flue'" "$AGENTS_DIR/src/app.ts" \
+  && grep -q "from '../flue'" "$AGENT_FILE" \
+  && grep -q "Documented exception" "$AGENTS_DIR/run-feature.mjs"; then
+  pass
+else
+  fail "barrel missing or @flue imports outside src/flue/:$OFFENDERS"
+fi
+
+# --- TFA11: telemetry sink ----------------------------------------------------
+start_case "telemetry sink: observe() -> JSONL wired in app.ts, unit tests green"
+if [ -f "$AGENTS_DIR/src/ports/telemetry-sink.ts" ] \
+  && grep -q "installTelemetrySink" "$AGENTS_DIR/src/app.ts" \
+  && grep -q "^logs/$" "$AGENTS_DIR/.gitignore" \
+  && (cd "$AGENTS_DIR" && pnpm test:unit >/dev/null 2>&1); then
+  pass
+else
+  fail "telemetry sink missing, unwired, or unit tests red"
+fi
+
+# --- TFA12: stable server (db.ts + build/start scripts) -----------------------
+start_case "stable server: db.ts sqlite file + start script + root agents:build/start"
+if [ -f "$AGENTS_DIR/src/db.ts" ] \
+  && grep -q "sqlite('./data/flue.db')" "$AGENTS_DIR/src/db.ts" \
+  && grep -q "^data/$" "$AGENTS_DIR/.gitignore" \
+  && node -e '
+const pkg = require(process.argv[1]);
+const root = require(process.argv[2]);
+const ok = typeof (pkg.scripts ?? {}).start === "string"
+  && typeof (root.scripts ?? {})["agents:build"] === "string"
+  && typeof (root.scripts ?? {})["agents:start"] === "string";
+process.exit(ok ? 0 : 1);
+' "$AGENTS_DIR/package.json" "$REPO_ROOT/package.json"; then
+  pass
+else
+  fail "db.ts, data/ ignore, or build/start scripts missing"
+fi
+
+# --- TFA13: error taxonomy -----------------------------------------------------
+start_case "error taxonomy: classify + retryPolicy, shared client table, driver reconnect"
+if [ -f "$AGENTS_DIR/src/domain/errors.ts" ] \
+  && grep -q "retryPolicy" "$AGENTS_DIR/src/domain/errors.ts" \
+  && grep -q "client-error-classes.mjs" "$AGENTS_DIR/run-feature.mjs" \
+  && grep -q "isTransientClientError" "$AGENTS_DIR/run-feature.mjs" \
+  && (cd "$AGENTS_DIR" && pnpm test:unit >/dev/null 2>&1); then
+  pass
+else
+  fail "error taxonomy missing, driver not reconnecting, or unit tests red"
 fi
 
 summary

@@ -1,7 +1,7 @@
 // flue-blueprint: tooling/vitest-evals@1 — adapted: agents.send + agents.wait
 // instead of agents.prompt (a blocking prompt dies with a headers timeout on
 // long delegation loops; the backend continues regardless).
-import { createFlueClient, type FlueConversationMessage } from '@flue/sdk';
+import { createFlueClient, type FlueConversationMessage } from '../../flue';
 import { createHarness } from 'vitest-evals';
 
 export interface HandymanAgentHarnessOptions {

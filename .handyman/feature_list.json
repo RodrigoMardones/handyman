@@ -192,10 +192,11 @@
         "La investigacion documenta el resultado real de ejecutar el comando npx skills add (exito/duplicado/error) y una recomendacion sobre declarar find-skills en discovery",
         "./init.sh exits 0"
       ],
-      "status": "in_progress",
+      "status": "done",
       "sprint": "feat-residual-memory-revision",
       "meta": {
-        "started_at": "2026-07-27T02:53:53.938Z"
+        "started_at": "2026-07-27T02:53:53.938Z",
+        "done_at": "2026-07-28T01:12:43.171Z"
       }
     },
     {
@@ -207,8 +208,12 @@
         "leader delegates to implementer and reviewer subagents over MCP",
         "toy feature closes green end-to-end on a scratch workspace"
       ],
-      "status": "pending",
-      "sprint": "feat-residual-memory-revision"
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-28T01:12:43.292Z",
+        "done_at": "2026-07-28T01:13:39.012Z"
+      }
     },
     {
       "id": 88,
@@ -219,8 +224,179 @@
         "eval suite runs via vitest-evals against flue dev and passes",
         "no API calls in structural tests; evals documented as API-cost tests"
       ],
-      "status": "pending",
-      "sprint": "feat-residual-memory-revision"
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-28T01:13:39.128Z",
+        "done_at": "2026-07-28T01:14:33.257Z"
+      }
+    },
+    {
+      "id": 89,
+      "name": "flue_runtime_api_architecture",
+      "title": "Formal harness architecture from the @flue/runtime API",
+      "description": "Complete review of the @flue/runtime/@flue/sdk/@flue/cli API surface (installed package ground truth + docs + CHANGELOG unreleased) to produce a concept map handyman<->Flue, a capability census, and an ordered harness architecture proposal. Full brief: .handyman/progress/handoff-2026-07-27.md section 3.",
+      "acceptance": [
+        "API inventory documented from the installed .d.mts, cross-checked with docs and CHANGELOG",
+        "concept map + capability census + architecture proposal written under .handyman/backlog/explore_flue_runtime_api.md"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-28T01:14:33.374Z",
+        "done_at": "2026-07-28T01:15:27.649Z"
+      }
+    },
+    {
+      "id": 90,
+      "name": "flue_anti_volatility_layer",
+      "title": "Capa anti-volatilidad: src/flue/ como unico import de @flue/*",
+      "description": "Crear agents/flue-handyman/src/flue/index.ts (barrel propio) que concentra TODOS los imports de @flue/runtime, @flue/runtime/routing y @flue/sdk, re-exportando solo lo usado (defineAgent, defineAgentProfile, connectMcpServer, observe, registerProvider, flue routing, createFlueClient y tipos). app.ts, agents/handyman-leader.ts y evals/harness.ts importan de la ruta relativa src/flue/ en vez de @flue/*. Objetivo: cuando Flue 1.0 rompa la superficie (plugin Vite, 'use agent', SDK colapsado), el diff toque un solo archivo. Excepcion documentada: run-feature.mjs (driver .mjs standalone sin build) sigue importando @flue/sdk directo. Cero cambio de comportamiento. Decision D-anti-volatilidad de backlog/explore_flue_runtime_api.md (secc. 4.3).",
+      "acceptance": [
+        "src/flue/index.ts existe y es el unico archivo bajo agents/flue-handyman/src/ que importa @flue/* (grep -rn '@flue/' agents/flue-handyman/src solo matchea src/flue/)",
+        "app.ts, agents/handyman-leader.ts y evals/harness.ts importan desde la ruta relativa a src/flue/; run-feature.mjs queda como excepcion documentada (comentario en el archivo y en README)",
+        "tests/test_flue_agents.sh gana caso que enforcea el unico importador y la suite sigue verde",
+        "./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "depends_on": [
+        89
+      ],
+      "meta": {
+        "started_at": "2026-07-28T01:17:34.507Z",
+        "done_at": "2026-07-28T01:21:11.902Z"
+      }
+    },
+    {
+      "id": 91,
+      "name": "flue_model_catalog",
+      "title": "ModelCatalog: providers y modelos por rol en ports/model-catalog.ts",
+      "description": "Extraer la configuracion de providers (registerProvider anthropic->Z.AI con override, kimi-coding de catalogo) y la resolucion de modelos por rol (HANDYMAN_{LEADER,IMPLEMENTER,REVIEWER}_MODEL, tuning GLM thinkingLevel/maxTokens) a agents/flue-handyman/src/ports/model-catalog.ts: un solo modulo conoce endpoints, env keys y tuning por provider. app.ts registra providers llamando al catalogo; handyman-leader.ts resuelve los modelos de rol desde el catalogo. Limpieza: KIMI_API_KEY como var canonica para kimi-coding (fallback MOONSHOT_API_KEY eliminado del codigo; la var del .env raiz se renombra con sed sin imprimir valores). Actualizar tests/test_flue_agents.sh (TFA6/TFA8 pasan a asertar el catalogo) y README.",
+      "acceptance": [
+        "src/ports/model-catalog.ts exporta registerModelProviders() y la resolucion de modelos por rol con tuning por provider; app.ts y agents/handyman-leader.ts lo consumen (ningun registerProvider ni lectura de env keys de providers fuera del catalogo)",
+        "el codigo ya no referencia MOONSHOT_API_KEY como fallback (solo KIMI_API_KEY para kimi-coding); el .env raiz queda renombrado; README actualizado",
+        "tests/test_flue_agents.sh actualizada al nuevo wiring y verde",
+        "./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "depends_on": [
+        90
+      ],
+      "meta": {
+        "started_at": "2026-07-28T01:22:12.673Z",
+        "done_at": "2026-07-28T01:26:59.580Z"
+      }
+    },
+    {
+      "id": 92,
+      "name": "flue_telemetry_sink",
+      "title": "TelemetrySink: observe() a JSONL por feature + politica de alertas",
+      "description": "Crear agents/flue-handyman/src/ports/telemetry-sink.ts: subscriber de observe() (via barrel src/flue/) que escribe un JSONL por instancia de agente en agents/flue-handyman/logs/agent-<instanceId>.jsonl con los eventos FlueEvent v3, correlacion submissionId/instanceId, y resume outcomes por consola (submission_settled failed, operaciones lentas, tools con error repetidos). Politica de privacidad: nunca contenido de mensajes en logs (text/thinking deltas se registran como conteos de chars). Wire en app.ts (un subscriber por proceso). logs/ gitignored. Diseno testeable: createTelemetrySink({dir}) devuelve el subscriber puro e installTelemetrySink lo conecta a observe(); test unitario con eventos fake (vitest, sin API ni runtime). Politica de alertas por outcomes (no errores anidados recuperables) documentada en README. Ref: explore_flue_runtime_api.md secc. 5.2.",
+      "acceptance": [
+        "src/ports/telemetry-sink.ts exporta createTelemetrySink (subscriber puro) e installTelemetrySink (wire a observe()); app.ts lo instala",
+        "escribe logs/agent-<instanceId>.jsonl (una linea por evento, sin contenido de mensajes: deltas como {chars}) y resume outcomes por consola; logs/ en .gitignore del paquete",
+        "test unitario sin API cubre correlacion por instanceId, omision de contenido y resumen de outcomes; corre en la suite estructural",
+        "tests/test_flue_agents.sh verde con caso nuevo y ./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "depends_on": [
+        90
+      ],
+      "meta": {
+        "started_at": "2026-07-28T01:28:29.988Z",
+        "done_at": "2026-07-28T01:32:35.241Z"
+      }
+    },
+    {
+      "id": 93,
+      "name": "flue_stable_server",
+      "title": "Servidor estable: flue build + sqlite persistente + runbook",
+      "description": "Durabilidad y estabilidad para sesiones largas. (1) src/db.ts con sqlite('./data/flue.db') (subpath @flue/runtime/node via barrel) para que submissions y conversaciones sobrevivan reinicios del proceso; data/ gitignored. (2) scripts de paquete build/start (flue build --target node -> node dist/server.mjs) y scripts raiz agents:build/agents:start como alternativa estable a flue dev (evita el Runtime drain timed out del watcher con edits en vuelo). (3) Runbook en README: levantar servidor estable, abort por feature (agents.abort), recovery tras kill del proceso (resume desde Durable Streams + disco handyman consistente), y precauciones de data/. El build real se ejecuta como evidencia y queda documentado en el impl report.",
+      "acceptance": [
+        "src/db.ts registra sqlite('./data/flue.db') via barrel src/flue/ y data/ queda en .gitignore del paquete",
+        "scripts build/start en el paquete y agents:build/agents:start en la raiz; README con runbook (servidor estable, abort por feature, recovery, data/)",
+        "pnpm --filter @handyman/flue-handyman build produce dist/server.mjs (evidencia citada en el impl report)",
+        "tests/test_flue_agents.sh verde con casos nuevos (db.ts + scripts) y ./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "depends_on": [
+        90
+      ],
+      "meta": {
+        "started_at": "2026-07-28T01:32:49.333Z",
+        "done_at": "2026-07-28T01:37:46.357Z"
+      }
+    },
+    {
+      "id": 94,
+      "name": "flue_error_taxonomy",
+      "title": "Taxonomia de errores: dominio/transiente/protocolo + politica retry",
+      "description": "Crear agents/flue-handyman/src/domain/errors.ts con la taxonomia de 3 clases de explore_flue_runtime_api.md secc. 5.2: (a) outcome de dominio (verifier rojo, feature duplicada, conflicto de veredicto -> NUNCA retry; el leader reporta y para), (b) fallo transiente de infra (provider 429/5xx, HeadersTimeoutError, StreamClosedError, RuntimeUnavailableError -> retry/reconexion con budget), (c) error de protocolo (ToolInputValidationError, SubagentNotDeclaredError, SessionBusyError -> lo corrige el modelo). Clasificador puro classify(...) basado en type snake_case de FlueError, clases del SDK y payloads isError del MCP. Aplicacion: run-feature.mjs reconecta al stream existente con backoff ante fallos transientes del wait (sin re-dispatch), y README documenta la tabla + politica. Tests unitarios del clasificador (sin API) en la suite estructural.",
+      "acceptance": [
+        "src/domain/errors.ts exporta classify() con las 3 clases y la tabla de mapeo (FlueError types, errores SDK, payloads MCP); tests unitarios verdes sin API",
+        "run-feature.mjs: ante fallo transiente del wait (timeout/headers/fetch), re-adjunta al mismo admission con backoff acotado en vez de re-dispatch",
+        "README documenta la taxonomia y la politica de retry por clase",
+        "tests/test_flue_agents.sh verde y ./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "depends_on": [
+        90
+      ],
+      "meta": {
+        "started_at": "2026-07-28T01:39:33.400Z",
+        "done_at": "2026-07-28T01:43:12.858Z"
+      }
+    },
+    {
+      "id": 95,
+      "name": "web_live_agent_view",
+      "title": "apps/web: vista viva del agente Flue por feature (read-only)",
+      "description": "Vista nueva /agent en apps/web que muestra el loop del leader por feature consumiendo el runtime Flue (env FLUE_BASE_URL, default http://127.0.0.1:3583) a traves de un route handler proxy same-origin (server-side; el cliente nunca ve origenes externos, CSP default-src 'self' intacta). Alcance minimo siguiendo el patron de vistas existente (page.tsx + renderer puro + Live client + route handler force-dynamic, cero deps nuevas): snapshot de la conversacion de la instancia (mensajes/tool calls resumidos) + fase (live/absent/error). Cuando el runtime Flue esta apagado la vista degrada a 'runtime offline' sin romper nada. Suite tests/test_web_agent.sh nueva siguiendo el patron de las suites test_web_* (archivos, renderer determinista, escaping, native route), registrada en run_tests.sh.",
+      "acceptance": [
+        "app/agent/ (page + renderer puro + client) y route handler proxy force-dynamic que consulta FLUE_BASE_URL server-side; degrada a 'runtime offline' sin lanzar",
+        "cero deps nuevas; CSP intacta; escaping del contenido del agente; sin em/en dashes en apps/web",
+        "tests/test_web_agent.sh siguiendo el patron existente, verde, y registrada en tests/run_tests.sh",
+        "./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "depends_on": [
+        90
+      ],
+      "meta": {
+        "started_at": "2026-07-28T01:44:47.024Z",
+        "done_at": "2026-07-28T02:01:35.972Z"
+      }
+    },
+    {
+      "id": 96,
+      "name": "architecture_memory_update",
+      "title": "memory/architecture.md: lectura hexagonal + bounded contexts + ADR Flue",
+      "description": "Volcar la propuesta de backlog/explore_flue_runtime_api.md (secc. 4-5) en .handyman/memory/architecture.md: lectura hexagonal del repo (CLIs = driving adapters, src/core = dominio, MCP = adapter), bounded contexts (harness core, tool gateway, agent orchestration, agent execution, model provisioning, observability, exposure), regla de la capa anti-volatilidad (un solo importador de @flue/* en agents/flue-handyman/src/flue/), taxonomia de errores de 3 clases y niveles de exposicion 0-4. ADR corto en docs/adr-flue-harness-architecture.md con la decision (Flue como tercer driving adapter, MCP como anti-corruption layer, diseno contra conceptos estables) y alternativas consideradas. Actualizar AGENTS.md solo si cambian convenciones operativas del layout de agents/flue-handyman.",
+      "acceptance": [
+        "memory/architecture.md describe bounded contexts, puertos y las reglas nuevas (anti-volatilidad, taxonomia de errores, niveles de exposicion) en seccion propia",
+        "docs/adr-flue-harness-architecture.md existe con decision, alternativas y consecuencias",
+        "AGENTS.md actualizado solo si el layout de agents/flue-handyman cambio convenciones operativas",
+        "./init.sh exits 0"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "depends_on": [
+        91,
+        92,
+        93,
+        94,
+        95
+      ],
+      "meta": {
+        "started_at": "2026-07-28T02:02:14.620Z",
+        "done_at": "2026-07-28T02:05:07.615Z"
+      }
     }
   ]
 }

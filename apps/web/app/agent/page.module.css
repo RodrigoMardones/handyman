@@ -1,0 +1,412 @@
+/* /agent page styles (feature 95 web_live_agent_view). Every value comes
+   from the tokens in globals.css: no raw hex, no second accent, same
+   terracotta-on-slate palette locked across the whole apps/web app
+   (tasteskill v2 Color Consistency Lock). The generated HTML from
+   renderAgentHtml uses plain class names, so the rules under .agent use
+   :global() to target them without losing the scoping this module gives the
+   page shell (same technique as /fleet, /timeline and /harness). */
+
+.page {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* --- Nav (same pill + radius language as /fleet and /timeline) ------------ */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand,
+.nav {
+  max-width: var(--max-width);
+  margin-inline: auto;
+}
+
+.nav {
+  padding-inline: var(--space-4);
+  height: 68px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.brandMark {
+  color: var(--accent);
+}
+
+.brandName {
+  letter-spacing: 0.01em;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navLinks a {
+  text-decoration: none;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  transition: color 120ms ease, background-color 120ms ease;
+}
+
+.navLinks a:hover {
+  color: var(--text);
+  background: var(--bg-sunken);
+}
+
+.navLinks a[aria-current="page"] {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .nav {
+    height: 60px;
+  }
+  .navLinks {
+    gap: var(--space-2);
+  }
+}
+
+/* --- Load-failure banner --------------------------------------------------- */
+.down {
+  max-width: var(--max-width);
+  margin: var(--space-4) auto 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-card);
+  background: var(--bg-elevated);
+}
+
+.down code {
+  font-family: var(--font-mono);
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* --- View container -------------------------------------------------------- */
+.agent {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding: var(--space-5) var(--space-4) var(--space-7);
+}
+
+/* --- Feature picker (plain GET form) --------------------------------------- */
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.pickerLabel {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.picker input {
+  flex: 1 1 16rem;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+.picker input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.picker button {
+  padding: var(--space-1) var(--space-3);
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--on-accent);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+/* The rules below target the HTML emitted by renderAgentHtml and the
+   AgentLive wrapper (plain class names), scoped to .agent via :global(). */
+
+.agent :global(.agent-live__status) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-3);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.agent :global(.agent-live__dot) {
+  width: 9px;
+  height: 9px;
+  border-radius: var(--radius-pill);
+  background: var(--border-strong);
+}
+
+.agent :global(.agent-live__status[data-live="live"] .agent-live__dot) {
+  background: var(--accent);
+}
+
+.agent :global(.agent-live__status[data-live="stale"] .agent-live__dot) {
+  background: var(--border-strong);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .agent :global(.agent-live__status[data-live="live"] .agent-live__dot) {
+    animation: agent-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes agent-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+}
+
+/* --- Header ---------------------------------------------------------------- */
+.agent :global(.agent-header) {
+  margin-bottom: var(--space-5);
+}
+
+.agent :global(.agent-header__eyebrow) {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.agent :global(.agent-header__title) {
+  margin: var(--space-1) 0;
+  font-size: clamp(2rem, 1.4rem + 2.5vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.agent :global(.agent-header__meta) {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.agent :global(.agent-header__feature) {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+/* --- Sections --------------------------------------------------------------- */
+.agent :global(.agent-section) {
+  margin-top: var(--space-5);
+}
+
+.agent :global(.agent-section__title) {
+  margin: 0 0 var(--space-3);
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.agent :global(.empty) {
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+}
+
+.agent :global(.agent-section--down .empty) {
+  border-style: solid;
+}
+
+/* --- Status + counter chips ------------------------------------------------- */
+.agent :global(.agent-chips) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.agent :global(.agent-chip) {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4em;
+  padding: 0.2em 0.7em;
+  border-radius: var(--radius-pill);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  background: var(--bg-sunken);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.agent :global(.agent-chip__count) {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.agent :global(.agent-chip--zero) {
+  opacity: 0.55;
+}
+
+/* Online/offline/alert carry meaning via accent weight, never a second hue. */
+.agent :global(.agent-chip--online) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.agent :global(.agent-chip--offline) {
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-sunken));
+  color: var(--text);
+}
+
+.agent :global(.agent-chip--alert) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* --- Activity meta line ------------------------------------------------------ */
+.agent :global(.agent-meta) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.agent :global(.agent-meta__total) {
+  color: var(--text);
+}
+
+.agent :global(.agent-meta__ts) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- byType table ------------------------------------------------------------- */
+.agent :global(.table-wrap) {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-elevated);
+}
+
+.agent :global(.agent-table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.agent :global(.agent-table thead th) {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.agent :global(.agent-table td),
+.agent :global(.agent-table th) {
+  padding: var(--space-2) var(--space-3);
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.agent :global(.agent-table tbody tr:last-child td),
+.agent :global(.agent-table tbody tr:last-child th) {
+  border-bottom: none;
+}
+
+.agent :global(.agent-table__type) {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.agent :global(.agent-table__count) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Outcomes list ------------------------------------------------------------- */
+.agent :global(.agent-outcomes) {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  max-width: 42rem;
+}
+
+.agent :global(.agent-outcome) {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6em;
+  align-items: baseline;
+  font-size: 0.85rem;
+}
+
+.agent :global(.agent-outcome__id) {
+  font-family: var(--font-mono);
+  color: var(--text);
+  word-break: break-all;
+}
+
+.agent :global(.agent-outcome__value) {
+  padding: 0.1em 0.5em;
+  border-radius: var(--radius-pill);
+  background: var(--bg-sunken);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .agent :global(.agent-outcome) {
+    grid-template-columns: 1fr;
+    gap: 0.2em;
+  }
+}

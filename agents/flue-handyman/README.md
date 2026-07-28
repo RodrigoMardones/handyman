@@ -75,9 +75,94 @@ Casos (`src/evals/handyman-leader.eval.ts`, ~8 min, coste de API real):
 ahora (aserciones deterministas); `toSatisfyJudge` con juez independiente es
 el siguiente paso natural.
 
+## Taxonomía de errores y política de retry
+
+`src/domain/errors.ts` clasifica todo fallo en 3 clases y la clase **decide**
+la política (clasificación por contratos estables: `type` snake_case de
+FlueError y nombre/status del error del SDK — nunca por `message`):
+
+| Clase | Ejemplos | Política |
+|---|---|---|
+| `domain_outcome` | verifier rojo en `feature_close`, `feature_add` duplicada, conflicto de veredicto, submission abortada o con retries agotados | **Nunca reintentar**: es un outcome de negocio/terminal. El leader reporta y para |
+| `transient_infra` | provider 429/5xx, `HeadersTimeoutError`, `StreamClosedError`, `RuntimeUnavailableError` (drain) | **Reconexión acotada**: re-adjuntar al MISMO admission/stream (el backend sigue trabajando; re-dispatch duplicaría el ciclo) |
+| `protocol_error` | `ToolInputValidationError`, `SubagentNotDeclaredError`, `SessionBusyError` | **El modelo corrige**: el error vuelve como tool result y el modelo ajusta su llamada; si escala a humano, es bug nuestro |
+
+Detalles de diseño:
+
+- Los tool results del MCP handyman con `isError` son `domain_outcome` por
+  construcción: los CLIs enforcean reglas de negocio, sus rechazos no se
+  reintentan (`classifyHandymanToolResult`).
+- Fallo desconocido del cliente → `transient_infra` por defecto: los
+  hiccups se recuperan, y el budget acotado (5 reconexiones, backoff
+  exponencial hasta 15 s en `run-feature.mjs`) impide que un bug real
+  reintente para siempre.
+- La tabla de errores de cliente vive en `src/domain/client-error-classes.mjs`
+  (JS plano) para que el driver standalone y los módulos TS compartan UNA
+  fuente de verdad; `errors.ts` la envuelve con tipos.
+
+## Servidor estable (sesiones largas)
+
+`flue dev` es para desarrollo: su watcher **no tolera edits con un run en
+vuelo** (`Runtime drain timed out` → estado `failed` hasta reiniciar). Para
+corridas largas o desatendidas, usa el servidor compilado:
+
+```bash
+pnpm agents:build     # flue build --target node -> agents/flue-handyman/dist/server.mjs
+pnpm agents:start     # PORT=3583 node dist/server.mjs (mismo puerto que flue dev)
+```
+
+El servidor compilado lee `PORT` (default 3000 upstream); el script lo fija a
+3583 para que el driver (`run-feature.mjs`) y los evals apunten al mismo
+puerto en ambos modos. Override libre: `PORT=4000 pnpm agents:start`.
+
+- **Durabilidad real**: `src/db.ts` registra `sqlite('./data/flue.db')`
+  (descubierto por el build; sin él, SQLite en memoria y todo se pierde al
+  salir). Streams de conversación, submissions aceptadas y registros de runs
+  sobreviven reinicios del proceso. `data/` está gitignored — borrarla
+  resetea el estado del runtime (el estado de negocio handyman NO se toca:
+  vive en el `.handyman/` del proyecto target).
+- **Recovery tras kill**: mata el proceso a mitad de un ciclo y vuelve a
+  `agents:start`; el runtime retoma los streams desde el último paso durable
+  (tool calls sin resultado se marcan `interrupted`, no se reejecutan) y el
+  disco handyman ya es crash-safe (escritura atómica temp+rename).
+- **Abort por feature**: una instancia = una feature (`id` = nombre). Para
+  abortar trabajo en vuelo o en cola: `agents.abort('handyman-leader',
+  '<feature>')` vía `@flue/sdk` (p.ej. un one-liner con `createFlueClient`).
+- **Regla dura**: un proceso vivo por instancia. No levantes dos servidores
+  sobre el mismo `data/`; la paralelización es por feature distinta, no por
+  réplica.
+- Edita código solo con el servidor parado; tras editar, `agents:build` de
+  nuevo antes de `agents:start`.
+
+## Telemetría (observe() → JSONL)
+
+`src/ports/telemetry-sink.ts` se suscribe al stream `observe()` del runtime
+(un subscriber por proceso, cableado en `src/app.ts`) y escribe:
+
+- **`logs/agent-<instanceId>.jsonl`** — una línea por evento `FlueEvent` v3,
+  correlacionado por `instanceId` (= feature). Regla dura de privacidad:
+  **nunca contenido de mensajes** — `text_delta`/`thinking_delta`, payloads de
+  mensajes y args/results de tools se registran como `{ chars: N }`; solo
+  pasan verbatim ids de correlación, escalares seguros (`toolName`,
+  `durationMs`, `isError`, `outcome`…) y `usage` (todo numérico).
+- **Consola orientada a outcomes** — `submission_settled` (completed → info;
+  failed/aborted → warn), `run_end` con error, operaciones fallidas y
+  operaciones lentas (>5 min). Las tool calls con error NO van a consola: son
+  dato para el modelo (recuperables), no alertas. Es la política recomendada
+  por las propias docs de Flue: alertar outcomes, no errores anidados.
+
+`logs/` está gitignored; el dir se puede mover con `HANDYMAN_TELEMETRY_DIR`.
+Correlación con la pista de negocio: `instanceId` = feature ↔ entradas de
+`history.md` (no se duplica: el JSONL es pista de ejecución, history es pista
+de negocio).
+
 ## Agente personalizado v1 (leader + subagents)
 
-`src/agents/handyman-leader.ts` implementa el agente handyman personalizado:
+`src/agents/handyman-leader.ts` implementa el agente handyman personalizado.
+Todo import de `@flue/*` pasa por la capa anti-volatilidad `src/flue/index.ts`
+(único importador del paquete; la excepción documentada es `run-feature.mjs`,
+driver `.mjs` sin build): cuando la API 1.0 de Flue rompa la superficie beta,
+la adaptación toca un solo archivo.
 
 - **Leader** (`defineAgent`): instrucciones = cuerpo de
   `handyman/assets/role-leader.template.md` + protocolo concreto MCP
@@ -93,7 +178,9 @@ el siguiente paso natural.
 
 ## Modelos por rol (multi-provider)
 
-Cada rol resuelve su modelo de una env var al arrancar `flue dev`:
+Cada rol resuelve su modelo en `src/ports/model-catalog.ts` (único módulo que
+conoce endpoints, env keys y tuning por provider; `app.ts` solo llama
+`registerModelProviders()` y el agente `resolveRoleModels()`):
 
 | Rol | Env var | Default |
 |---|---|---|
@@ -101,16 +188,16 @@ Cada rol resuelve su modelo de una env var al arrancar `flue dev`:
 | implementer | `HANDYMAN_IMPLEMENTER_MODEL` | `anthropic/glm-5.2` |
 | reviewer | `HANDYMAN_REVIEWER_MODEL` | `anthropic/glm-5.2` |
 
-Providers configurados (ver `src/app.ts`):
+Providers configurados (ver `src/ports/model-catalog.ts`):
 
 - **`anthropic` (override)** → Z.AI (`api.z.ai/api/anthropic`), key `Z_AI_API_KEY`. Sirve GLM-5.2.
 - **`kimi-coding` (catálogo, solo apiKey)** → Kimi for Coding (`api.kimi.com/coding`,
-  protocolo anthropic-messages). Key `KIMI_API_KEY` con fallback a `MOONSHOT_API_KEY`.
+  protocolo anthropic-messages). Key `KIMI_API_KEY`.
   Modelos: `k2p7` (K2.7 Code), `k3`.
-- **`moonshotai` / `moonshotai-cn` (catálogo)** → plataforma Moonshot, key
-  `MOONSHOT_API_KEY`. Modelos `kimi-k2.5`…`kimi-k3`. Ojo: un token de
-  **Kimi for Coding NO es válido aquí** (401 en api.moonshot.ai) — son productos
-  y endpoints distintos.
+- **Moonshot plataforma (`moonshotai`/`moonshotai-cn`): NO configurado** en este
+  deployment. Ojo: un token de **Kimi for Coding NO es válido** en
+  `api.moonshot.ai` (401) — son productos y endpoints distintos; si se necesita
+  plataforma, registrar el provider explícitamente con su propia key.
 
 Ejemplo mixto validado:
 

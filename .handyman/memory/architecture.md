@@ -195,8 +195,67 @@ anota aqui en vez de doblar el helper.
   los `runCli("feature.js")` para resolver el binario desde
   `node_modules/handyman-harness/dist/` es trivial.
 
+## Capa de agentes Flue (bounded contexts y puertos)
+
+Desde las features 90-96 el repo tiene un tercer consumidor del dominio (junto
+a los CLIs y el MCP): el agent runtime Flue en `agents/flue-handyman/`. La
+lectura hexagonal formal (propuesta completa en
+`backlog/explore_flue_runtime_api.md` y decision en
+`docs/adr-flue-harness-architecture.md`):
+
+- **Dominio (harness core):** la maquina de estados de feature, sprints,
+  reportes, verifier y el layout `.handyman/` viven en `handyman/src/core/` +
+  CLIs + `assets/schemas/*.json`. No importa nada hacia afuera.
+- **Tool gateway (MCP):** `handyman/src/mcp.ts` es el anti-corruption layer
+  entre el LLM y el dominio: los tools son comandos de aplicacion
+  (`feature_close`), no primitivas de persistencia. El modelo propone; el CLI
+  dispone. Sus rechazos son outcomes de dominio, nunca errores a reintentar.
+- **Agent orchestration:** `agents/flue-handyman/` — roles como profiles
+  (prompts desde `handyman/assets/role-*.template.md`, fuente unica), una
+  instancia de agente por feature (`id` = nombre del feature), delegacion
+  leader->subagent via `task()`.
+- **Agent execution:** propiedad del framework Flue (sesiones, compaction,
+  sandbox, Durable Streams). Se consume por su contrato publico; no se
+  construye dominio ahi.
+- **Model provisioning:** `agents/flue-handyman/src/ports/model-catalog.ts`
+  es el unico modulo que conoce endpoints, env keys y tuning por provider
+  (Z.AI GLM via override `anthropic`; Kimi for Coding via `kimi-coding` +
+  `KIMI_API_KEY`).
+- **Observability:** `agents/flue-handyman/src/ports/telemetry-sink.ts`
+  (`observe()` -> `logs/agent-<feature>.jsonl` sanitizado) + consola orientada
+  a outcomes; la vista `/agent` de `apps/web` la consume read-only via
+  `app/api/agent/loadAgentState.ts` (nunca el wire interno de Flue).
+- **Exposure (niveles):** 0 = CLIs/MCP (sagrado) · 1 = `flue dev` + driver SDK
+  · 2 = servidor compilado (`agents:build`/`agents:start`) + sqlite persistente
+  (`src/db.ts`) · 3 = vista `/agent` · 4 = channels/schedules (postergado:
+  channels sin API publica en beta.9).
+
+Reglas duras de la capa de agentes:
+
+1. **Anti-volatilidad.** Todo import de `@flue/*` pasa por
+   `agents/flue-handyman/src/flue/index.ts` (unico importador; excepcion
+   documentada: `run-feature.mjs`, driver standalone). Diseñar contra
+   conceptos estables (agents, profiles, tools, sessions, dispatch, observe,
+   registerProvider). **Workflows prohibidos**: mueren en Flue 1.0.
+2. **Taxonomia de errores de 3 clases** (`src/domain/errors.ts`):
+   `domain_outcome` (nunca retry; el leader reporta y para),
+   `transient_infra` (reconexion acotada al MISMO admission, nunca
+   re-dispatch), `protocol_error` (lo corrige el modelo). Clasificar por
+   contratos estables (`type` snake_case, nombre/status del error), nunca por
+   `message`.
+3. **Privacidad de logs.** Nunca contenido de mensajes en telemetria (deltas
+   y payloads -> `{chars}`); `usage` numerico si.
+4. **Un proceso vivo por instancia**; la flota paraleliza por feature, no por
+   replica. Servidor compilado para sesiones largas (el watcher de `flue dev`
+   no tolera edits con un run en vuelo).
+
 ## What Not To Do
 
+- Importar `@flue/*` fuera de `agents/flue-handyman/src/flue/` (rompe la capa
+  anti-volatilidad; el caso TFA10 de `tests/test_flue_agents.sh` lo enforcea).
+- Usar workflows de Flue para el ciclo de features (eliminados en 1.0), ni
+  reintentar rechazos de dominio de los CLIs (verifier rojo, duplicados,
+  conflicto de veredicto).
 - Cambiar el contrato de un CLI (subcomandos, flags, exit codes, forma de stdout) sin
   actualizar su test oracle **y** todas las referencias en `SKILL.md` / `references/`.
 - Editar `feature_list.json` a mano o introducir claves fuera del schema.

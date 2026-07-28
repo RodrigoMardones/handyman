@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "flue dev",
     "build": "flue build --target node",
+    "start": "PORT=3583 node dist/server.mjs",
     "run-feature": "node run-feature.mjs",
+    "test:unit": "vitest run",
     "evals": "vitest run --config vitest.evals.config.ts",
     "evals:json": "vitest run --config vitest.evals.config.ts --reporter=vitest-evals/reporter --reporter=json --outputFile.json=vitest-results.json"
   },
