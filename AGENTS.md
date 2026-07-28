@@ -26,7 +26,7 @@ A map, not a rulebook: read only what you need.
 | `memory/business.md`, `memory/architecture.md`, `memory/conventions.md`, `memory/verification.md` | `$HARNESS_WORKSPACE/memory/` (legacy: `docs/`) | before editing / closing |
 | `CHECKPOINTS.md` | `$PROJECT_ROOT` | before review or close |
 | `src/`, `tests/` | `$PROJECT_ROOT` | implementation |
-| `agents/flue-handyman/` | `$PROJECT_ROOT` | Flue-runtime handyman agent (leader + implementer/reviewer over the MCP); see its README before editing; all `@flue/*` imports go through `src/flue/` (anti-volatility barrel) |
+| `agents/mastra-handyman/` | `$PROJECT_ROOT` | Mastra-runtime handyman agent (supervisor / workflow / skill mirror over the MCP); see its README before editing; all `@mastra/*` imports go through `src/mastra/` (anti-volatility barrel). Flue fue eliminado el 2026-07-28 (ADR `docs/adr-mastra-adopcion.md`) |
 
 ## Hard Rules
 

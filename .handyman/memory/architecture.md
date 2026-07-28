@@ -195,13 +195,13 @@ anota aqui en vez de doblar el helper.
   los `runCli("feature.js")` para resolver el binario desde
   `node_modules/handyman-harness/dist/` es trivial.
 
-## Capa de agentes Flue (bounded contexts y puertos)
+## Capa de agentes Mastra (bounded contexts y puertos)
 
-Desde las features 90-96 el repo tiene un tercer consumidor del dominio (junto
-a los CLIs y el MCP): el agent runtime Flue en `agents/flue-handyman/`. La
-lectura hexagonal formal (propuesta completa en
-`backlog/explore_flue_runtime_api.md` y decision en
-`docs/adr-flue-harness-architecture.md`):
+Desde 2026-07-28 el repo tiene un tercer consumidor del dominio (junto
+a los CLIs y el MCP): el agent runtime Mastra en `agents/mastra-handyman/`
+(decision en `docs/adr-mastra-adopcion.md`, ratificado el mismo dia; el
+runtime anterior, Flue, fue eliminado ese dia y su ADR queda como registro
+historico). La lectura hexagonal:
 
 - **Dominio (harness core):** la maquina de estados de feature, sprints,
   reportes, verifier y el layout `.handyman/` viven en `handyman/src/core/` +
@@ -210,52 +210,51 @@ lectura hexagonal formal (propuesta completa en
   entre el LLM y el dominio: los tools son comandos de aplicacion
   (`feature_close`), no primitivas de persistencia. El modelo propone; el CLI
   dispone. Sus rechazos son outcomes de dominio, nunca errores a reintentar.
-- **Agent orchestration:** `agents/flue-handyman/` — roles como profiles
-  (prompts desde `handyman/assets/role-*.template.md`, fuente unica), una
-  instancia de agente por feature (`id` = nombre del feature), delegacion
-  leader->subagent via `task()`.
-- **Agent execution:** propiedad del framework Flue (sesiones, compaction,
-  sandbox, Durable Streams). Se consume por su contrato publico; no se
-  construye dominio ahi.
-- **Model provisioning:** `agents/flue-handyman/src/ports/model-catalog.ts`
+- **Agent orchestration:** `agents/mastra-handyman/` — una sola definicion
+  de roles (`createRoleAgents`), dos topologias: **supervisor**
+  (`run-feature.ts`, leader que rutea el ciclo por LLM) y **workflow durable**
+  (`run-workflow.ts`, el orden del ciclo es codigo, con HITL y crash-recovery).
+  Tercer camino: **skill mirror** (`run-skill.ts`, agente generico + la skill
+  handyman nativa sobre `handyman/SKILL.md`, sin role instructions).
+- **Agent execution:** propiedad del framework Mastra (Agent, Workflow,
+  generate, Memory thread=feature/resource=proyecto). Se consume por su
+  contrato publico; no se construye dominio ahi.
+- **Verdad unica en disco, dos capas por tiempo de vida:** `mastra.db`/DuckDB
+  guardan lo que muere con el run (threads, snapshots, spans, metric_events,
+  score_events); `.handyman/` guarda lo que debe sobrevivir al runtime
+  (feature_list, memory, backlog, progress, sprints — git-tracked). Nada de
+  negocio entra al storage de Mastra.
+- **Model provisioning:** `agents/mastra-handyman/src/ports/model-catalog.ts`
   es el unico modulo que conoce endpoints, env keys y tuning por provider
-  (Z.AI GLM via override `anthropic`; Kimi for Coding via `kimi-coding` +
-  `KIMI_API_KEY`).
-- **Observability:** `agents/flue-handyman/src/ports/telemetry-sink.ts`
-  (`observe()` -> `logs/agent-<feature>.jsonl` sanitizado) + consola orientada
-  a outcomes; la vista `/agent` de `apps/web` la consume read-only via
-  `app/api/agent/loadAgentState.ts` (nunca el wire interno de Flue).
-- **Exposure (niveles):** 0 = CLIs/MCP (sagrado) · 1 = `flue dev` + driver SDK
-  · 2 = servidor compilado (`agents:build`/`agents:start`) + sqlite persistente
-  (`src/db.ts`) · 3 = vista `/agent` · 4 = channels/schedules (postergado:
-  channels sin API publica en beta.9).
+  (Z.AI GLM; Kimi for Coding).
+- **Observability:** telemetria sanitizada (nunca contenido de mensajes),
+  metricas con costo en DuckDB, ledger de tokens agregado por **traceId**
+  (las delegaciones usan threads frescos; threadId solo ve al leader),
+  scores de evals en `score_events`.
 
 Reglas duras de la capa de agentes:
 
-1. **Anti-volatilidad.** Todo import de `@flue/*` pasa por
-   `agents/flue-handyman/src/flue/index.ts` (unico importador; excepcion
-   documentada: `run-feature.mjs`, driver standalone). Diseñar contra
-   conceptos estables (agents, profiles, tools, sessions, dispatch, observe,
-   registerProvider). **Workflows prohibidos**: mueren en Flue 1.0.
-2. **Taxonomia de errores de 3 clases** (`src/domain/errors.ts`):
-   `domain_outcome` (nunca retry; el leader reporta y para),
-   `transient_infra` (reconexion acotada al MISMO admission, nunca
-   re-dispatch), `protocol_error` (lo corrige el modelo). Clasificar por
-   contratos estables (`type` snake_case, nombre/status del error), nunca por
-   `message`.
+1. **Anti-volatilidad.** Todo import de `@mastra/*` pasa por
+   `agents/mastra-handyman/src/mastra/index.ts` (barrel unico), con pin
+   `@mastra/core@1.53.0` y upgrade mensual con suite verde; la eval de
+   trayectoria actua como tripwire de cambios de superficie.
+2. **Taxonomia de errores:** outcomes de negocio -> valores tipados
+   (`bail`/outcomes), nunca retries; transitorios -> `throw` + `retryConfig`.
+   Clasificar por contratos estables, nunca por `message`.
 3. **Privacidad de logs.** Nunca contenido de mensajes en telemetria (deltas
    y payloads -> `{chars}`); `usage` numerico si.
-4. **Un proceso vivo por instancia**; la flota paraleliza por feature, no por
-   replica. Servidor compilado para sesiones largas (el watcher de `flue dev`
-   no tolera edits con un run en vuelo).
+4. **Un proceso vivo por data dir** (DuckDB single-writer, lock fatal);
+   `HANDYMAN_DATA_DIR` por corrida paralela.
+5. **Cero `.map()` en grafos durables** (bug de restart en 1.53.0); steps de
+   agente como steps regulares con `agent.generate()` en `execute`.
 
 ## What Not To Do
 
-- Importar `@flue/*` fuera de `agents/flue-handyman/src/flue/` (rompe la capa
-  anti-volatilidad; el caso TFA10 de `tests/test_flue_agents.sh` lo enforcea).
-- Usar workflows de Flue para el ciclo de features (eliminados en 1.0), ni
-  reintentar rechazos de dominio de los CLIs (verifier rojo, duplicados,
-  conflicto de veredicto).
+- Importar `@mastra/*` fuera de `agents/mastra-handyman/src/mastra/` (rompe la
+  capa anti-volatilidad), ni usar `.map()` en grafos durables de workflow
+  (bug de restart en 1.53.0).
+- Reintentar rechazos de dominio de los CLIs (verifier rojo, duplicados,
+  conflicto de veredicto): son outcomes tipados, se reportan y se para.
 - Cambiar el contrato de un CLI (subcomandos, flags, exit codes, forma de stdout) sin
   actualizar su test oracle **y** todas las referencias en `SKILL.md` / `references/`.
 - Editar `feature_list.json` a mano o introducir claves fuera del schema.

@@ -4,13 +4,15 @@ Agente handyman corriendo sobre el runtime **Mastra 1.x** (`@mastra/core`
 1.53.0): un leader supervisor que orquesta subagentes `implementer`/`reviewer`
 y conduce el harness handyman a través de su servidor MCP, ejecutando el ciclo
 completo de un feature (`add → start → impl → review → close`). Nació de
-`docs/spike-mastra-harness.md` (fases 0–2 ejecutadas; 3 y 4 pendientes) como
-sucesor del spike con Flue (`agents/flue-handyman/`).
+`docs/spike-mastra-harness.md` (fases 0–3 ejecutadas; 4 pendiente) como
+sucesor del spike con Flue (paquete `agents/flue-handyman/`, eliminado el
+2026-07-28 tras la ratificación del ADR).
 
 ## Topología
 
 ```
 run-feature.ts (tsx, in-process) ──> Mastra app (agente handyman-leader)
+run-workflow.ts (tsx, in-process) ─> Mastra app (workflow feature-cycle)   [fase 3]
                                           │ MCPClient (streamable-http)
                                           ▼
                             handyman MCP server :8177  (node handyman/dist/mcp.js --http)
@@ -21,6 +23,11 @@ run-feature.ts (tsx, in-process) ──> Mastra app (agente handyman-leader)
 
 - **In-process (topología A del spike)**: sin servidor Mastra; el driver importa
   la app y llama `agent.generate()`. Ideal para spike y CI.
+- **Dos orquestaciones, una definición de roles** (fase 3): el mismo par
+  `implementer`/`reviewer` (`createRoleAgents`) sirve al supervisor leader
+  (run-feature, estrategia 1) y al workflow `feature-cycle` (run-workflow,
+  estrategia 2), donde **el orden del ciclo es código, no decisiones del LLM**
+  — sin tokens de leader para routing.
 - Modelo por rol vía env (ver abajo); ambos providers hablan protocolo
   Anthropic con baseURL propia **con `/v1` final** (AI SDK pega
   `${baseURL}/messages`; sin el `/v1` Z.AI devuelve 404 disfrazado de 200).
@@ -48,6 +55,13 @@ node handyman/dist/mcp.js --http --port 8177
 # 3. Ejecutar el ciclo de un feature (desde agents/mastra-handyman)
 set -a && . ../../.env && set +a
 HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-feature -- <nombre_feature>
+
+# 4. O como WORKFLOW durable con gate humano (fase 3)
+HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- start <feature>
+#    … corre add→start→implement→review y se SUSPENDE en human-review
+HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- resume <feature> approve|reject [feedback]
+HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- restart <feature>   # crash recovery
+HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- status <feature>    # estado persistido
 ```
 
 ## Decisiones de diseño (y por qué)
@@ -86,7 +100,23 @@ HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-feature -- <nombre_feature>
 - **Ledger de tokens** (`src/ports/tokens-ledger.ts`): al cerrar el feature,
   una línea en `<PROJECT>/.handyman/metrics/tokens.jsonl` con
   `source: "mastra"` (diseño §2 de `docs/analisis-tokens-consumo-y-metricas.md`;
-  best-effort, nunca bloquea).
+  best-effort, nunca bloquea). Solo aplica a la topología supervisor: en la
+  topología workflow el `WorkflowResult` no expone `usage` — la agregación
+  debe derivarse de `metric_events` en DuckDB (pendiente, fase 4).
+- **Workflow durable con verdad única de negocio** (fase 3,
+  `src/workflows/feature-cycle.ts`): el snapshot del workflow en mastra.db es
+  **estado operativo desechable** (step actual, suspend payloads); la verdad
+  de negocio sigue en `feature_list.json`, escrita solo vía MCP. No hay
+  reconciliación bidireccional: si discrepan, el disco gana y el run se
+  abandona. Los side effects de negocio (add/start/close) son steps
+  deterministas que llaman tools MCP directamente; solo implement/review son
+  llamadas a agentes. Errores de negocio → outcome tipado (`bail` con el
+  output del workflow); infra transitoria → `throw` + retries.
+- **Regla de estilo: cero `.map()` en grafos durables** — Mastra 1.53.0 tiene
+  un bug de restart: tras un kill, un step cuyo predecesor es un mapping
+  recibe `undefined` de input (reproducido en `wf_crash` y con toy workflow;
+  hallazgo §7 abajo). Los steps de agente son steps regulares que llaman
+  `agent.generate()` en `execute`, no `createStep(agent)` + mappings.
 
 ## Reglas duras de operación
 
@@ -100,7 +130,7 @@ HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-feature -- <nombre_feature>
   (el estado de negocio handyman NO se toca: vive en el `.handyman/` del
   proyecto target).
 
-## Hallazgos del spike (fases 0–2)
+## Hallazgos del spike (fases 0–3)
 
 1. **Endpoint Anthropic custom**: `createAnthropic({ baseURL })` debe incluir
    `/v1` (AI SDK pega solo `/messages`). Verificado con curl contra
@@ -130,6 +160,67 @@ HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-feature -- <nombre_feature>
    mitigación real debe ser de código — pinning del proyecto a nivel MCP
    (una sesión MCP por proyecto) o un wrapper de tools que rechace
    `project != PROJECT`; el prompt solo reduce la probabilidad.
+7. **`bail()` con el output del workflow → run `success`** (verificado con
+   toy probe): el resultado del run es el payload tipado y todos los steps
+   quedan `success` — la distinción entre "cerró" y "outcome de negocio" se
+   lee en `result.outcome`, no en el status del run.
+8. **Bug de restart con mappings (1.53.0)**: kill -9 a mitad de un step cuyo
+   predecesor es un `.map()` → al `run.restart()` ese step recibe `undefined`
+   de input y el run muere con `WORKFLOW_STEP_INPUT_VALIDATION_FAILED`.
+   Reproducido dos veces (corrida real `wf_crash` + toy workflow mínimo) y
+   confirmado que SIN mappings el restart es correcto (steps completados se
+   restauran del snapshot; solo el interrumpido se re-ejecuta). Workaround
+   adoptado: grafos durables sin `.map()`; steps de agente como steps
+   regulares con `agent.generate()` dentro de `execute`. Candidato a issue
+   upstream.
+9. **~~El reviewer no lee el backlog por MCP~~ RESUELTO (2026-07-28,
+   mandato operador):** el reviewer tiene ahora filesystem READ-ONLY sobre
+   el project root vía Workspace (`src/ports/workspace.ts`) y lee
+   `.handyman/backlog/impl_<f>.md` directo de disco — sin tool MCP nuevo y
+   SIN meter informes en la DB de Mastra (la verdad de negocio queda en
+   disco, git-tracked; `feature.js done` lee el veredicto de disco, así que
+   moverlo a LibSQL rompería el gate del verifier). El task del reviewer
+   sigue llevando el output del implementer como fallback.
+10. **La trayectoria por trace es inútil para agent targets** (1.53.0): la
+    extracción de `runEvals` vía trace store deja como top level UN step
+    `llm: 'glm-5.2'` (los MCP calls anidan 3 niveles abajo:
+    agent_run → model_generation → model_step → mcp_tool_call). El scorer
+    prebuilt `trajectory-accuracy` nunca matchea nombres de tools ahí, y en
+    la forma plana recibe mensajes crudos y revienta. Scorer propio:
+    `extractTrajectory(output)` → subsecuencia (ver
+    `src/evals/protocol-trajectory.ts`).
+11. **El leader diverge bajo verifier rojo** (no-determinismo real, 3 formas
+    en 3 corridas): `feature_close_async` + polling de `task_result` con ids
+    inventados; doble delegación + `feature_log` propio + agotamiento de
+    steps. Mitigación: instrucciones de disciplina (close solo SYNC, una
+    delegación por rol, nunca `task_result`) + caso rojo del eval sin
+    `close` en la trayectoria esperada (el rechazo lo cubre
+    deterministamente el workflow de fase 3, no el modelo).
+12. **`checks.noToolErrors` no ve errores de envelope MCP**: `isError` vuelve
+    como tool result con texto, no como tool-error del SDK. Los gates se
+    complementan con trayectoria + verdad en disco.
+13. **La skill nativa funciona pero su carga es cara**: 376k input tokens en
+    la primera corrida (relectura de references) → 129k con instrucciones de
+    disciplina; supervisor agregado ≈ 90k; workflow ≈ la mitad. La topología
+    workflow es la más barata por feature. **Decisión (2026-07-28): el
+    workflow es el camino por defecto del ciclo; la skill mirror queda como
+    validación de formato/adopción, no como path de ejecución rutinario.**
+14. **`pnpm` no strippea `--`** en ningún driver (`run-feature`,
+    `run-workflow`, `run-skill`): todos filtran `--` de argv. Dato lateral:
+    el agente RECHAZÓ correr con feature `--` explicando la regla de
+    naming — el protocolo se sostiene ante input roto del operador.
+15. **Las workspace tools NO aparecen en `agent.listTools()`**: se inyectan
+    por run dentro del loop del agente (`createWorkspaceTools` sobre
+    `getWorkspace({ requestContext })`). La verificación del wiring es por
+    ejecución (sonda live: el implementer llamó `mastra_workspace_write_file`
+    y escribió en el project root), no por inspección.
+16. **`LocalFilesystem.readOnly` se enforcea en código**
+    (`WorkspaceReadOnlyError` al escribir; verificado por sonda para leader y
+    reviewer) y el sandbox solo existe para roles escribibles — la regla
+    "leader/reviewer no editan código" es construcción, no prompt. Ojo:
+    `listFiles` no está en la interfaz `WorkspaceFilesystem` (solo las tools
+    del agente la exponen); la API programática es `readFile`/`writeFile`/
+    `stat`/…
 
 ## Modelos por rol (multi-provider)
 
@@ -195,11 +286,71 @@ correctamente en la roja (`[ledger] skipped (feature not done)`).
 
 Reporte completo: `.handyman/backlog/impl_mastra_spike_phases_0_2.md`.
 
-## Pendiente (fases 3–4 del spike)
+**Fase 3 (workflow durable + HITL, 4 corridas en /tmp/hm-mastra-wf-*):**
 
-- **Fase 3**: workflow `createWorkflow` con `suspend/resume` para revisión
-  humana, crash-recovery demostrado, decisión documentada sobre doble verdad
-  (snapshot Mastra vs `feature_list.json`).
-- **Fase 4**: `runEvals` en CI con gates deterministas (`checks.toolOrder`,
-  `noToolErrors`) + skill handyman como skill nativa Mastra (`Workspace` +
-  filesystem); ADR de adopción/rechazo.
+| Corrida | Escenario | Resultado |
+|---|---|---|
+| `wf_green` | start → suspend → resume approve | `done` en disco, `validate_harness: OK` |
+| `wf_reject` | start → suspend → resume reject | `bail` tipado `changes_requested`; feature queda `in_progress`, close nunca intentado |
+| `wf_red` | verifier exit 1; humano **override** al reviewer y aprueba | `close-feature` rechazado por el verifier → `bail` `close_rejected`; `in_progress` (el gate es código, no el reviewer) |
+| `wf_crash2` | kill -9 a mitad de `review` → restart → approve | `done`; solo el step interrumpido se re-ejecutó (timestamps 17:32:55→17:33:12 pre-kill restaurados del snapshot; `review` re-corrió 17:33:31→17:33:53) |
+
+- `suspend/resume` cross-proceso verificado: el resume corre en un proceso
+  nuevo contra el mismo data dir (0.2s; los steps previos no se re-ejecutan).
+- Observabilidad en la topología workflow: 158 spans con jerarquía
+  `workflow_run → workflow_step → agent_run → model_generation → mcp_tool_call`
+  y `metric_events` de tokens en DuckDB (corrida crash2).
+- `wf_crash` (primera corrida de crash) murió en el restart por el bug de
+  mappings (hallazgo §8) — quedó como evidencia del bug, no del diseño.
+- Reporte completo: `.handyman/backlog/impl_mastra_spike_phase_3.md`.
+
+**Fase 4 (evals en CI + skill nativa + ledger fiel):**
+
+- **Evals con exit code** (`pnpm test:eval`, 2 casos reales): `runEvals` con
+  gates `checks.toolOrder` + `checks.noToolErrors` y scorer propio
+  `protocol-trajectory-order` (zero-LLM, threshold 1.0). Verde → verdict
+  `passed` + `done`; roja (verifier exit 1) → verdict `passed` +
+  `in_progress`. `[eval] PASSED`, **EXIT_CODE=0**. Scores persistidos en la
+  tabla `mastra_scorers` de LibSQL (scorers registrados en la instancia).
+- **Skill handyman nativa espejo** (`pnpm run-skill`): el `handyman/SKILL.md`
+  canónico (+ `references/`) cargado como skill agent-level por path — cero
+  duplicación — sin role instructions. Ciclo completo: `skill → feature_add →
+  feature_start → feature_log → report_write ×2 → backlog_review →
+  feature_close` → `done` en 74.8s, `validate_harness: OK`.
+- **Ledger por traceId**: la línea `scope:"run"` registra el total real
+  (leader + delegaciones comparten traza): in 89 782 / out 2 356 vs
+  `result.usage` del leader in 49 614 / out 774 (1.8×). threadId NO sirve:
+  las delegaciones corren en threads frescos por aislamiento.
+- Reporte completo: `.handyman/backlog/impl_mastra_spike_phase_4.md`.
+- **ADR: `docs/adr-mastra-adopcion.md`** — **ratificado por el operador el
+  2026-07-28** (adopción + sunset de Flue ejecutado ese día).
+
+## Superficie de sistema (2026-07-28, mandato del operador)
+
+Los agentes tienen acceso real al sistema, a la manera documentada de Mastra:
+
+| Capacidad | Vía | Alcance por rol |
+|---|---|---|
+| Filesystem | `Workspace` + `LocalFilesystem` (`src/ports/workspace.ts`) | implementer/skill: escritura · leader/reviewer: read-only (enforced por `WorkspaceReadOnlyError`) |
+| Shell / git | `LocalSandbox.execute_command` (git CLI, tests, verifier) | solo implementer/skill |
+| Búsqueda web | `web_search` + `web_fetch` propios (`src/ports/web-tools.ts`, DuckDuckGo Lite + fetch, cero API keys, output capado) | leader + skill mirror |
+| GitHub | MCP oficial `api.githubcopilot.com/mcp/` en el mismo `MCPClient` cuando hay `GITHUB_TOKEN`/`GH_TOKEN` | solo leader (los filtros por verb exactos nunca dejan pasar `github_*` a subagentes); alternativa sin token: `gh` CLI autenticado en el sandbox |
+| Observabilidad | las workspace/MCP tool calls caen en los spans ya exportados (`MastraStorageExporter`) | todos |
+
+Verificado por sonda live (eliminada tras extraer hallazgos): búsqueda real
+devuelve resultados; fetch de página OK; escritura denegada a leader/reviewer
+y permitida a implementer/skill; tool call `mastra_workspace_write_file`
+ejecutada en una corrida GLM real. `tsc` limpio, `vitest` 23/23.
+
+## Pendiente (post-spike; ADR ratificado 2026-07-28)
+
+- ~~Ratificación del ADR~~ **ratificado**: Flue eliminado con la vista
+  `/agent` el mismo día.
+- Deuda: pinning de proyecto a nivel MCP (sube de prioridad: 2 incidentes);
+  issue upstream restart+`.map()`.
+- ~~Lectura de backlog~~ **resuelta** con el filesystem read-only del
+  reviewer (ver hallazgo §9).
+- Aditivos (capa conversacional, nunca negocio): semantic recall,
+  Observational Memory, Studio como panel; web search con backend dedicado
+  (`@mastra/tavily`) si se provee `TAVILY_API_KEY` — el par `web_search`/
+  `web_fetch` actual cubre investigación sin credenciales.

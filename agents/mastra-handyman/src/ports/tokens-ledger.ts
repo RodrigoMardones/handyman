@@ -17,10 +17,10 @@ export interface TokensLedgerEntry {
   feature_id: number | null;
   feature: string;
   source: 'mastra';
-  /** 'leader' = usage of the leader agent ONLY (result.usage). Subagent
-   *  usage is NOT in this line; the run total lives in the observability
-   *  store (metric_events aggregated by threadId/runId). */
-  scope: 'leader';
+  /** 'leader' = usage of the leader agent ONLY (result.usage, phase-2
+   *  behavior). 'run' = thread-total aggregated from metric_events
+   *  (leader + subagents, phase 4) — the number that matches reality. */
+  scope: 'leader' | 'run';
   provider: string;
   model: string;
   input_tokens: number;
@@ -53,6 +53,7 @@ export function appendTokensLedger(
   feature: string,
   modelSpec: string,
   usage: TokenUsageLike,
+  scope: 'leader' | 'run' = 'leader',
 ): TokensLedgerEntry | null {
   const { id, status } = featureState(project, feature);
   if (status !== 'done') return null;
@@ -63,7 +64,7 @@ export function appendTokensLedger(
     feature_id: id,
     feature,
     source: 'mastra',
-    scope: 'leader',
+    scope,
     provider: slash > 0 ? modelSpec.slice(0, slash) : 'unknown',
     model: slash > 0 ? modelSpec.slice(slash + 1) : modelSpec,
     input_tokens: usage.inputTokens ?? 0,

@@ -1,9 +1,13 @@
 # 🔬 Spike: Mastra como runtime de agentes para el harness handyman
 
-> **Estado (2026-07-28): fases 0–2 EJECUTADAS y validadas** en
-> `agents/mastra-handyman/` (ver su README y
-> `.handyman/backlog/impl_mastra_spike_phases_0_2.md`). Fases 3 y 4
-> pendientes por decisión del operador.
+> **Estado (2026-07-28): spike COMPLETO — fases 0–4 ejecutadas y validadas**
+> en `agents/mastra-handyman/` (ver su README;
+> `.handyman/backlog/impl_mastra_spike_phases_0_2.md`,
+> `impl_mastra_spike_phase_3.md`, `impl_mastra_spike_phase_4.md`). Decisión
+> de fase 3: workflows Mastra SÍ como runtime operativo, con verdad única de
+> negocio en disco; regla derivada: cero `.map()` en grafos durables (bug de
+> restart en 1.53.0). **ADR de adopción + sunset de Flue:
+> `docs/adr-mastra-adopcion.md` (propuesto, a ratificar por el operador).**
 >
 > Documento de investigación (spike), sucesor del trabajo sobre Flue
 > (`docs/adr-flue-harness-architecture.md`, `agents/flue-handyman/`).

@@ -18,11 +18,12 @@ import { DEFAULT_ROLE_MODEL } from './src/ports/model-catalog';
 import { featureThread } from './src/ports/memory';
 import { createFeatureTelemetry } from './src/ports/telemetry';
 import { appendTokensLedger } from './src/ports/tokens-ledger';
+import { aggregateRunUsage } from './src/ports/usage-aggregate';
 
-const feature = process.argv[2] ?? 'spike_mastra_integration';
+const feature = process.argv.slice(2).filter((a) => a !== '--')[0] ?? 'spike_mastra_integration';
 const leaderModel = process.env.HANDYMAN_LEADER_MODEL ?? DEFAULT_ROLE_MODEL;
 
-const { mastra, close } = await buildApp();
+const { mastra, observabilityStore, close } = await buildApp();
 const leader = mastra.getAgentById('handyman-leader');
 
 const telemetry = createFeatureTelemetry({
@@ -67,11 +68,18 @@ try {
 
   telemetry.settle('completed', result.usage, { traceId: result.traceId });
 
-  // Tokens ledger: one line per CLOSED feature (best-effort, never blocks).
-  const entry = appendTokensLedger(PROJECT, feature, leaderModel, result.usage ?? {});
+  // Tokens ledger (phase 4): the line records the RUN TOTAL aggregated from
+  // metric_events by traceId (leader + delegations share one trace) — the
+  // phase-2 line recorded result.usage (leader only). Falls back to the
+  // leader usage if the aggregate query fails (best-effort either way; one
+  // line per CLOSED feature, never blocks).
+  const runUsage = await aggregateRunUsage(observabilityStore, result.traceId ?? '');
+  const usageForLedger =
+    runUsage.inputTokens !== undefined ? runUsage : (result.usage ?? {});
+  const entry = appendTokensLedger(PROJECT, feature, leaderModel, usageForLedger, 'run');
   console.log(
     entry
-      ? `[ledger] tokens.jsonl += in=${entry.input_tokens} out=${entry.output_tokens} (${entry.model})`
+      ? `[ledger] tokens.jsonl += in=${entry.input_tokens} out=${entry.output_tokens} (${entry.model}, scope=${entry.scope})`
       : `[ledger] skipped (feature not done)`,
   );
 } catch (error) {

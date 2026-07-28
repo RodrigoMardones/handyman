@@ -10,6 +10,8 @@ import { Agent, MCPClient } from '../mastra';
 import type { Memory } from '../mastra';
 import { resolveModel, resolveRoleModels } from '../ports/model-catalog';
 import { businessMemorySnapshot } from '../ports/memory';
+import { roleWorkspace } from '../ports/workspace';
+import { webTools } from '../ports/web-tools';
 import { implementerVerbs, reviewerVerbs, toolsForVerbs } from '../domain/role-tools';
 
 // Repo root: the documented runtime (tsx run-feature.ts from this package's
@@ -60,6 +62,9 @@ Execute this sequence, in order, waiting for each result:
 5. Only if the reviewer approved: handyman_feature_close with the name.
    If the close is refused (red verifier), report the refusal verbatim and
    stop. If the reviewer requested changes, report them and stop.
+   ALWAYS the SYNC handyman_feature_close — NEVER handyman_feature_close_async
+   or handyman_task_result (the async pair is for slow verifiers driven by a
+   human operator, not for this loop).
 
 HARD STOP rule: every tool call above targets EXACTLY the project
 "${PROJECT}". If that project's harness is missing or broken (feature_add
@@ -71,7 +76,17 @@ that is contamination, not initiative.
 
 Finish with one short line per step: tool/delegation and outcome, plus the
 final feature status. Do not call tools outside this protocol yourself
-(steps 3-4 are delegations, not direct work).${businessMemorySnapshot(PROJECT)}`;
+(steps 3-4 are delegations, not direct work). Discipline rules learned from
+live runs: each delegation happens EXACTLY ONCE (one implementer, one
+reviewer — never re-delegate); you NEVER call feature_log, report_write or
+backlog_review yourself (those belong to the subagents); and you NEVER probe
+task_result (it serves the human-driven async close, not this loop).
+
+Auxiliary capabilities (NOT part of the cycle protocol): a READ-ONLY
+filesystem on the project root for grounding your routing decisions, and the
+web_search/web_fetch pair for internet research when the operator asks for
+investigation work. If a github_ tool is present (GITHUB_TOKEN configured)
+it is yours alone — never delegate it.${businessMemorySnapshot(PROJECT)}`;
 }
 
 function implementerInstructions(): string {
@@ -79,10 +94,14 @@ function implementerInstructions(): string {
 ${roleBody('implementer')}
 
 ## Concrete protocol (this deployment)
-You operate ONLY through your handyman_ tools on project "${PROJECT}".
-Your step budget is LIMITED — spend it on your two required writes, not on
-exploration (the leader already validated the harness; do NOT run
-preflight/metrics/verify probes).
+You operate through your handyman_ tools on project "${PROJECT}" — PLUS a
+workspace scoped to that same project root: file tools (read/write/edit/
+list/grep) and a shell (execute_command: git, tests, the verifier). Use the
+workspace when the feature involves real code changes; the MCP tools remain
+the ONLY way to mutate harness state.
+Your step budget is LIMITED — spend it on the work and your two required
+writes, not on exploration (the leader already validated the harness; do NOT
+run preflight/metrics/verify MCP probes).
 For the feature named in the task, in this order:
 1. handyman_feature_log with a one-line note (what you did for the feature).
 2. handyman_report_write (kind "impl", feature = the name, content = what
@@ -99,28 +118,48 @@ function reviewerInstructions(): string {
 ${roleBody('reviewer')}
 
 ## Concrete protocol (this deployment)
-You operate ONLY through your handyman_ tools on project "${PROJECT}"
+You operate through your handyman_ tools on project "${PROJECT}"
 (read-only probes plus backlog_review) — you have NO state-mutation verbs,
-by design. Your step budget is LIMITED: go straight to the verdict.
+by design. You ALSO have a READ-ONLY filesystem on that project root: use it
+to read the implementation report at .handyman/backlog/impl_<feature>.md and
+the code the feature touched — judge artifacts you have READ, never the task
+text alone (a verdict on an unread report is a hallucinated verdict; a 2026-07-28
+run stamped "feature does not exist" for exactly that reason).
+Your step budget is LIMITED: read the report, probe at most once or twice, go
+straight to the verdict.
 For the feature named in the task: assess the implementation against the
-acceptance criteria using the task text (what the implementer reported) and,
-if needed, one or two probes. Then stamp your verdict with
+acceptance criteria. Then stamp your verdict with
 handyman_backlog_review (status "approved" or "changes_requested") — the
 verdict is your deliverable; a review without the stamp is a FAILED review.
 Reply with the verdict and one line of justification. Never claim you
 stamped unless the tool call succeeded.`;
 }
 
-/** Connect to the handyman MCP server and return the full tool map. */
+/** Connect to the handyman MCP server and return the full tool map. When
+ *  GITHUB_TOKEN/GH_TOKEN is set, GitHub's official hosted MCP server joins
+ *  the same client (leader-only by construction: the subagent verb filters
+ *  match exact `handyman_` keys, so `github_*` tools never reach them).
+ *  Local git stays in the implementer's workspace sandbox (git CLI). */
 export async function connectHandymanMcp() {
+  const githubToken = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
   const mcp = new MCPClient({
     id: 'handyman',
-    servers: { handyman: { url: new URL(MCP_URL) } },
+    servers: {
+      handyman: { url: new URL(MCP_URL) },
+      ...(githubToken
+        ? {
+            github: {
+              url: new URL('https://api.githubcopilot.com/mcp/'),
+              requestInit: { headers: { Authorization: `Bearer ${githubToken}` } },
+            },
+          }
+        : {}),
+    },
   });
   const tools = (await mcp.listTools()) as Record<string, unknown>;
   const count = Object.keys(tools).length;
   if (count === 0) throw new Error(`MCP at ${MCP_URL} exposed 0 tools`);
-  console.log(`[mcp] connected to ${MCP_URL}: ${count} tools`);
+  console.log(`[mcp] connected to ${MCP_URL}: ${count} tools${githubToken ? ' (github MCP on)' : ''}`);
   return { tools, mcp };
 }
 
@@ -136,15 +175,11 @@ const ROLE_DEFAULT_OPTIONS = {
   modelSettings: { maxOutputTokens: 16384 },
 } as const;
 
-/** Phase-1 supervisor + phase-2 memory: leader + implementer/reviewer
- *  subagents, each role with its own model (env-overridable) and its own MCP
- *  tool set. Conversation memory attaches to the LEADER only — delegation
- *  threads stay ephemeral (fresh thread per delegation, lastMessages off),
- *  which preserves subagent isolation and avoids junk threads. */
-export async function createHandymanLeader(
-  tools: Record<string, unknown>,
-  options: { memory?: Memory } = {},
-) {
+/** Implementer + reviewer subagents, shared by the supervisor (phase 1) and
+ *  the feature-cycle workflow (phase 3): one definition, two orchestration
+ *  topologies. Each role keeps its own model (env-overridable) and its own
+ *  MCP tool set. */
+export function createRoleAgents(tools: Record<string, unknown>) {
   const implementer = new Agent({
     id: 'implementer',
     name: 'Implementer',
@@ -153,6 +188,7 @@ export async function createHandymanLeader(
     instructions: implementerInstructions,
     model: resolveModel(MODELS.implementer),
     tools: toolsForVerbs(tools, implementerVerbs()) as never,
+    workspace: roleWorkspace('implementer', PROJECT),
     defaultOptions: ROLE_DEFAULT_OPTIONS,
   });
 
@@ -164,8 +200,23 @@ export async function createHandymanLeader(
     instructions: reviewerInstructions,
     model: resolveModel(MODELS.reviewer),
     tools: toolsForVerbs(tools, reviewerVerbs()) as never,
+    workspace: roleWorkspace('reviewer', PROJECT),
     defaultOptions: ROLE_DEFAULT_OPTIONS,
   });
+
+  return { implementer, reviewer };
+}
+
+/** Phase-1 supervisor + phase-2 memory: leader + implementer/reviewer
+ *  subagents, each role with its own model (env-overridable) and its own MCP
+ *  tool set. Conversation memory attaches to the LEADER only — delegation
+ *  threads stay ephemeral (fresh thread per delegation, lastMessages off),
+ *  which preserves subagent isolation and avoids junk threads. */
+export async function createHandymanLeader(
+  tools: Record<string, unknown>,
+  options: { memory?: Memory; subagents?: ReturnType<typeof createRoleAgents> } = {},
+) {
+  const { implementer, reviewer } = options.subagents ?? createRoleAgents(tools);
 
   return new Agent({
     id: 'handyman-leader',
@@ -174,8 +225,9 @@ export async function createHandymanLeader(
       'Handyman leader: orchestrates implementer/reviewer subagents over the handyman MCP server.',
     instructions: leaderInstructions,
     model: resolveModel(MODELS.leader),
-    tools: tools as never,
+    tools: { ...tools, ...webTools() } as never,
     agents: { implementer, reviewer },
+    workspace: roleWorkspace('leader', PROJECT),
     defaultOptions: ROLE_DEFAULT_OPTIONS,
     ...(options.memory ? { memory: options.memory } : {}),
   });

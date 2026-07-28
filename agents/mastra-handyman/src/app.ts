@@ -5,6 +5,7 @@
 // Observability layer. The agent file must not know about any of this.
 import { join } from 'node:path';
 import {
+  checks,
   DuckDBStore,
   Mastra,
   MastraCompositeStore,
@@ -13,13 +14,26 @@ import {
   PinoLogger,
   SensitiveDataFilter,
 } from './mastra';
-import { connectHandymanMcp, createHandymanLeader } from './agents/handyman-leader';
+import {
+  connectHandymanMcp,
+  createHandymanLeader,
+  createRoleAgents,
+  PROJECT,
+} from './agents/handyman-leader';
 import { createConversationMemory, DATA_DIR } from './ports/memory';
+import { createFeatureCycleWorkflow } from './workflows/feature-cycle';
+import { createProtocolTrajectoryScorer } from './evals/protocol-trajectory';
 
 export async function buildApp() {
   const { tools, mcp } = await connectHandymanMcp();
   const { memory, storage: memoryStorage } = createConversationMemory();
-  const leader = await createHandymanLeader(tools, { memory });
+  // One definition of the role agents, two orchestration topologies: nested
+  // in the leader (supervisor, run-feature.ts) and top-level for the
+  // feature-cycle workflow (run-workflow.ts), where the workflow — not an
+  // LLM — routes the cycle.
+  const subagents = createRoleAgents(tools);
+  const leader = await createHandymanLeader(tools, { memory, subagents });
+  const featureCycle = createFeatureCycleWorkflow({ tools, agents: subagents, project: PROJECT });
 
   const observabilityStore = await new DuckDBStore({
     id: 'handyman-mastra-observability',
@@ -33,7 +47,29 @@ export async function buildApp() {
   });
 
   const mastra = new Mastra({
-    agents: { leader },
+    agents: { leader, implementer: subagents.implementer, reviewer: subagents.reviewer },
+    workflows: { 'feature-cycle': featureCycle },
+    // Scorer registry (phase 4): runEvals persists scores per case and looks
+    // scorers up by id — unregistered ids warn on save. Instances here share
+    // ids with the ones the eval runner creates inline; the eval's own
+    // instances produce the scores, these make them persistable (score_events).
+    scorers: {
+      'check-tool-order': checks.toolOrder([
+        'handyman_feature_add',
+        'handyman_feature_start',
+        'agent-implementer',
+        'agent-reviewer',
+        'handyman_feature_close',
+      ]),
+      'check-no-tool-errors': checks.noToolErrors(),
+      'protocol-trajectory-order': createProtocolTrajectoryScorer([
+        'handyman_feature_add',
+        'handyman_feature_start',
+        'agent-implementer',
+        'agent-reviewer',
+        'handyman_feature_close',
+      ]),
+    },
     storage,
     observability: new Observability({
       configs: {
@@ -52,6 +88,13 @@ export async function buildApp() {
 
   return {
     mastra,
+    /** Full MCP tool map (handyman_* verbs) — for probe agents built outside
+     *  the registered topologies (skill mirror). Avoids a second MCPClient. */
+    tools,
+    /** Observability store domain (live DuckDB connection) — for metric
+     *  aggregation ports (usage-aggregate). Do NOT open a second connection
+     *  to the same file (single-writer lock). */
+    observabilityStore,
     /** Release the MCP connection so the process can exit (an open
      *  MCPClient otherwise keeps the event loop alive forever). */
     close: () => mcp.disconnect(),

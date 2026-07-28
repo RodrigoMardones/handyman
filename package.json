@@ -5,10 +5,11 @@
   "scripts": {
     "web:dev": "pnpm --filter @handyman/web dev",
     "web:build": "pnpm --filter @handyman/web build",
-    "agents:dev": "pnpm --filter @handyman/flue-handyman dev",
-    "agents:run": "pnpm --filter @handyman/flue-handyman run-feature",
-    "agents:build": "pnpm --filter @handyman/flue-handyman build",
-    "agents:start": "pnpm --filter @handyman/flue-handyman start"
+    "agents:run": "pnpm --filter @handyman/mastra-handyman run-feature",
+    "agents:workflow": "pnpm --filter @handyman/mastra-handyman run-workflow",
+    "agents:skill": "pnpm --filter @handyman/mastra-handyman run-skill",
+    "agents:eval": "pnpm --filter @handyman/mastra-handyman test:eval",
+    "agents:test": "pnpm --filter @handyman/mastra-handyman test:unit"
   },
   "packageManager": "pnpm@11.14.0+sha512.66c1ac4c7d4762d6d7dde44c7f3e5a73591ed0a0806e751d4ed32d4f004f25b2285a906b1fd8a9e3e621df3b4e2858bf88e50e0cf626bedbe977fe434a5caf85"
 }

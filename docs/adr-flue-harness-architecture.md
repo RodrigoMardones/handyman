@@ -1,7 +1,7 @@
 # ADR: Flue como tercer driving adapter del harness handyman
 
 - **Fecha:** 2026-07-28
-- **Estado:** aceptado
+- **Estado:** histórico (supersedido el mismo día por `docs/adr-mastra-adopcion.md`; paquete `agents/flue-handyman/` eliminado el 2026-07-28)
 - **Contexto:** features 89–96 (branch `feat/flue-spike`) · Propuesta completa: `.handyman/backlog/explore_flue_runtime_api.md` · Investigación previa: `.handyman/backlog/explore_flue-framework-integration.md`
 
 ## Contexto
