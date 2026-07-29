@@ -244,7 +244,15 @@ historico). La lectura hexagonal:
   puro desde cualquier cwd (paquete sigue `private: true`); y todo toolset
   handyman queda pineado al proyecto seleccionado en el cliente MCP
   (`src/ports/mcp-pinning.ts` — rechazo ruidoso ante proyecto ajeno; el
-  pinning server-side en el MCP es deuda aparte).
+  pinning server-side en el MCP es deuda aparte). Con
+  `HANDYMAN_MCP_TRANSPORT=stdio` (F104) el runtime spawnea el MCP handyman
+  como hijo stdio (`src/ports/mcp-transport.ts`, env passthrough minimo):
+  UN comando = cliente + MCP, sin servidor HTTP aparte ni huerfanos. Y
+  `node dist-bundle/run-hub.mjs --project <nombre>` (F105,
+  `src/ports/hub.ts`) levanta el stack de revision estilo gateway: MCP hijo
+  con health-wait + `mastra dev` (Studio) con dotenv fundido a menor
+  precedencia (NUNCA `mastra dev -e`: clobberiza process.env), banner con
+  URLs y shutdown sin huerfanos.
 - **Observability:** telemetria sanitizada (nunca contenido de mensajes),
   metricas con costo en DuckDB, ledger de tokens agregado por **traceId**
   (las delegaciones usan threads frescos; threadId solo ve al leader),

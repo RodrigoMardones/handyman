@@ -1250,3 +1250,15 @@ Append-only. Do not edit earlier entries during normal work.
 - **Tools:** ...
 - **Evidence:** backlog/impl_mastra_project_pinning.md · review: APPROVED -> backlog/review_mastra_project_pinning.md
 - **Verification:** verifier exit 0 · closure done
+
+## 2026-07-29 - Feature 104: mastra_embedded_mcp_stdio
+- **Branch:** feat/mastra-handyman
+- **Tools:** ...
+- **Evidence:** backlog/impl_mastra_embedded_mcp_stdio.md · review: APPROVED -> backlog/review_mastra_embedded_mcp_stdio.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-29 - Feature 105: mastra_hub_command
+- **Branch:** feat/mastra-handyman
+- **Tools:** ...
+- **Evidence:** backlog/impl_mastra_hub_command.md · review: APPROVED -> backlog/review_mastra_hub_command.md
+- **Verification:** verifier exit 0 · closure done

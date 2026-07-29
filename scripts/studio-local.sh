@@ -9,7 +9,8 @@
 #   2. builds handyman/dist if missing (the MCP server runs from dist)
 #   3. bootstraps the experiment project if missing (scaffold local — never
 #      the monorepo by default, so experiments never touch the real .handyman)
-#   4. brings the handyman MCP up on 127.0.0.1:8177 (reuses a live one)
+#   4. brings the handyman MCP up on 127.0.0.1:8177 (reuses a live one) —
+#      SKIPPED when HANDYMAN_MCP_TRANSPORT=stdio (the runtime embeds the MCP)
 #   5. execs `mastra dev` (Studio on http://localhost:4111) in the foreground
 #
 # Overrides (env):
@@ -70,7 +71,12 @@ if [ ! -f "$PROJECT/init.sh" ]; then
 fi
 
 # 4. MCP up --------------------------------------------------------------------
+# Skipped when the runtime embeds the MCP itself (HANDYMAN_MCP_TRANSPORT=stdio,
+# feature 104): the agents spawn their own child MCP, no shared server on 8177.
 MCP_URL="http://127.0.0.1:$MCP_PORT/mcp"
+if [ "${HANDYMAN_MCP_TRANSPORT:-http}" = "stdio" ]; then
+  echo "[studio-local] HANDYMAN_MCP_TRANSPORT=stdio — skipping the shared MCP boot"
+else
 probe_mcp() {
   # Any HTTP response means listening; 000 means nothing bound.
   [ "$(curl -s -m 2 -o /dev/null -w '%{http_code}' -X POST "$MCP_URL" \
@@ -88,6 +94,7 @@ else
     sleep 0.2
   done
   probe_mcp || { echo "[studio-local] MCP failed to start" >&2; exit 1; }
+fi
 fi
 
 # 5. Studio (foreground) -------------------------------------------------------

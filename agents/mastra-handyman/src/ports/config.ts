@@ -19,6 +19,10 @@
 //   HANDYMAN_ROOT          machine-global handyman state root (registry.json,
 //                          agent data/logs); default = ~/HANDYMAN
 //   HANDYMAN_MCP_URL       handyman MCP endpoint (node handyman/dist/mcp.js --http)
+//   HANDYMAN_MCP_TRANSPORT 'http' (default — connect to a running server at
+//                          HANDYMAN_MCP_URL) | 'stdio' (spawn the MCP as a
+//                          child: node <handymanAssetsDir>/dist/mcp.js — one
+//                          command runs client + server, feature 104)
 //   HANDYMAN_DATA_DIR      Mastra state dir (LibSQL memory/workflows + DuckDB
 //                          observability); default =
 //                          <HANDYMAN_ROOT>/agent/<harnessId>/data. ONE live
@@ -84,6 +88,9 @@ export interface AppConfig {
   projectRoot: string;
   /** Handyman MCP endpoint URL. */
   mcpUrl: string;
+  /** MCP transport: connect to a running HTTP server ('http', default) or
+   *  spawn the MCP as a stdio child of this process ('stdio', feature 104). */
+  mcpTransport: 'http' | 'stdio';
   /** Mastra state dir (memory/workflows DB + observability). Single writer:
    *  one live process per dir. */
   dataDir: string;
@@ -113,6 +120,13 @@ function harnessConfigName(projectRoot: string): string | undefined {
   }
 }
 
+/** HANDYMAN_MCP_TRANSPORT, validated: 'http' (default) | 'stdio'. */
+function mcpTransport(env: NodeJS.ProcessEnv): 'http' | 'stdio' {
+  const raw = env.HANDYMAN_MCP_TRANSPORT ?? 'http';
+  if (raw === 'http' || raw === 'stdio') return raw;
+  throw new Error(`invalid HANDYMAN_MCP_TRANSPORT '${raw}': expected 'http' or 'stdio'.`);
+}
+
 /** Read the deployment config from env. Pure — pass a fake env in tests. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const root = handymanRoot(env);
@@ -125,6 +139,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     handymanRoot: root,
     projectRoot,
     mcpUrl: env.HANDYMAN_MCP_URL ?? 'http://127.0.0.1:8177/mcp',
+    mcpTransport: mcpTransport(env),
     dataDir: env.HANDYMAN_DATA_DIR ?? join(root, 'agent', harnessId, 'data'),
     telemetryDir: env.HANDYMAN_TELEMETRY_DIR ?? join(root, 'agent', harnessId, 'logs'),
     modelCatalogPath: env.HANDYMAN_MODEL_CATALOG ?? join(PACKAGE_ROOT, 'model-catalog.json'),

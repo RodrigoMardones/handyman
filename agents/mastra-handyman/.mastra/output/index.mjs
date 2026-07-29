@@ -337,6 +337,31 @@ function pinToolsToProject(tools, projectRoot, opts = {}) {
   return { tools: wrapped, pinned };
 }
 
+function handymanMcpEntry(config) {
+  return join(config.handymanAssetsDir, "dist", "mcp.js");
+}
+function handymanMcpTarget(config) {
+  return config.mcpTransport === "stdio" ? handymanMcpEntry(config) : config.mcpUrl;
+}
+function handymanServerDefinition(config, env = process.env) {
+  if (config.mcpTransport === "http") return { url: new URL(config.mcpUrl) };
+  const entry = handymanMcpEntry(config);
+  if (!existsSync(entry)) {
+    throw new Error(
+      `cannot spawn the embedded MCP: ${entry} does not exist \u2014 build the handyman toolchain (npm run build in handyman/) or use HANDYMAN_MCP_TRANSPORT=http with a running server.`
+    );
+  }
+  return {
+    command: process.execPath,
+    args: [entry],
+    env: {
+      PATH: env.PATH ?? "",
+      HOME: env.HOME ?? "",
+      HANDYMAN_ROOT: config.handymanRoot
+    }
+  };
+}
+
 const WRITABLE_ROLES = /* @__PURE__ */ new Set(["implementer", "skill"]);
 function roleWorkspace(role, projectRoot, opts = {}) {
   const writable = WRITABLE_ROLES.has(role);
@@ -528,7 +553,9 @@ async function connectHandymanMcp(config) {
   const mcp = new MCPClient({
     id: "handyman",
     servers: {
-      handyman: { url: new URL(config.mcpUrl) },
+      // http (default): connect to a running server; stdio (feature 104):
+      // spawn the MCP as a child of this process — one command runs both.
+      handyman: handymanServerDefinition(config),
       ...config.githubToken ? {
         github: {
           url: new URL("https://api.githubcopilot.com/mcp/"),
@@ -543,15 +570,16 @@ async function connectHandymanMcp(config) {
   const count = Object.keys(rawTools).length;
   if (count === 0)
     throw new Error(
-      `MCP at ${config.mcpUrl} exposed 0 tools \u2014 is the handyman MCP server running? Start one with 'handyman mcp --http' (installed bin) or 'node handyman/dist/mcp.js --http' from a checkout, or point HANDYMAN_MCP_URL at a live server.`
+      config.mcpTransport === "stdio" ? `the embedded handyman MCP (stdio child: ${handymanMcpTarget(config)}) exposed 0 tools \u2014 the child spawned but listed nothing; check its stderr and that ${config.handymanAssetsDir} is a healthy build, or try HANDYMAN_MCP_TRANSPORT=http.` : `MCP at ${config.mcpUrl} exposed 0 tools \u2014 is the handyman MCP server running? Start one with 'handyman mcp --http' (installed bin) or 'node handyman/dist/mcp.js --http' from a checkout, or point HANDYMAN_MCP_URL at a live server.`
     );
   const { tools, pinned } = pinToolsToProject(rawTools, config.projectRoot);
   if (pinned.length === 0 && Object.keys(rawTools).some((name) => name.startsWith("handyman_")))
     console.warn(
       "[pinning] WARNING: no handyman tool accepted a project arg \u2014 pinning is INERT (inputSchema shape drift?)"
     );
+  const via = config.mcpTransport === "stdio" ? ` via stdio (embedded ${handymanMcpTarget(config)})` : ` to ${config.mcpUrl}`;
   console.log(
-    `[mcp] connected to ${config.mcpUrl}: ${count} tools, ${pinned.length} pinned to ${config.projectRoot}${config.githubToken ? " (github MCP on)" : ""}`
+    `[mcp] connected${via}: ${count} tools, ${pinned.length} pinned to ${config.projectRoot}${config.githubToken ? " (github MCP on)" : ""}`
   );
   return { tools, mcp };
 }
@@ -665,6 +693,11 @@ function harnessConfigName(projectRoot) {
     return void 0;
   }
 }
+function mcpTransport(env) {
+  const raw = env.HANDYMAN_MCP_TRANSPORT ?? "http";
+  if (raw === "http" || raw === "stdio") return raw;
+  throw new Error(`invalid HANDYMAN_MCP_TRANSPORT '${raw}': expected 'http' or 'stdio'.`);
+}
 function loadConfig(env = process.env) {
   const root = handymanRoot(env);
   const projectRoot = resolveProjectRoot(env.HANDYMAN_PROJECT_ROOT, root) ?? process.cwd();
@@ -675,6 +708,7 @@ function loadConfig(env = process.env) {
     handymanRoot: root,
     projectRoot,
     mcpUrl: env.HANDYMAN_MCP_URL ?? "http://127.0.0.1:8177/mcp",
+    mcpTransport: mcpTransport(env),
     dataDir: env.HANDYMAN_DATA_DIR ?? join(root, "agent", harnessId, "data"),
     telemetryDir: env.HANDYMAN_TELEMETRY_DIR ?? join(root, "agent", harnessId, "logs"),
     modelCatalogPath: env.HANDYMAN_MODEL_CATALOG ?? join(PACKAGE_ROOT, "model-catalog.json"),

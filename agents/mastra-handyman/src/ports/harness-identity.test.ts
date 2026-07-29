@@ -16,6 +16,7 @@ const config: AppConfig = {
   handymanRoot: '/hroot',
   projectRoot: '/proj',
   mcpUrl: 'http://x',
+  mcpTransport: 'http',
   dataDir: '/d',
   telemetryDir: '/t',
   modelCatalogPath: '/none',

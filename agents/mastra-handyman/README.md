@@ -187,6 +187,94 @@ log lo hace visible: `[mcp] connected …: 25 tools, 21 pinned to <root>`; un
 inputSchema → pinning inerte). **Fuera de alcance:** el pinning server-side
 (una sesión MCP por proyecto) — deuda del MCP, no del cliente.
 
+### Un solo comando (MCP embebido por stdio, feature 104)
+
+Con `HANDYMAN_MCP_TRANSPORT=stdio` el runtime SPAWNEA el MCP handyman como
+proceso hijo (`node <handymanAssetsDir>/dist/mcp.js` — stdio es el transporte
+por defecto del toolchain; `--http` es opt-in) vía el transport stdio del
+propio `MCPClient` (`@mastra/mcp` 1.15.0, `StdioServerDefinition
+{command, args, env}`). Un solo comando corre cliente + servidor, sin MCP
+HTTP aparte:
+
+```bash
+cd /tmp
+HANDYMAN_MCP_TRANSPORT=stdio HANDYMAN_PROJECT_ROOT=hm-studio \
+  node <repo>/agents/mastra-handyman/dist-bundle/run-feature.mjs mi_feature
+# boot log: [mcp] connected via stdio (embedded …/handyman/dist/mcp.js): 25 tools, 21 pinned to …
+```
+
+- **Topología**: el hijo habla stdio con ESTE proceso (loopback ni puerto);
+  el pinning (F103) envuelve el toolset exactamente igual — el transporte es
+  invisible para el wrap. Passthrough de env al hijo, deliberado y mínimo:
+  `HANDYMAN_ROOT` (sus lecturas del registry), `PATH` (el server shellea
+  git), `HOME`. El comando es `process.execPath` — no depende de PATH para
+  encontrar node.
+- **`HANDYMAN_MCP_TRANSPORT=http` (default)** deja todo intacto: conecta a
+  `HANDYMAN_MCP_URL` y la guarda accionable de F102 aplica. Valor inválido →
+  error en `loadConfig`. Si stdio no encuentra `<handymanAssetsDir>/dist/
+  mcp.js` (toolchain sin buildear), el error lo dice y sugiere el build o
+  volver a `http`.
+- **Ciclo de vida**: los runners cierran con `mcp.disconnect()` en su
+  `finally` (el transport stdio mata al hijo); en salida anormal (SIGINT,
+  crash) el hijo ve EOF en stdin y muere solo — verificado por
+  `scripts/smoke_stdio.sh`: tras el exit NO queda `dist/mcp.js` huérfano
+  (aserción por delta de `pgrep`, sin tocar procesos ajenos). Señales: no
+  hay handler propio; el mecanismo es stdin-EOF, suficiente por ser hijo
+  directo con pipes.
+- **studio-local.sh** salta su boot del MCP en 8177 cuando el entorno trae
+  `HANDYMAN_MCP_TRANSPORT=stdio`.
+- **Nota honesta**: Studio (browser) sigue siendo un cliente APARTE — la UI
+  habla HTTP con `mastra dev`, y el MCP embebido vive dentro del proceso
+  `mastra dev`, no en el navegador.
+
+### Hub (un comando, estilo gateway, feature 105)
+
+`run-hub` levanta el stack completo de revisión con UN comando — el modelo
+gateway: dos hijos del mismo proceso, todo loopback.
+
+```bash
+pnpm run-hub -- [--project <nombre|path>] [--mcp-port <n>]
+# o con node puro:  node dist-bundle/run-hub.mjs --project hm-studio
+```
+
+- **Qué levanta**: (1) el MCP handyman en HTTP (`node <handymanAssetsDir>/
+  dist/mcp.js --http --host 127.0.0.1 --port <mcpPort>`, env mínimo
+  PATH/HOME/HANDYMAN_ROOT) con health-wait activo (~30s) — si el puerto ya
+  era de otro proceso, el hijo muere al bind y el hub falla con error que
+  nombra el puerto y sugiere `--mcp-port`; (2) `mastra dev` (Studio +
+  agentes) con cwd en el paquete y `-d studio` — igual que `pnpm studio`.
+- **Flags**: `--project <nombre|path>` (resolución F101: nombre de registry
+  o path; default cwd) y `--mcp-port <n>` (default 8177). NO hay
+  `--studio-port`: `mastra dev` 1.20.3 no tiene flag de puerto — elige el
+  primero libre en 4111..4131 y el hub lee la URL REAL del stdout del hijo
+  (ventana 4111-4131, para no confundirla con la URL del MCP que el boot de
+  los agentes también imprime).
+- **Env del hijo studio**: passthrough COMPLETO del entorno del operador
+  (este hijo sí corre los agentes — necesita las LLM keys) sobre una capa
+  dotenv de MENOR precedencia (el `.env` raíz parseado por el hub: keys y
+  model vars sin exportarlas), más el wiring (`HANDYMAN_PROJECT_ROOT`
+  resuelto, `HANDYMAN_MCP_URL`, `HANDYMAN_ROOT`). DATA/TELEMETRY solo viajan
+  si el operador las exportó (los defaults de F101 aplican dentro). **Por
+  qué no `mastra dev -e`**: el comando dev re-asigna el archivo entero en
+  `process.env` SIN respetar lo ya definido (`DevBundler.loadEnvVars` →
+  asignación incondicional, verificado en el dist 1.20.3) — un `.env` con
+  `HANDYMAN_PROJECT_ROOT` pisaría el wiring del hub (bug reproducido: el
+  Studio arrancó conduciendo `handyman` en vez del proyecto pedido).
+- **Banner y parada**: con ambos hijos sanos imprime los puntos de acceso
+  (Studio URL real, MCP endpoint, proyecto pineado). Ctrl+C/SIGTERM →
+  SIGTERM a ambos y SIGKILL tras ~3s de gracia, exit 0. Si un hijo muere
+  inesperadamente, el hub dice CUÁL, mata al otro y sale con su code.
+- **Relación con `scripts/studio-local.sh`**: el script raíz sigue siendo el
+  orquestador dev del monorepo (scaffold del proyecto experimento, modelo
+  por rol por defecto, MCP compartido en 8177 con reuse); el hub es el
+  gateway portable — corre el bundle desde cualquier cwd contra cualquier
+  proyecto registrado. **Notas honestas**: el browser sigue siendo cliente
+  aparte (la UI habla HTTP con `mastra dev`); loopback sin auth, como toda
+  la superficie MCP actual; el camino 2 (proceso único, Studio in-process
+  sin `mastra dev`) queda como posible spike futuro.
+- Smoke en vivo: `bash scripts/smoke_hub.sh` (banner + MCP responde + SIGINT
+  sin huérfanos + puerto ocupado, 5 casos).
+
 ## Decisiones de diseño (y por qué)
 
 - **Barrel anti-volatilidad** (`src/mastra/index.ts`): único importador de

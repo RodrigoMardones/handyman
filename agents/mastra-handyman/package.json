@@ -8,6 +8,7 @@
     "run-feature": "HANDYMAN_DATA_DIR=$PWD/data HANDYMAN_TELEMETRY_DIR=$PWD/logs tsx run-feature.ts",
     "run-workflow": "HANDYMAN_DATA_DIR=$PWD/data HANDYMAN_TELEMETRY_DIR=$PWD/logs tsx run-workflow.ts",
     "run-skill": "HANDYMAN_DATA_DIR=$PWD/data HANDYMAN_TELEMETRY_DIR=$PWD/logs tsx run-skill.ts",
+    "run-hub": "HANDYMAN_DATA_DIR=$PWD/data HANDYMAN_TELEMETRY_DIR=$PWD/logs tsx run-hub.ts",
     "build:bundle": "node scripts/build_bundle.mjs",
     "studio": "HANDYMAN_REPO_ROOT=$PWD/../.. HANDYMAN_DATA_DIR=$PWD/data HANDYMAN_TELEMETRY_DIR=$PWD/logs mastra dev -d studio -e ../../.env",
     "test:unit": "vitest run",

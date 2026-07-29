@@ -133,6 +133,24 @@ describe('loadConfig decoupled defaults', () => {
   });
 });
 
+describe('loadConfig mcpTransport', () => {
+  it('defaults to http and keeps the MCP url', () => {
+    const config = loadConfig({ ...BASE_ENV });
+    expect(config.mcpTransport).toBe('http');
+    expect(config.mcpUrl).toBe('http://127.0.0.1:8177/mcp');
+  });
+
+  it('accepts stdio explicitly', () => {
+    expect(loadConfig({ ...BASE_ENV, HANDYMAN_MCP_TRANSPORT: 'stdio' }).mcpTransport).toBe('stdio');
+  });
+
+  it('rejects an invalid value with an actionable error', () => {
+    expect(() => loadConfig({ ...BASE_ENV, HANDYMAN_MCP_TRANSPORT: 'udp' })).toThrowError(
+      /invalid HANDYMAN_MCP_TRANSPORT 'udp': expected 'http' or 'stdio'/,
+    );
+  });
+});
+
 describe('resolveHandymanAssetsDir precedence', () => {
   it('HANDYMAN_ASSETS_DIR wins over the package and the dev fallback', () => {
     expect(

@@ -35,7 +35,7 @@ import * as esbuild from "esbuild";
 
 const PKG_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT_DIR = join(PKG_DIR, "dist-bundle");
-const RUNNERS = ["run-feature", "run-workflow", "run-skill"];
+const RUNNERS = ["run-feature", "run-workflow", "run-skill", "run-hub"];
 
 function die(msg) {
   process.stderr.write(`error: ${msg}\n`);

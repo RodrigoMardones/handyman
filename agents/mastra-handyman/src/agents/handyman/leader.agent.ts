@@ -14,6 +14,7 @@ import { businessMemorySnapshot } from '../../ports/memory';
 import { webTools } from '../../ports/web-tools';
 import { experimentalSkillDirs } from '../../ports/skills';
 import { pinToolsToProject } from '../../ports/mcp-pinning';
+import { handymanMcpTarget, handymanServerDefinition } from '../../ports/mcp-transport';
 import { roleWorkspace } from '../../ports/workspace';
 import type { AppConfig } from '../../ports/config';
 import { createRoleAgents, roleBody } from './roles.agent';
@@ -84,7 +85,9 @@ export async function connectHandymanMcp(config: AppConfig) {
   const mcp = new MCPClient({
     id: 'handyman',
     servers: {
-      handyman: { url: new URL(config.mcpUrl) },
+      // http (default): connect to a running server; stdio (feature 104):
+      // spawn the MCP as a child of this process — one command runs both.
+      handyman: handymanServerDefinition(config),
       ...(config.githubToken
         ? {
             github: {
@@ -101,22 +104,30 @@ export async function connectHandymanMcp(config: AppConfig) {
   const count = Object.keys(rawTools).length;
   if (count === 0)
     throw new Error(
-      `MCP at ${config.mcpUrl} exposed 0 tools — is the handyman MCP server running? ` +
-        `Start one with 'handyman mcp --http' (installed bin) or 'node handyman/dist/mcp.js --http' ` +
-        `from a checkout, or point HANDYMAN_MCP_URL at a live server.`,
+      config.mcpTransport === 'stdio'
+        ? `the embedded handyman MCP (stdio child: ${handymanMcpTarget(config)}) exposed 0 tools — ` +
+            `the child spawned but listed nothing; check its stderr and that ${config.handymanAssetsDir} ` +
+            `is a healthy build, or try HANDYMAN_MCP_TRANSPORT=http.`
+        : `MCP at ${config.mcpUrl} exposed 0 tools — is the handyman MCP server running? ` +
+            `Start one with 'handyman mcp --http' (installed bin) or 'node handyman/dist/mcp.js --http' ` +
+            `from a checkout, or point HANDYMAN_MCP_URL at a live server.`,
     );
   // Project pinning (feature 103): every handyman_* tool that accepts
   // `project` is wrapped ONCE here — the single choke point — so every
   // consumer of the map (leader, implementer/reviewer via the role-tools
   // filters, the feature-cycle workflow steps, the skill mirror) gets tools
-  // pinned to config.projectRoot.
+  // pinned to config.projectRoot. stdio changes nothing about the wrap.
   const { tools, pinned } = pinToolsToProject(rawTools, config.projectRoot);
   if (pinned.length === 0 && Object.keys(rawTools).some((name) => name.startsWith('handyman_')))
     console.warn(
       '[pinning] WARNING: no handyman tool accepted a project arg — pinning is INERT (inputSchema shape drift?)',
     );
+  const via =
+    config.mcpTransport === 'stdio'
+      ? ` via stdio (embedded ${handymanMcpTarget(config)})`
+      : ` to ${config.mcpUrl}`;
   console.log(
-    `[mcp] connected to ${config.mcpUrl}: ${count} tools, ${pinned.length} pinned to ${config.projectRoot}${config.githubToken ? ' (github MCP on)' : ''}`,
+    `[mcp] connected${via}: ${count} tools, ${pinned.length} pinned to ${config.projectRoot}${config.githubToken ? ' (github MCP on)' : ''}`,
   );
   return { tools, mcp };
 }

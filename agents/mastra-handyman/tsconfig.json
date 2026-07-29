@@ -11,5 +11,5 @@
     "esModuleInterop": true,
     "resolveJsonModule": true
   },
-  "include": ["src", "run-feature.ts", "run-workflow.ts", "run-skill.ts", "run-evals.ts", "vitest.config.ts"]
+  "include": ["src", "run-feature.ts", "run-workflow.ts", "run-skill.ts", "run-evals.ts", "run-hub.ts", "vitest.config.ts"]
 }

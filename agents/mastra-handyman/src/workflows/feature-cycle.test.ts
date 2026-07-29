@@ -134,6 +134,7 @@ describe('createFeatureCycleWorkflow', () => {
       handymanRoot: '/tmp',
       projectRoot: '/tmp',
       mcpUrl: 'http://127.0.0.1:8177/mcp',
+      mcpTransport: 'http',
       dataDir: '/tmp',
       telemetryDir: '/tmp',
       modelCatalogPath: '/nonexistent/model-catalog.json',

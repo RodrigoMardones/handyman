@@ -2,8 +2,9 @@
 // Mastra app and runs ONE feature through the handyman MCP loop, then prints
 // the agent text and token usage, writes the per-feature telemetry JSONL and
 // — when the feature closes — appends to the handyman tokens ledger.
-// Requires the handyman MCP server on :8177 and the provider keys exported
-// (set -a && . ../../.env && set +a).
+// Requires the provider keys exported (set -a && . ../../.env && set +a) and
+// the handyman MCP: either already running on :8177 (default http transport)
+// or spawned as an embedded stdio child (HANDYMAN_MCP_TRANSPORT=stdio, f104).
 //
 //   pnpm run-feature <feature-name>
 //

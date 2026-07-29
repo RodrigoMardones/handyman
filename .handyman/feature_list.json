@@ -533,6 +533,54 @@
         "started_at": "2026-07-29T06:47:08.402Z",
         "done_at": "2026-07-29T07:06:05.780Z"
       }
+    },
+    {
+      "id": 104,
+      "name": "mastra_embedded_mcp_stdio",
+      "title": "Runtime Mastra: MCP embebido por stdio (un solo comando = cliente + MCP)",
+      "description": "Pedido del usuario: correr MCP + server Mastra + cliente sin tres procesos. Hoy el agente exige un MCP HTTP aparte (HANDYMAN_MCP_URL default :8177; la guarda de F102 falla accionable si no esta). El MCP handyman habla stdio por defecto (dist/mcp.js sin --http) y viaja en el paquete handyman-harness (resoluble via harness-install handymanPackageDir desde F101). Nuevo modo de conexion: env HANDYMAN_MCP_TRANSPORT=stdio (default http, comportamiento actual intacto) — el runtime spawnea node <handymanPackageDir>/dist/mcp.js como hijo con transport stdio del MCPClient de Mastra, env passthrough (HANDYMAN_ROOT, HANDYMAN_PROJECT_ROOT no aplica: el server resuelve por tool arg), ciclo de vida atado al padre (el hijo muere al salir el runner, sin MCP huerfano). Si @mastra/mcp 1.15.0 no soporta stdio directamente, plan B: spawn propio del hijo con --http en puerto efimero loopback + espera de health + kill en exit (mismo UX: un comando). El pinning de F103 envuelve el toolset igual. studio-local.sh: si el modo stdio esta activo, puede saltarse el boot del MCP (decidir y documentar). Browser/Studio no es bundleable por naturaleza — fuera de scope.",
+      "acceptance": [
+        "con HANDYMAN_MCP_TRANSPORT=stdio y SIN MCP HTTP corriendo, node dist-bundle/run-workflow.mjs bootea: log muestra conexion stdio y las 25 tools (21 pineadas) — evidencia en vivo en el impl report",
+        "el proceso MCP hijo muere con el padre (smoke: tras exit del runner no queda proceso mcp.js huerfano)",
+        "modo http sigue default e intacto (tests unitarios del resolvedor de transporte)",
+        "pnpm test:unit + tsc + smoke + ./init.sh verdes; README del paquete documenta la topologia de un comando"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-29T07:25:11.144Z",
+        "done_at": "2026-07-29T08:55:07.884Z"
+      }
+    },
+    {
+      "id": 105,
+      "name": "mastra_hub_command",
+      "title": "Runtime Mastra: comando hub estilo gateway (un comando levanta MCP + Studio)",
+      "description": "Pedido del usuario: correr el stack completo como se corre OpenClaw (gateway de un comando). Camino 1 (orquestador empaquetado, aprobado por el usuario): nuevo runner run-hub.ts en agents/mastra-handyman que levanta como hijos, con lifecycle completo: (1) MCP handyman HTTP en loopback (node <handymanPackageDir>/dist/mcp.js --http --host 127.0.0.1 --port N, health-wait con timeout y error accionable si el puerto esta ocupado por otro proceso), (2) el server Mastra/Studio (bin mastra local, dev sobre la app del paquete) con env passthrough: HANDYMAN_PROJECT_ROOT (nombre de registry o path, resuelto con el resolvedor de F101), HANDYMAN_MCP_URL apuntando al MCP hijo, DATA/TELEMETRY por defecto de F101, LLM keys del entorno. Logs multiplexados con prefijo [mcp]/[studio]; banner final con los puntos de acceso (Studio URL, MCP endpoint, proyecto pineado); SIGINT/SIGTERM -> apagado ordenado de ambos hijos sin huerfanos; si un hijo muere inesperadamente, el hub reporta y muere con su exit code. Flags: --project <nombre|path> (default: cwd como F101), --mcp-port (default 8177), el resto por env. Entra como runner en build_bundle.mjs (dist-bundle/run-hub.mjs). studio-local.sh queda intacto (flujo dev); el hub es el camino productizado, documentado en README. NO es un proceso unico real (eso es el camino 2, spike aparte si se quiere); el browser sigue siendo el cliente. MCP sin auth loopback-only como hoy.",
+      "acceptance": [
+        "HANDYMAN_PROJECT_ROOT=<nombre> node dist-bundle/run-hub.mjs levanta MCP + Studio con health-wait, imprime banner con URLs, y Ctrl-C no deja procesos huerfanos (smoke en vivo con fixture)",
+        "puerto MCP ocupado por otro proceso -> error accionable que identifica el conflicto (test o smoke)",
+        "logica de orquestacion cubierta con tests unitarios (plan de spawn, health-wait con fetch inyectado, orden de shutdown)",
+        "pnpm test:unit + tsc + build:bundle + smoke + ./init.sh verdes; README documenta el hub"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-29T14:19:52.222Z",
+        "done_at": "2026-07-29T15:04:36.729Z"
+      }
+    },
+    {
+      "id": 106,
+      "name": "studio_local_dotenv_clobber",
+      "title": "studio-local.sh: -e ../../.env clobberiza HANDYMAN_PROJECT_ROOT (hallazgo F105)",
+      "description": "Hallazgo lateral de F105 (review_mastra_hub_command): mastra dev -e <file> reasigna el env file en process.env INCONDICIONALMENTE (DevBundler.loadEnvVars, verificado en mastra 1.20.3 dist), asi que scripts/studio-local.sh con -e ../../.env deja que un HANDYMAN_PROJECT_ROOT definido en el .env raiz pise el proyecto de experimento que el script acaba de preparar. El hub (run-hub.ts) ya lo evita parseando el .env con la menor precedencia. Fix: aplicar la misma estrategia en studio-local.sh (parsear y fusionar con precedencia operador > archivo, sin -e) o fijar HANDYMAN_PROJECT_ROOT despues del -e.",
+      "acceptance": [
+        "studio-local.sh arranca Studio conduciendo el proyecto de experimento aunque .env raiz defina HANDYMAN_PROJECT_ROOT (prueba documentada)",
+        "./init.sh verde"
+      ],
+      "status": "pending",
+      "sprint": "feat-residual-memory-revision"
     }
   ]
 }
