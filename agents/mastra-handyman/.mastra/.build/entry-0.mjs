@@ -1,4 +1,4 @@
-import { join, basename } from 'node:path';
+import { join, dirname, basename, isAbsolute, resolve } from 'node:path';
 import { Mastra } from '@mastra/core';
 import { Agent } from '@mastra/core/agent';
 import { MASTRA_THREAD_ID_KEY } from '@mastra/core/request-context';
@@ -20,6 +20,8 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { existsSync, readFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { z } from 'zod';
 import { homedir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 
 "use strict";
@@ -226,29 +228,28 @@ function webTools() {
 }
 
 "use strict";
-function skillSearchDirs(repoRoot) {
-  return [
-    join(repoRoot, ".agents", "mastra-handyman", "skills"),
-    // deployment
-    join(repoRoot, "agents", "mastra-handyman", "skills"),
-    // package
-    join(repoRoot, ".agents", "skills"),
-    // project
-    join(repoRoot, ".github", "skills"),
-    // project
-    join(homedir(), ".agents", "skills")
-    // user
-  ];
+const PACKAGE_ROOT$1 = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+function skillSearchDirs(scopes = {}) {
+  const env = scopes.env ?? process.env;
+  const override = env.HANDYMAN_SKILL_DIRS?.trim();
+  if (override) return override.split(":").filter(Boolean);
+  const dirs = [join(PACKAGE_ROOT$1, "skills")];
+  if (scopes.projectRoot) {
+    dirs.push(join(scopes.projectRoot, ".agents", "skills"));
+    dirs.push(join(scopes.projectRoot, ".github", "skills"));
+  }
+  dirs.push(join(homedir(), ".agents", "skills"));
+  return dirs;
 }
 function listSkillDirs(dir) {
   if (!existsSync(dir)) return [];
   return readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory() && existsSync(join(dir, entry.name, "SKILL.md"))).map((entry) => join(dir, entry.name));
 }
-function experimentalSkillDirs(repoRoot) {
-  const [deployment] = skillSearchDirs(repoRoot);
-  return listSkillDirs(deployment);
+function experimentalSkillDirs(env = process.env) {
+  const [first] = skillSearchDirs({ env });
+  return first ? listSkillDirs(first) : [];
 }
-function skillRegistry(repoRoot, searchDirs = skillSearchDirs(repoRoot)) {
+function skillRegistry(searchDirs) {
   const registry = {};
   for (const dir of searchDirs) {
     for (const skillDir of listSkillDirs(dir)) {
@@ -256,6 +257,59 @@ function skillRegistry(repoRoot, searchDirs = skillSearchDirs(repoRoot)) {
     }
   }
   return registry;
+}
+
+"use strict";
+function schemaProperties(inputSchema) {
+  if (!inputSchema || typeof inputSchema !== "object") return void 0;
+  const schema = inputSchema;
+  const json = typeof schema.getSchema === "function" ? schema.getSchema() : inputSchema;
+  const props = json?.properties;
+  return props && typeof props === "object" ? props : void 0;
+}
+function acceptsProjectArg(tool) {
+  const props = schemaProperties(tool?.inputSchema);
+  return props !== void 0 && "project" in props;
+}
+function isSameProject(attempted, projectRoot) {
+  if (typeof attempted !== "string" || attempted.trim() === "") return false;
+  if (attempted === projectRoot || attempted === basename(projectRoot)) return true;
+  return isAbsolute(attempted) && resolve(attempted) === resolve(projectRoot);
+}
+function pinToolsToProject(tools, projectRoot, opts = {}) {
+  const prefix = opts.prefix ?? "handyman_";
+  const warn = opts.warn ?? ((message) => console.warn(message));
+  const pinned = [];
+  const wrapped = { ...tools };
+  for (const [name, tool] of Object.entries(tools)) {
+    if (!name.startsWith(prefix) || !acceptsProjectArg(tool)) continue;
+    const pinnable = tool;
+    if (typeof pinnable.execute !== "function") continue;
+    const execute = pinnable.execute.bind(tool);
+    pinned.push(name);
+    wrapped[name] = {
+      ...tool,
+      // async so a pinning rejection surfaces as a PROMISE rejection (the
+      // underlying MCP execute is async; a sync throw would break consumers
+      // that only handle rejections).
+      execute: async (input, ...rest) => {
+        if (!input || typeof input !== "object" || Array.isArray(input)) {
+          return execute(input, ...rest);
+        }
+        const args = { ...input };
+        const attempted = args.project;
+        if (attempted === void 0 || attempted === null || attempted === "") {
+          args.project = projectRoot;
+        } else if (!isSameProject(attempted, projectRoot)) {
+          const message = `[pinning] ${name} rejected: this agent is pinned to project "${projectRoot}" but the call attempted "${String(attempted)}". Retry with project="${projectRoot}" or omit the "project" argument.`;
+          warn(message);
+          throw new Error(message);
+        }
+        return execute(args, ...rest);
+      }
+    };
+  }
+  return { tools: wrapped, pinned };
 }
 
 "use strict";
@@ -310,16 +364,16 @@ function activeToolKeys(role, declared) {
 }
 
 "use strict";
-function roleBody(role, repoRoot) {
+function roleBody(role, handymanAssetsDir) {
   const raw = readFileSync(
-    join(repoRoot, "handyman", "assets", `role-${role}.template.md`),
+    join(handymanAssetsDir, "assets", `role-${role}.template.md`),
     "utf-8"
   );
   return raw.replace(/^---\n[\s\S]*?\n---\n/, "").trim();
 }
 function implementerInstructions(config) {
   return `
-${roleBody("implementer", config.repoRoot)}
+${roleBody("implementer", config.handymanAssetsDir)}
 
 ## Concrete protocol (this deployment)
 You operate through your handyman_ tools on project "${config.projectRoot}" \u2014 PLUS a
@@ -342,7 +396,7 @@ the report exists unless the tool call succeeded.`;
 }
 function reviewerInstructions(config) {
   return `
-${roleBody("reviewer", config.repoRoot)}
+${roleBody("reviewer", config.handymanAssetsDir)}
 
 ## Concrete protocol (this deployment)
 You operate through your handyman_ tools on project "${config.projectRoot}"
@@ -400,7 +454,7 @@ function createRoleAgents(config, tools, opts = {}) {
 function leaderInstructions(config) {
   const project = config.projectRoot;
   return `
-${roleBody("leader", config.repoRoot)}
+${roleBody("leader", config.handymanAssetsDir)}
 
 ## Concrete protocol (this deployment)
 
@@ -464,17 +518,25 @@ async function connectHandymanMcp(config) {
       } : {}
     }
   });
-  const tools = await mcp.listTools();
-  const count = Object.keys(tools).length;
-  if (count === 0) throw new Error(`MCP at ${config.mcpUrl} exposed 0 tools`);
+  const rawTools = await mcp.listTools();
+  const count = Object.keys(rawTools).length;
+  if (count === 0)
+    throw new Error(
+      `MCP at ${config.mcpUrl} exposed 0 tools \u2014 is the handyman MCP server running? Start one with 'handyman mcp --http' (installed bin) or 'node handyman/dist/mcp.js --http' from a checkout, or point HANDYMAN_MCP_URL at a live server.`
+    );
+  const { tools, pinned } = pinToolsToProject(rawTools, config.projectRoot);
+  if (pinned.length === 0 && Object.keys(rawTools).some((name) => name.startsWith("handyman_")))
+    console.warn(
+      "[pinning] WARNING: no handyman tool accepted a project arg \u2014 pinning is INERT (inputSchema shape drift?)"
+    );
   console.log(
-    `[mcp] connected to ${config.mcpUrl}: ${count} tools${config.githubToken ? " (github MCP on)" : ""}`
+    `[mcp] connected to ${config.mcpUrl}: ${count} tools, ${pinned.length} pinned to ${config.projectRoot}${config.githubToken ? " (github MCP on)" : ""}`
   );
   return { tools, mcp };
 }
 async function createHandymanLeader(config, tools, options = {}) {
   const { implementer, reviewer } = options.subagents ?? createRoleAgents(config, tools);
-  const skills = experimentalSkillDirs(config.repoRoot);
+  const skills = experimentalSkillDirs();
   return new Agent({
     id: "handyman-leader",
     name: "Handyman Leader",
@@ -493,6 +555,90 @@ async function createHandymanLeader(config, tools, options = {}) {
 "use strict";
 
 "use strict";
+function handymanRoot(env = process.env) {
+  const raw = env.HANDYMAN_ROOT;
+  if (raw) return resolve(raw.replace(/^~(?=$|\/)/, homedir()));
+  return join(homedir(), "HANDYMAN");
+}
+function handymanPackageDir() {
+  try {
+    return dirname(createRequire(import.meta.url).resolve("handyman-harness/package.json"));
+  } catch {
+    return void 0;
+  }
+}
+function resolveHandymanAssetsDir(env = process.env, packageDir = void 0) {
+  if (env.HANDYMAN_ASSETS_DIR) return env.HANDYMAN_ASSETS_DIR;
+  const pkg = packageDir === void 0 ? handymanPackageDir() : packageDir;
+  if (pkg) return pkg;
+  if (env.HANDYMAN_REPO_ROOT) return join(env.HANDYMAN_REPO_ROOT, "handyman");
+  throw new Error(
+    "cannot locate the handyman assets (role templates, SKILL.md): set HANDYMAN_ASSETS_DIR, install the handyman-harness package, or point HANDYMAN_REPO_ROOT at a monorepo checkout."
+  );
+}
+function readRegistryRoots(root) {
+  try {
+    const raw = readFileSync(join(root, "registry.json"), "utf-8");
+    const parsed = JSON.parse(raw);
+    return (parsed.harnesses ?? []).map((entry) => entry.project_root).filter((root2) => typeof root2 === "string");
+  } catch {
+    return [];
+  }
+}
+function resolveProjectRoot(value, root) {
+  if (!value) return void 0;
+  if (isAbsolute(value)) return value;
+  const roots = readRegistryRoots(root);
+  const matches = roots.filter((candidate) => basename(candidate) === value);
+  if (matches.length === 0) {
+    const names = roots.map((candidate) => basename(candidate)).join(", ");
+    throw new Error(
+      `project '${value}' is not registered in ${join(root, "registry.json")}. Registered harnesses: ${names || "(none)"}. Pass a registered name, an absolute project root, or register it with 'handyman toolbox register <root>'.`
+    );
+  }
+  if (matches.length > 1) {
+    throw new Error(
+      `project name '${value}' is ambiguous: ${matches.length} registered harnesses share it: ${matches.join(", ")}. Pass the absolute project root instead of the name.`
+    );
+  }
+  return matches[0];
+}
+function whichBin(name, env) {
+  for (const dir of (env.PATH ?? "").split(":")) {
+    if (!dir) continue;
+    const candidate = join(dir, name);
+    if (existsSync(candidate)) return candidate;
+  }
+  return void 0;
+}
+function resolveToolboxCommand(env = process.env, packageDir = void 0) {
+  const override = env.HANDYMAN_TOOLBOX_CMD?.trim();
+  if (override) {
+    const [file, ...args] = override.split(/\s+/);
+    return { file, args, source: "HANDYMAN_TOOLBOX_CMD" };
+  }
+  const bin = whichBin("handyman", env);
+  if (bin) return { file: bin, args: ["toolbox", "register"], source: "handyman bin on PATH" };
+  const pkg = packageDir === void 0 ? handymanPackageDir() : packageDir;
+  if (pkg) {
+    return {
+      file: "node",
+      args: [join(pkg, "dist", "cli.js"), "toolbox", "register"],
+      source: "handyman-harness package"
+    };
+  }
+  if (env.HANDYMAN_REPO_ROOT) {
+    return {
+      file: "node",
+      args: [join(env.HANDYMAN_REPO_ROOT, "handyman", "dist", "toolbox.js"), "register"],
+      source: "HANDYMAN_REPO_ROOT dev checkout"
+    };
+  }
+  return void 0;
+}
+
+"use strict";
+const PACKAGE_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 function harnessConfigName(projectRoot) {
   try {
     const raw = readFileSync(join(projectRoot, "harness.config.json"), "utf-8");
@@ -503,17 +649,20 @@ function harnessConfigName(projectRoot) {
   }
 }
 function loadConfig(env = process.env) {
-  const repoRoot = env.HANDYMAN_REPO_ROOT ?? join(process.cwd(), "..", "..");
-  const projectRoot = env.HANDYMAN_PROJECT_ROOT ?? repoRoot;
+  const root = handymanRoot(env);
+  const projectRoot = resolveProjectRoot(env.HANDYMAN_PROJECT_ROOT, root) ?? process.cwd();
+  const harnessId = env.HANDYMAN_HARNESS_ID ?? harnessConfigName(projectRoot) ?? basename(projectRoot);
   return {
-    repoRoot,
+    repoRoot: env.HANDYMAN_REPO_ROOT,
+    handymanAssetsDir: resolveHandymanAssetsDir(env),
+    handymanRoot: root,
     projectRoot,
     mcpUrl: env.HANDYMAN_MCP_URL ?? "http://127.0.0.1:8177/mcp",
-    dataDir: env.HANDYMAN_DATA_DIR ?? join(process.cwd(), "data"),
-    telemetryDir: env.HANDYMAN_TELEMETRY_DIR ?? join(process.cwd(), "logs"),
-    modelCatalogPath: env.HANDYMAN_MODEL_CATALOG ?? join(repoRoot, "agents", "mastra-handyman", "model-catalog.json"),
+    dataDir: env.HANDYMAN_DATA_DIR ?? join(root, "agent", harnessId, "data"),
+    telemetryDir: env.HANDYMAN_TELEMETRY_DIR ?? join(root, "agent", harnessId, "logs"),
+    modelCatalogPath: env.HANDYMAN_MODEL_CATALOG ?? join(PACKAGE_ROOT, "model-catalog.json"),
     githubToken: env.GITHUB_TOKEN ?? env.GH_TOKEN,
-    harnessId: env.HANDYMAN_HARNESS_ID ?? harnessConfigName(projectRoot) ?? basename(projectRoot),
+    harnessId,
     models: resolveRoleModels(env)
   };
 }
@@ -539,14 +688,20 @@ function ensureHarnessRegistered(config, opts = {}) {
   const env = opts.env ?? process.env;
   if (env.HANDYMAN_HARNESS_REGISTER === "off") return;
   const exec = opts.exec ?? execFileSync;
+  const command = resolveToolboxCommand(env, opts.packageDir);
+  if (!command) {
+    console.warn(
+      `[harness] auto-register skipped for ${config.projectRoot}: no toolbox command found (set HANDYMAN_TOOLBOX_CMD, put the \`handyman\` bin on PATH, or install handyman-harness)`
+    );
+    return;
+  }
   try {
-    exec("node", ["handyman/dist/toolbox.js", "register", config.projectRoot], {
-      cwd: config.repoRoot,
-      stdio: "pipe"
-    });
+    exec(command.file, [...command.args, config.projectRoot], { stdio: "pipe" });
   } catch (error) {
     const message = error instanceof Error ? error.message.split("\n")[0] ?? "" : String(error);
-    console.warn(`[harness] auto-register skipped for ${config.projectRoot}: ${message}`);
+    console.warn(
+      `[harness] auto-register skipped for ${config.projectRoot} (${command.source}): ${message}`
+    );
   }
 }
 
@@ -818,9 +973,10 @@ async function buildApp() {
   ensureHarnessRegistered(config);
   const { tools, mcp } = await connectHandymanMcp(config);
   const { memory, storage: memoryStorage } = createConversationMemory(config.dataDir);
-  const skillsRegistry = skillRegistry(config.repoRoot);
+  const skillDirs = skillSearchDirs({ projectRoot: config.projectRoot });
+  const skillsRegistry = skillRegistry(skillDirs);
   const subagents = createRoleAgents(config, tools, {
-    skillDirs: skillSearchDirs(config.repoRoot)
+    skillDirs
   });
   const leader = await createHandymanLeader(config, tools, { memory, subagents });
   const featureCycle = createFeatureCycleWorkflow({
