@@ -59,6 +59,54 @@ Ad-hoc (no install):
 npx handyman-harness@3 <verb> [args...]
 ```
 
+## Run anywhere: one install, every registered project
+
+Install once and operate every harness on the machine from any cwd — the hub
+is the registry at `$HANDYMAN_ROOT/registry.json` (default `~/HANDYMAN`).
+
+```bash
+npm i -g handyman-harness        # puts the `handyman` bin on PATH
+# or stay ad-hoc, nothing installed:
+npx -y handyman-harness@3 <verb> [args...]
+```
+
+Register each project once (idempotent), then forget about paths:
+
+```bash
+handyman toolbox register <path>
+handyman toolbox discover --scan <dir> --register   # scan a tree, register hits
+```
+
+Review the whole fleet from any directory:
+
+```bash
+handyman toolbox status      # live per-harness report + fleet rollup (--json)
+handyman toolbox health      # derived signals (STALE_WIP, BEHIND, IDLE...) (--json)
+handyman toolbox timeline    # merged closure chronology, newest first (--json)
+```
+
+One MCP server covers the fleet too — stdio by default, Streamable HTTP when
+you want several clients against one process:
+
+```bash
+handyman mcp                                       # stdio
+handyman mcp --http --host 127.0.0.1 --port 8177   # endpoint: /mcp
+```
+
+Every tool accepts `project`: a registered name or an absolute project root
+(omitted = the server's cwd). The same handle addresses the resources
+`handyman://{project}/current`, `handyman://{project}/resume` and
+`handyman://{project}/docs/{doc}`.
+
+Two honest caveats:
+
+- **Project names come from the root's basename and must be unique** in the
+  registry. On a collision the MCP tools refuse the name (`project name
+  '<name>' is ambiguous...`) and ask you to pass the absolute root instead.
+- **The registry is machine-local**: it stores absolute paths, so it does not
+  travel between machines — re-register (or re-run `discover --register`) on
+  each one.
+
 ## CLI usage
 
 ```bash

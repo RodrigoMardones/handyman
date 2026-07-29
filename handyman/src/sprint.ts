@@ -809,6 +809,7 @@ export function main(argv: string[]): number {
 }
 
 // Run when executed directly (mirrors Python `if __name__ == "__main__"`).
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Basename check, not import.meta.url: bundle-proof (see toolbox.ts).
+if (basename(process.argv[1] ?? "") === "sprint.js") {
   process.exit(main(process.argv.slice(2)));
 }

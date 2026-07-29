@@ -1214,3 +1214,39 @@ Append-only. Do not edit earlier entries during normal work.
 - **Tools:** domain/role-tools.ts + sandbox local · demo_grounding_3 validada (MCP por rol)
 - **Evidence:** backlog/impl_flue_subagent_grounding.md · review: APPROVED -> backlog/review_flue_subagent_grounding.md
 - **Verification:** verifier exit 0 · closure done
+
+## 2026-07-29 - Feature 98: npm_pack_evals_and_stale_paths
+- **Branch:** feat/mastra-handyman
+- **Tools:** ...
+- **Evidence:** backlog/impl_npm_pack_evals_and_stale_paths.md · review: APPROVED -> backlog/review_npm_pack_evals_and_stale_paths.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-29 - Feature 99: registry_basename_uniqueness
+- **Branch:** feat/mastra-handyman
+- **Tools:** ...
+- **Evidence:** backlog/impl_registry_basename_uniqueness.md · review: APPROVED -> backlog/review_registry_basename_uniqueness.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-29 - Feature 100: consumer_guide_run_anywhere
+- **Branch:** feat/mastra-handyman
+- **Tools:** ...
+- **Evidence:** backlog/impl_consumer_guide_run_anywhere.md · review: APPROVED -> backlog/review_consumer_guide_run_anywhere.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-29 - Feature 101: mastra_runtime_decoupling
+- **Branch:** feat/mastra-handyman
+- **Tools:** ...
+- **Evidence:** backlog/impl_mastra_runtime_decoupling.md · review: APPROVED -> backlog/review_mastra_runtime_decoupling.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-29 - Feature 102: mastra_runtime_pack
+- **Branch:** feat/mastra-handyman
+- **Tools:** ...
+- **Evidence:** backlog/impl_mastra_runtime_pack.md · review: APPROVED -> backlog/review_mastra_runtime_pack.md
+- **Verification:** verifier exit 0 · closure done
+
+## 2026-07-29 - Feature 103: mastra_project_pinning
+- **Branch:** feat/mastra-handyman
+- **Tools:** ...
+- **Evidence:** backlog/impl_mastra_project_pinning.md · review: APPROVED -> backlog/review_mastra_project_pinning.md
+- **Verification:** verifier exit 0 · closure done

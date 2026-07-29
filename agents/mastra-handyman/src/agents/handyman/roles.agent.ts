@@ -5,16 +5,18 @@
 // reviewer cannot mutate feature state by construction.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Agent } from '../../mastra';
+import { Agent, SkillSearchProcessor } from '../../mastra';
 import { resolveModel, roleDefaultOptions } from '../../ports/model-catalog';
 import { implementerVerbs, reviewerVerbs, toolsForVerbs } from '../../domain/role-tools';
 import { roleWorkspace } from '../../ports/workspace';
 import type { AppConfig } from '../../ports/config';
 
-/** Role prompt body from handyman/assets/role-<role>.template.md (frontmatter stripped). */
-export function roleBody(role: string, repoRoot: string): string {
+/** Role prompt body from <handymanAssetsDir>/assets/role-<role>.template.md
+ *  (frontmatter stripped). handymanAssetsDir comes resolved from the config
+ *  port (env > handyman-harness package > dev fallback) — no repoRoot anchor. */
+export function roleBody(role: string, handymanAssetsDir: string): string {
   const raw = readFileSync(
-    join(repoRoot, 'handyman', 'assets', `role-${role}.template.md`),
+    join(handymanAssetsDir, 'assets', `role-${role}.template.md`),
     'utf-8',
   );
   return raw.replace(/^---\n[\s\S]*?\n---\n/, '').trim();
@@ -22,7 +24,7 @@ export function roleBody(role: string, repoRoot: string): string {
 
 function implementerInstructions(config: AppConfig): string {
   return `
-${roleBody('implementer', config.repoRoot)}
+${roleBody('implementer', config.handymanAssetsDir)}
 
 ## Concrete protocol (this deployment)
 You operate through your handyman_ tools on project "${config.projectRoot}" — PLUS a
@@ -46,7 +48,7 @@ the report exists unless the tool call succeeded.`;
 
 function reviewerInstructions(config: AppConfig): string {
   return `
-${roleBody('reviewer', config.repoRoot)}
+${roleBody('reviewer', config.handymanAssetsDir)}
 
 ## Concrete protocol (this deployment)
 You operate through your handyman_ tools on project "${config.projectRoot}"
@@ -66,7 +68,18 @@ Reply with the verdict and one line of justification. Never claim you
 stamped unless the tool call succeeded.`;
 }
 
-export function createRoleAgents(config: AppConfig, tools: Record<string, unknown>) {
+export function createRoleAgents(
+  config: AppConfig,
+  tools: Record<string, unknown>,
+  opts: { skillDirs?: readonly string[] } = {},
+) {
+  // One workspace instance feeds both the agent and the SkillSearchProcessor:
+  // skills live on the WORKSPACE (the deployment/package/project/github/user
+  // scopes) and discovery is ON-DEMAND (search_skills/load_skill over a local
+  // BM25 index) — no eager injection of every skill into the context.
+  const implementerWorkspace = roleWorkspace('implementer', config.projectRoot, {
+    skillDirs: opts.skillDirs,
+  });
   const implementer = new Agent({
     id: 'implementer',
     name: 'Implementer',
@@ -75,7 +88,17 @@ export function createRoleAgents(config: AppConfig, tools: Record<string, unknow
     instructions: () => implementerInstructions(config),
     model: resolveModel(config.models.implementer, { catalogPath: config.modelCatalogPath }),
     tools: toolsForVerbs(tools, implementerVerbs()) as never,
-    workspace: roleWorkspace('implementer', config.projectRoot),
+    workspace: implementerWorkspace,
+    ...(opts.skillDirs
+      ? {
+          inputProcessors: [
+            new SkillSearchProcessor({
+              workspace: implementerWorkspace,
+              search: { topK: 5 },
+            }),
+          ],
+        }
+      : {}),
     defaultOptions: roleDefaultOptions(config.models.implementer),
   });
 

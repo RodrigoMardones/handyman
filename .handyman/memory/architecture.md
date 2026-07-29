@@ -19,6 +19,12 @@ Define que es "buen trabajo" en este repo. Los reviewers evaluan el codigo contr
    - **CLI (entrypoints):** cada `handyman/src/*.ts` es un entrypoint delgado; parsea
      argumentos (paridad con `argparse`), llama a la logica y traduce a exit code +
      salida estable. Se ejecutan como `node handyman/dist/<x>.js`.
+     El entry-guard que dispara `main()` compara el NOMBRE invocado
+     (`basename(process.argv[1]) === "<verbo>.js"`), nunca `import.meta.url`:
+     esbuild colapsa el `import.meta.url` de todos los modulos al del bundle y
+     los guards por URL ejecutaban el `main()` de los verbos importados antes
+     que el real (bug del tarball 3.7.5, corregido en F100). Vale en `dist/`
+     (tsc), en el bundle y via `cli.js` (que repunta `argv[1]`).
    - **Core compartido:** `handyman/src/core/` concentra los helpers reutilizados
      (resolucion de `HARNESS_WORKSPACE`, carga/validacion de `feature_list.json`,
      IO byte-identica, `unifiedDiff` equivalente a `difflib`, frontmatter). Es
@@ -229,6 +235,16 @@ historico). La lectura hexagonal:
 - **Model provisioning:** `agents/mastra-handyman/src/ports/model-catalog.ts`
   es el unico modulo que conoce endpoints, env keys y tuning por provider
   (Z.AI GLM; Kimi for Coding).
+- **Distribution surface (F101-F103, 2026-07-29):** el runtime NO asume el
+  layout del monorepo — assets/templates via el paquete `handyman-harness`
+  instalado (`src/ports/harness-install.ts`, env-first), proyecto por nombre
+  de registry (errores coherentes con el MCP), data/logs bajo
+  `~/HANDYMAN/agent/<harnessId>/`; `pnpm build:bundle` genera
+  `dist-bundle/*.mjs` (externos `@mastra/*`, thin ~50KB) ejecutable con node
+  puro desde cualquier cwd (paquete sigue `private: true`); y todo toolset
+  handyman queda pineado al proyecto seleccionado en el cliente MCP
+  (`src/ports/mcp-pinning.ts` — rechazo ruidoso ante proyecto ajeno; el
+  pinning server-side en el MCP es deuda aparte).
 - **Observability:** telemetria sanitizada (nunca contenido de mensajes),
   metricas con costo en DuckDB, ledger de tokens agregado por **traceId**
   (las delegaciones usan threads frescos; threadId solo ve al leader),
@@ -237,9 +253,9 @@ historico). La lectura hexagonal:
 Reglas duras de la capa de agentes:
 
 1. **Anti-volatilidad.** Todo import de `@mastra/*` pasa por
-   `agents/mastra-handyman/src/mastra/index.ts` (barrel unico), con pin
-   `@mastra/core@1.53.0` y upgrade mensual con suite verde; la eval de
-   trayectoria actua como tripwire de cambios de superficie.
+   `agents/mastra-handyman/src/mastra/index.ts` (barrel unico), con pin de
+   versiones exactas (hoy `@mastra/core@1.54.0`) y upgrade mensual con suite
+   verde; la eval de trayectoria actua como tripwire de cambios de superficie.
 2. **Taxonomia de errores:** outcomes de negocio -> valores tipados
    (`bail`/outcomes), nunca retries; transitorios -> `throw` + `retryConfig`.
    Clasificar por contratos estables, nunca por `message`.

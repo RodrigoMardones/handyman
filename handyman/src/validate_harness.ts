@@ -22,7 +22,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import { computeEvidenceDebt } from "@handyman/toolbox-core/triage";
 import { parseFrontmatter } from "./core/frontmatter.js";
 import { PLATFORM_ROLE_DIRS, resolveWorkspace, validateFeatureList } from "./core/index.js";
@@ -614,7 +614,8 @@ function main(argv: string[]): number {
 }
 
 // Entry guard: run only when invoked directly (not when imported by a test).
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Basename check, not import.meta.url: bundle-proof (see toolbox.ts).
+if (basename(process.argv[1] ?? "") === "validate_harness.js") {
   const code = main(process.argv.slice(2));
   process.exit(code);
 }

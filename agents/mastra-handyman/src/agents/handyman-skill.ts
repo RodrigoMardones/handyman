@@ -10,7 +10,6 @@
 // system surface — writable workspace (files + shell/git) scoped to the
 // project root and the web_search/web_fetch pair — so it can implement real
 // features on real projects, not just exercise the process verbs.
-import { join } from 'node:path';
 import { Agent } from '../mastra';
 import { resolveModel, roleDefaultOptions } from '../ports/model-catalog';
 import { roleWorkspace } from '../ports/workspace';
@@ -49,8 +48,9 @@ Your step budget is LIMITED: no exploratory probes beyond what the protocol
 needs (skill loads + the cycle verbs + at most one verify).`,
     model: resolveModel(spec, { catalogPath: config.modelCatalogPath }),
     tools: { ...tools, ...webTools() } as never,
-    // Canonical skill directory: handyman/SKILL.md + handyman/references/.
-    skills: [join(config.repoRoot, 'handyman')],
+    // Canonical skill directory: the handyman package root (SKILL.md +
+    // references/), resolved by the config port (env > package > dev fallback).
+    skills: [config.handymanAssetsDir],
     workspace: roleWorkspace('skill', config.projectRoot),
     defaultOptions: { ...roleDefaultOptions(spec), maxSteps: 20 },
   });

@@ -35,8 +35,10 @@ run-workflow.ts (tsx, in-process) ─> Mastra app (workflow feature-cycle)   [fa
   en LibSQL): reemplaza el patrón "una instancia de agente por feature" de
   Flue. El `Agent` es una definición stateless; el aislamiento vive en
   thread/resource.
-- El proyecto objetivo se elige con `HANDYMAN_PROJECT_ROOT` (default: la raíz
-  del monorepo; para spikes, un scratch como `/tmp/hm-mastra-sup1`).
+- El proyecto objetivo se elige con `HANDYMAN_PROJECT_ROOT`: ruta absoluta o
+  NOMBRE del registry handyman (match por basename; error accionable si no
+  existe o es ambiguo). Default: el cwd. Para spikes, un scratch como
+  `/tmp/hm-mastra-sup1`.
 
 ## Cómo ejecutar
 
@@ -57,12 +59,133 @@ set -a && . ../../.env && set +a
 HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-feature -- <nombre_feature>
 
 # 4. O como WORKFLOW durable con gate humano (fase 3)
-HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- start <feature>
+HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- start <feature> [declaracion.json]
 #    … corre add→start→implement→review y se SUSPENDE en human-review
 HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- resume <feature> approve|reject [feedback]
 HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- restart <feature>   # crash recovery
 HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- status <feature>    # estado persistido
 ```
+
+La `declaracion.json` de `run-workflow -- start` ancla la corrida de forma
+declarativa — se valida EN LA PUERTA (una declaración inválida falla antes de
+ejecutar nada) y cada concepto queda verificado y propagado:
+
+```json
+{
+  "project": "/abs/path",
+  "title": "Mi feature",
+  "description": "Qué hace y por qué",
+  "acceptance": ["criterio 1", "criterio 2"],
+  "skills": ["nombre-skill"],
+  "mcps": ["verify", "metrics"]
+}
+```
+
+- **project** (opcional, default = el configurado): debe ser EXACTAMENTE el
+  project root configurado — el HARD STOP es código, no prompt.
+- **acceptance** (requerido, mínimo 1): criterios reales que viajan a
+  `feature_add` (verdad en `feature_list.json`) y se citan verbatim al
+  implementer y al reviewer.
+- **skills**: SUGERENCIAS para el feature — validadas contra el registro
+  multi-ubicación (`skillRegistry`: paquete `<pkg>/skills` (resuelto
+  package-relative, sin ancla repoRoot), proyecto `<projectRoot>/.agents/
+  skills` y `<projectRoot>/.github/skills`, y usuario `~/.agents/skills`; en
+  colisión gana la primera; `HANDYMAN_SKILL_DIRS` (separador `:`) reemplaza
+  TODA la cadena). En el formulario de Studio el campo ofrece las disponibles
+  (enum) y el `.describe` las lista como ayuda. El implementer las carga
+  primero con `load_skill` y puede descubrir más on-demand con
+  `search_skills` (`SkillSearchProcessor` sobre las skills del workspace,
+  BM25 local — sin inyección eager de contexto; `[]` = sin sugerencias).
+- **mcps**: verbos extra validados contra el set del rol (enum en el
+  formulario); el step activa exactamente `obligatorios ∪ declarados`
+  (`activeTools` por corrida); por defecto el set completo del rol.
+
+### Boot desde cualquier cwd (runtime desacoplado, 2026-07-29)
+
+El agente NO asume el layout del monorepo (`HANDYMAN_REPO_ROOT` ya no tiene
+default `<cwd>/../..`): bootea desde un cwd arbitrario contra cualquier
+proyecto del registry handyman. Resolución de recursos
+(`src/ports/harness-install.ts`, env primero en todo):
+
+| Recurso | Precedencia |
+|---|---|
+| Assets handyman (role templates, `SKILL.md` canónica) | `HANDYMAN_ASSETS_DIR` > paquete `handyman-harness` instalado (dependencia workspace → `handyman/`) > fallback dev `<HANDYMAN_REPO_ROOT>/handyman` |
+| Model catalog | `HANDYMAN_MODEL_CATALOG` > `<pkg>/model-catalog.json` (package-relative) |
+| Skill scopes | `HANDYMAN_SKILL_DIRS` (`:`-separados) > `<pkg>/skills` > `<proyecto>/.agents/skills`, `<proyecto>/.github/skills` > `~/.agents/skills` |
+| `dataDir` / `telemetryDir` | `HANDYMAN_DATA_DIR` / `HANDYMAN_TELEMETRY_DIR` > `<HANDYMAN_ROOT>/agent/<harnessId>/{data,logs}` (`HANDYMAN_ROOT` default `~/HANDYMAN`); los npm scripts del paquete pinnean `$PWD/data`/`$PWD/logs` — el flujo dev NO cambia |
+| Comando toolbox (auto-register) | `HANDYMAN_TOOLBOX_CMD` (prefijo; se anexa el root) > bin `handyman` en PATH (`handyman toolbox register`) > `node <pkg>/dist/cli.js toolbox register` > fallback dev `node <HANDYMAN_REPO_ROOT>/handyman/dist/toolbox.js register` |
+| Proyecto | `HANDYMAN_PROJECT_ROOT`: ruta absoluta directa, o NOMBRE del registry por basename (0 matches → error con la lista de registrados y la sugerencia `handyman toolbox register`; >1 → error de ambigüedad con candidatos, misma regla que el MCP) > default cwd |
+
+`HANDYMAN_REPO_ROOT` queda SOLO como override dev (sin default). Ejemplo fuera
+del monorepo: `cd /tmp && HANDYMAN_PROJECT_ROOT=hm-studio tsx
+<repo>/agents/mastra-handyman/run-feature.ts mi_feature`.
+
+### Bundle runnable con node puro (feature 102)
+
+`pnpm build:bundle` empaqueta los runners en `dist-bundle/` (`run-feature.mjs`,
+`run-workflow.mjs`, `run-skill.mjs`; esbuild, target node20, ESM) para
+ejecutarlos con NODE PURO — sin tsx — desde cualquier cwd:
+
+```bash
+pnpm build:bundle
+cd /tmp
+HANDYMAN_PROJECT_ROOT=hm-studio \
+  node <repo>/agents/mastra-handyman/dist-bundle/run-feature.mjs mi_feature
+```
+
+- **Externos por diseño** (`@mastra/*` —incluidos los bindings nativos
+  duckdb/libsql que esos paquetes traen—, `@ai-sdk/*`, `zod`, `mastra`,
+  `handyman-harness`): se resuelven de `node_modules` en runtime RELATIVO AL
+  BUNDLE, nunca al cwd del caller. El bundle es thin (~50 KB por runner, solo
+  src propio) porque el paquete es `private` y siempre corre desde su
+  instalación — `node_modules` está garantizado. `handyman-harness` ni
+  siquiera es import estático: `src/ports/harness-install.ts` lo resuelve con
+  `createRequire(import.meta.url)`, que en el bundle apunta a
+  `dist-bundle/<runner>.mjs` y sube al `node_modules` del paquete (link
+  workspace → assets/ y dist/ reales).
+- **Sin banner `createRequire`**: nada de lo inlined es CJS (src propio ESM).
+  Si algún día se inlinea una dep CJS, copiar el banner de
+  `handyman/scripts/pack_npm.mjs`.
+- Los runners ejecutan TOP-LEVEL (son drivers, no unidades importables): sin
+  entry-guard — cada archivo del bundle ES la entrada (contraste con el
+  dispatcher `cli.js` del toolchain, feature 100).
+- El build borra y regenera `dist-bundle/` (gitignored) con guards de
+  inventario: los 3 runners presentes y `@mastra/*` sin inlinear.
+- Requisito de runtime: un MCP handyman vivo (`handyman mcp --http`, o
+  `node handyman/dist/mcp.js --http` desde un checkout) salvo que
+  `HANDYMAN_MCP_URL` apunte a otro endpoint — el error de boot lo indica.
+- Smoke automatizado: `bash scripts/smoke_bundle.sh` — build + boot node desde
+  cwd ajeno con `HANDYMAN_ROOT` aislado y MCP apagado; debe fallar SOLO en el
+  connect MCP (4 casos).
+
+### Pinning de proyecto a nivel cliente MCP (feature 103)
+
+La regla HARD STOP ("toda tool call apunta EXACTAMENTE al proyecto
+configurado") deja de ser solo prompt: `connectHandymanMcp` envuelve las
+tools `handyman_*` que declaran arg `project` con el guard de
+`src/ports/mcp-pinning.ts`, UNA vez, en el choke point — leader,
+implementer/reviewer (filtros de role-tools), steps deterministas del
+workflow y skill mirror reciben el mismo mapa pineado:
+
+- Call SIN `project` → se INYECTA `config.projectRoot` (path absoluto —
+  inequívoco tras F99/F101).
+- Call con el MISMO proyecto (el path absoluto, un path absoluto que resuelve
+  igual, o el basename del root — el shorthand por nombre del registry) →
+  pasa tal cual.
+- Call con proyecto AJENO → RECHAZO con error que nombra el pin y el intento
+  (`[pinning] <tool> rejected: … pinned to project "<root>" … attempted
+  "<otro>" …`) más un `console.warn` estructurado. Rechazo, no rewrite
+  silencioso: el modelo aprende del error y reintenta con el proyecto
+  correcto.
+
+No se tocan: tools que no son del handyman MCP (`github_*`, workspace, web) y
+las tools handyman SIN arg `project` (`harness_list`, `fleet_*` — el set
+`needsProject: false` del servidor), detectadas por su inputSchema
+(`getSchema().properties`, verificado contra `@mastra/mcp` 1.15.0). El boot
+log lo hace visible: `[mcp] connected …: 25 tools, 21 pinned to <root>`; un
+`[pinning] WARNING` suena si 0 tools quedan pineadas (drift del shape del
+inputSchema → pinning inerte). **Fuera de alcance:** el pinning server-side
+(una sesión MCP por proyecto) — deuda del MCP, no del cliente.
 
 ## Decisiones de diseño (y por qué)
 
@@ -90,9 +213,15 @@ HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- status <feature>
   observability — LibSQL no soporta métricas) vía `MastraCompositeStore`.
 - **Observabilidad**: `Observability` + `MastraStorageExporter` +
   `SensitiveDataFilter` (nunca contenido de mensajes en spans) +
-  `requestContextKeys: ['feature']` para correlación por feature. Métricas
-  automáticas `mastra_model_*` (tokens in/out/cache, duraciones, costo
-  estimado por modelo) consultables en DuckDB.
+  `requestContextKeys: ['feature', 'project']` para correlación por corrida.
+  Métricas automáticas `mastra_model_*` (tokens in/out/cache, duraciones,
+  costo estimado por modelo) consultables en DuckDB. **Identidad de harness
+  deployment-level** (`src/ports/harness-identity.ts`): todos los spans llevan
+  los atributos `handyman.harness.id` (env `HANDYMAN_HARNESS_ID` →
+  `project_name` de harness.config.json → basename) y `handyman.harness.root`
+  — separados de la metadata por-corrida. Además, al boot el proyecto se
+  AUTO-REGISTRA en el registry handyman (`toolbox.js register`, idempotente,
+  best-effort; opt-out `HANDYMAN_HARNESS_REGISTER=off`).
 - **Telemetría JSONL por feature** (`src/ports/telemetry.ts` →
   `logs/agent-<feature>.jsonl`): pista de EJECUCIÓN sanitizada (nombres de
   tools, usage, finishReason; texto como `{ chars }`). `history.md` sigue
@@ -128,7 +257,9 @@ HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- status <feature>
   el event loop vivo y el proceso nunca sale.
 - `data/` y `logs/` están gitignored; borrarlos resetea el estado del runtime
   (el estado de negocio handyman NO se toca: vive en el `.handyman/` del
-  proyecto target).
+  proyecto target). Fuera de los npm scripts del paquete, el default es
+  `<HANDYMAN_ROOT>/agent/<harnessId>/{data,logs}` — mismas reglas, otra
+  ubicación.
 
 ## Hallazgos del spike (fases 0–3)
 
@@ -156,10 +287,11 @@ HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- status <feature>
    `harness_list` y ejecutó el protocolo completo ahí (feature 98 +
    reportes en el `.handyman/` real). Se limpió quirúrgicamente y se añadió
    la regla HARD STOP al prompt del leader (nunca cambiar de proyecto; las
-   probes fleet_* son observación, no fallback). **Deuda estructural:** la
-   mitigación real debe ser de código — pinning del proyecto a nivel MCP
-   (una sesión MCP por proyecto) o un wrapper de tools que rechace
-   `project != PROJECT`; el prompt solo reduce la probabilidad.
+   probes fleet_* son observación, no fallback). **~~Deuda estructural~~
+   RESUELTA (feature 103):** la mitigación de código pedida aquí (wrapper de
+   tools que rechaza `project != PROJECT`) es el pinning cliente de
+   `src/ports/mcp-pinning.ts`; el pinning server-side (una sesión MCP por
+   proyecto) sigue como deuda del MCP.
 7. **`bail()` con el output del workflow → run `success`** (verificado con
    toy probe): el resultado del run es el payload tipado y todos los steps
    quedan `success` — la distinción entre "cerró" y "outcome de negocio" se
@@ -386,18 +518,21 @@ Da: chat con el leader (sus 27 tools: 25 MCP + `web_search`/`web_fetch`),
 inspección de agents/tools, el workflow `feature-cycle` (start/resume desde
 la UI) y los traces en DuckDB. Verificado end-to-end: `/api/agents` 200,
 chat REST real, scaffold automático del proyecto, y skill experimental
-respondiendo `SKILL-OK` con el leader k3. **Gotcha:** `mastra dev` NO corre
-con cwd = package dir — el script fija `HANDYMAN_REPO_ROOT` explícito (la
-trampa documentada de paths relativos, aplicada al entry).
+respondiendo `SKILL-OK` con el leader k3. **Nota:** `mastra dev` NO corre
+con cwd = package dir — el script fija `HANDYMAN_DATA_DIR`/
+`HANDYMAN_TELEMETRY_DIR` package-local (desde el desacople del runtime el
+default es `<HANDYMAN_ROOT>/agent/<harnessId>/…`; el flujo dev sigue con
+`./data`/`./logs`) y mantiene `HANDYMAN_REPO_ROOT` como override dev.
 
 ### Skills experimentales
 
 Todo directorio `agents/mastra-handyman/skills/<nombre>/SKILL.md` se carga
-como skill nativa del LEADER en el siguiente arranque (`src/ports/skills.ts`)
-— sin tocar código. La skill mirror (`run-skill`) no las carga: su contrato
-es la skill canónica sola. `skills/ejemplo-skill/` es el canario del
-mecanismo (pide "prueba de skill" en el chat → `SKILL-OK`) y la plantilla de
-copia; bórrala al tener las tuyas.
+como skill nativa del LEADER en el siguiente arranque (`src/ports/skills.ts`
+— scope paquete, resuelto package-relative; `HANDYMAN_SKILL_DIRS` lo
+reemplaza) — sin tocar código. La skill mirror (`run-skill`) no las carga:
+su contrato es la skill canónica sola. `skills/ejemplo-skill/` es el canario
+del mecanismo (pide "prueba de skill" en el chat → `SKILL-OK`) y la
+plantilla de copia; bórrala al tener las tuyas.
 
 ## Superficie de sistema (2026-07-28, mandato del operador)
 Los agentes tienen acceso real al sistema, a la manera documentada de Mastra:
@@ -419,8 +554,9 @@ ejecutada en una corrida GLM real. `tsc` limpio, `vitest` 23/23.
 
 - ~~Ratificación del ADR~~ **ratificado**: Flue eliminado con la vista
   `/agent` el mismo día.
-- Deuda: pinning de proyecto a nivel MCP (sube de prioridad: 2 incidentes);
-  issue upstream restart+`.map()`.
+- Deuda: pinning de proyecto a nivel MCP — la mitad cliente quedó RESUELTA
+  (feature 103, wrapper en `connectHandymanMcp`); queda la mitad server-side
+  (una sesión MCP por proyecto); issue upstream restart+`.map()`.
 - ~~Lectura de backlog~~ **resuelta** con el filesystem read-only del
   reviewer (ver hallazgo §9).
 - Aditivos (capa conversacional, nunca negocio): semantic recall,

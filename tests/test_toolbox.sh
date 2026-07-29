@@ -506,6 +506,27 @@ else
 fi
 rm -rf "$T"
 
+# --- TB24: a shared basename warns on register but still registers ------------
+start_case "register warns on a shared basename; both roots register, re-register stays silent"
+T="$(mktemp -d)"; FR="$T/toolboxroot"
+H1="$T/one/hm-studio"; H2="$T/two/hm-studio"
+write_harness "$H1" "one" "1.0.0"
+write_harness "$H2" "two" "1.0.0"
+OUT1="$(HANDYMAN_ROOT="$FR" node "$TOOLBOX" register "$H1" 2>&1)"; C1=$?
+OUT2="$(HANDYMAN_ROOT="$FR" node "$TOOLBOX" register "$H2" 2>&1)"; C2=$?
+OUT3="$(HANDYMAN_ROOT="$FR" node "$TOOLBOX" register "$H2" 2>&1)"; C3=$?
+N="$(node -e "console.log(JSON.parse(require('fs').readFileSync('$FR/registry.json','utf-8')).harnesses.length)")"
+if [ "$C1" -eq 0 ] && [ "$C2" -eq 0 ] && [ "$C3" -eq 0 ] && [ "$N" = "2" ] \
+  && ! printf '%s' "$OUT1" | grep -q "WARN" \
+  && printf '%s' "$OUT2" | grep -q "WARN: name 'hm-studio' is shared with $H1" \
+  && ! printf '%s' "$OUT3" | grep -q "WARN" \
+  && printf '%s' "$OUT3" | grep -q "already registered"; then
+  pass
+else
+  fail "c1=$C1 c2=$C2 c3=$C3 entries=$N out1=$OUT1 out2=$OUT2 out3=$OUT3"
+fi
+rm -rf "$T"
+
 # --- source hygiene: no raw NUL bytes in TypeScript sources ------------------
 # handyman/src/toolbox.ts used to embed 4 RAW NUL bytes as a dedup-key
 # separator. grep classifies such a file as binary and SKIPS IT SILENTLY, so

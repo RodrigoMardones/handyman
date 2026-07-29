@@ -1,14 +1,15 @@
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 import { Mastra } from '@mastra/core';
 import { Agent } from '@mastra/core/agent';
-import '@mastra/core/request-context';
+import { MASTRA_THREAD_ID_KEY } from '@mastra/core/request-context';
 import { MastraCompositeStore } from '@mastra/core/storage';
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { createScorer } from '@mastra/core/evals';
+import { SkillSearchProcessor } from '@mastra/core/processors';
 import { checks } from '@mastra/evals/checks';
 import { extractTrajectory } from '@mastra/evals/scorers/utils';
 import { MCPClient } from '@mastra/mcp';
-import { Workspace, LocalSandbox, LocalFilesystem } from '@mastra/core/workspace';
+import { Workspace, LocalSkillSource, LocalSandbox, LocalFilesystem } from '@mastra/core/workspace';
 import { createTool } from '@mastra/core/tools';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
@@ -18,6 +19,8 @@ import { Observability, SensitiveDataFilter, MastraStorageExporter } from '@mast
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { existsSync, readFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { z } from 'zod';
+import { homedir } from 'node:os';
+import { execFileSync } from 'node:child_process';
 
 "use strict";
 
@@ -44,28 +47,22 @@ const PROVIDER_FACTORIES = {
     headers: { Authorization: `Bearer ${env.KIMI_API_KEY ?? ""}` }
   })
 };
-const DEFAULT_CATALOG_PATH = join(
-  process.env.HANDYMAN_REPO_ROOT ?? join(process.cwd(), "..", ".."),
-  "agents",
-  "mastra-handyman",
-  "model-catalog.json"
-);
-let catalogCache = null;
+const catalogCache = /* @__PURE__ */ new Map();
 function loadCatalogProviders(path) {
-  if (catalogCache && !path) return catalogCache;
-  const catalogPath = path ?? process.env.HANDYMAN_MODEL_CATALOG ?? DEFAULT_CATALOG_PATH;
+  const cached = catalogCache.get(path);
+  if (cached) return cached;
   const providers = {};
-  if (existsSync(catalogPath)) {
+  if (existsSync(path)) {
     try {
-      const parsed = JSON.parse(readFileSync(catalogPath, "utf-8"));
+      const parsed = JSON.parse(readFileSync(path, "utf-8"));
       for (const p of parsed.providers ?? []) {
         if (p?.id && p.baseURL && p.protocol === "anthropic") providers[p.id] = p;
       }
     } catch (error) {
-      console.warn(`[model-catalog] ignoring unreadable catalog at ${catalogPath}:`, error);
+      console.warn(`[model-catalog] ignoring unreadable catalog at ${path}:`, error);
     }
   }
-  if (!path) catalogCache = providers;
+  catalogCache.set(path, providers);
   return providers;
 }
 function assertCatalogModel(provider, modelId) {
@@ -90,14 +87,15 @@ function roleDefaultOptions(spec) {
     }
   };
 }
-function resolveModel(spec, env = process.env) {
+function resolveModel(spec, options = {}) {
+  const env = options.env ?? process.env;
   const slash = spec.indexOf("/");
   if (slash < 1) throw new Error(`model spec "${spec}" must be 'provider/model'`);
   const provider = spec.slice(0, slash);
   const modelId = spec.slice(slash + 1);
   const factory = PROVIDER_FACTORIES[provider];
   if (factory) return factory(env)(modelId);
-  const catalogProvider = loadCatalogProviders()[provider];
+  const catalogProvider = options.catalogPath ? loadCatalogProviders(options.catalogPath)[provider] : void 0;
   if (catalogProvider) {
     assertCatalogModel(catalogProvider, modelId);
     const apiKey = catalogProvider.apiKeyEnv ? env[catalogProvider.apiKeyEnv] ?? "" : "local";
@@ -112,12 +110,11 @@ function resolveModel(spec, env = process.env) {
 }
 
 "use strict";
-const DATA_DIR = process.env.HANDYMAN_DATA_DIR ?? join(process.cwd(), "data");
-function createConversationMemory() {
-  mkdirSync(DATA_DIR, { recursive: true });
+function createConversationMemory(dataDir) {
+  mkdirSync(dataDir, { recursive: true });
   const storage = new LibSQLStore({
     id: "handyman-mastra-memory",
-    url: `file:${join(DATA_DIR, "mastra.db")}`
+    url: `file:${join(dataDir, "mastra.db")}`
   });
   const memory = new Memory({
     storage,
@@ -151,18 +148,6 @@ ${body}`);
 
 ## Business memory (read-only snapshot from .handyman/memory/)
 ${sections.join("\n\n")}`;
-}
-
-"use strict";
-const WRITABLE_ROLES = /* @__PURE__ */ new Set(["implementer", "skill"]);
-function roleWorkspace(role, projectRoot) {
-  const writable = WRITABLE_ROLES.has(role);
-  return new Workspace({
-    filesystem: new LocalFilesystem({ basePath: projectRoot, readOnly: !writable }),
-    // Only writable roles get a shell: git/test/verifier execution is an
-    // implementation concern; leader and reviewer probe through the MCP.
-    ...writable ? { sandbox: new LocalSandbox({ workingDirectory: projectRoot }) } : {}
-  });
 }
 
 "use strict";
@@ -241,13 +226,53 @@ function webTools() {
 }
 
 "use strict";
-const REPO_ROOT$1 = process.env.HANDYMAN_REPO_ROOT ?? join(process.cwd(), "..", "..");
-const EXPERIMENTAL_SKILLS_DIR = join(REPO_ROOT$1, ".agents", "mastra-handyman", "skills");
-function experimentalSkillDirs() {
-  if (!existsSync(EXPERIMENTAL_SKILLS_DIR)) return [];
-  return readdirSync(EXPERIMENTAL_SKILLS_DIR, { withFileTypes: true }).filter(
-    (entry) => entry.isDirectory() && existsSync(join(EXPERIMENTAL_SKILLS_DIR, entry.name, "SKILL.md"))
-  ).map((entry) => join(EXPERIMENTAL_SKILLS_DIR, entry.name));
+function skillSearchDirs(repoRoot) {
+  return [
+    join(repoRoot, ".agents", "mastra-handyman", "skills"),
+    // deployment
+    join(repoRoot, "agents", "mastra-handyman", "skills"),
+    // package
+    join(repoRoot, ".agents", "skills"),
+    // project
+    join(repoRoot, ".github", "skills"),
+    // project
+    join(homedir(), ".agents", "skills")
+    // user
+  ];
+}
+function listSkillDirs(dir) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory() && existsSync(join(dir, entry.name, "SKILL.md"))).map((entry) => join(dir, entry.name));
+}
+function experimentalSkillDirs(repoRoot) {
+  const [deployment] = skillSearchDirs(repoRoot);
+  return listSkillDirs(deployment);
+}
+function skillRegistry(repoRoot, searchDirs = skillSearchDirs(repoRoot)) {
+  const registry = {};
+  for (const dir of searchDirs) {
+    for (const skillDir of listSkillDirs(dir)) {
+      registry[basename(skillDir)] ??= skillDir;
+    }
+  }
+  return registry;
+}
+
+"use strict";
+const WRITABLE_ROLES = /* @__PURE__ */ new Set(["implementer", "skill"]);
+function roleWorkspace(role, projectRoot, opts = {}) {
+  const writable = WRITABLE_ROLES.has(role);
+  return new Workspace({
+    filesystem: new LocalFilesystem({ basePath: projectRoot, readOnly: !writable }),
+    // Only writable roles get a shell: git/test/verifier execution is an
+    // implementation concern; leader and reviewer probe through the MCP.
+    ...writable ? { sandbox: new LocalSandbox({ workingDirectory: projectRoot }) } : {},
+    // Skill scopes live OUTSIDE the contained project filesystem (user scope,
+    // monorepo scopes): the default source (the workspace's own contained
+    // filesystem) would deny them — read them through an uncontained
+    // LocalSkillSource. BM25 local search feeds the SkillSearchProcessor.
+    ...opts.skillDirs ? { skills: [...opts.skillDirs], skillSource: new LocalSkillSource(), bm25: true } : {}
+  });
 }
 
 "use strict";
@@ -277,24 +302,110 @@ function toolsForVerbs(tools, verbs) {
   const allowed = new Set(verbs.map((v) => `${MCP_PREFIX}${v}`));
   return Object.fromEntries(Object.entries(tools).filter(([name]) => allowed.has(name)));
 }
+function activeToolKeys(role, declared) {
+  const mandatory = role === "implementer" ? IMPLEMENTER_EXTRA : REVIEWER_EXTRA;
+  const roleVerbs = new Set(role === "implementer" ? implementerVerbs() : reviewerVerbs());
+  const verbs = /* @__PURE__ */ new Set([...mandatory, ...declared.filter((v) => roleVerbs.has(v))]);
+  return [...verbs].map((v) => `${MCP_PREFIX}${v}`);
+}
 
 "use strict";
-const REPO_ROOT = process.env.HANDYMAN_REPO_ROOT ?? join(process.cwd(), "..", "..");
-const PROJECT = process.env.HANDYMAN_PROJECT_ROOT ?? REPO_ROOT;
-const MCP_URL = process.env.HANDYMAN_MCP_URL ?? "http://127.0.0.1:8177/mcp";
-const MODELS = resolveRoleModels();
-function roleBody(role) {
-  const raw = readFileSync(join(REPO_ROOT, "handyman", "assets", `role-${role}.template.md`), "utf-8");
+function roleBody(role, repoRoot) {
+  const raw = readFileSync(
+    join(repoRoot, "handyman", "assets", `role-${role}.template.md`),
+    "utf-8"
+  );
   return raw.replace(/^---\n[\s\S]*?\n---\n/, "").trim();
 }
-function leaderInstructions() {
+function implementerInstructions(config) {
   return `
-${roleBody("leader")}
+${roleBody("implementer", config.repoRoot)}
+
+## Concrete protocol (this deployment)
+You operate through your handyman_ tools on project "${config.projectRoot}" \u2014 PLUS a
+workspace scoped to that same project root: file tools (read/write/edit/
+list/grep) and a shell (execute_command: git, tests, the verifier). Use the
+workspace when the feature involves real code changes; the MCP tools remain
+the ONLY way to mutate harness state.
+Your step budget is LIMITED \u2014 spend it on the work and your two required
+writes, not on exploration (the leader already validated the harness; do NOT
+run preflight/metrics/verify MCP probes).
+For the feature named in the task, in this order:
+1. handyman_feature_log with a one-line note (what you did for the feature).
+2. handyman_report_write (kind "impl", feature = the name, content = what
+   you did and why it meets the acceptance criteria). This write is your
+   deliverable: a task without the report written is a FAILED task.
+3. Reply with the report path and nothing else.
+Write the report ONLY through handyman_report_write \u2014 the MCP tool stamps
+the house frontmatter and enforces the never-overwrite policy. Never claim
+the report exists unless the tool call succeeded.`;
+}
+function reviewerInstructions(config) {
+  return `
+${roleBody("reviewer", config.repoRoot)}
+
+## Concrete protocol (this deployment)
+You operate through your handyman_ tools on project "${config.projectRoot}"
+(read-only probes plus backlog_review) \u2014 you have NO state-mutation verbs,
+by design. You ALSO have a READ-ONLY filesystem on that project root: use it
+to read the implementation report at .handyman/backlog/impl_<feature>.md and
+the code the feature touched \u2014 judge artifacts you have READ, never the task
+text alone (a verdict on an unread report is a hallucinated verdict; a 2026-07-28
+run stamped "feature does not exist" for exactly that reason).
+Your step budget is LIMITED: read the report, probe at most once or twice, go
+straight to the verdict.
+For the feature named in the task: assess the implementation against the
+acceptance criteria. Then stamp your verdict with
+handyman_backlog_review (status "approved" or "changes_requested") \u2014 the
+verdict is your deliverable; a review without the stamp is a FAILED review.
+Reply with the verdict and one line of justification. Never claim you
+stamped unless the tool call succeeded.`;
+}
+function createRoleAgents(config, tools, opts = {}) {
+  const implementerWorkspace = roleWorkspace("implementer", config.projectRoot, {
+    skillDirs: opts.skillDirs
+  });
+  const implementer = new Agent({
+    id: "implementer",
+    name: "Implementer",
+    description: "Implements exactly one feature: logs each step via feature_log and writes the impl report via report_write. Delegate the implementation step of a feature to it.",
+    instructions: () => implementerInstructions(config),
+    model: resolveModel(config.models.implementer, { catalogPath: config.modelCatalogPath }),
+    tools: toolsForVerbs(tools, implementerVerbs()),
+    workspace: implementerWorkspace,
+    ...opts.skillDirs ? {
+      inputProcessors: [
+        new SkillSearchProcessor({
+          workspace: implementerWorkspace,
+          search: { topK: 5 }
+        })
+      ]
+    } : {},
+    defaultOptions: roleDefaultOptions(config.models.implementer)
+  });
+  const reviewer = new Agent({
+    id: "reviewer",
+    name: "Reviewer",
+    description: "Reviews one implemented feature against its acceptance criteria and stamps the verdict via backlog_review. Delegate the review step to it after implementation.",
+    instructions: () => reviewerInstructions(config),
+    model: resolveModel(config.models.reviewer, { catalogPath: config.modelCatalogPath }),
+    tools: toolsForVerbs(tools, reviewerVerbs()),
+    workspace: roleWorkspace("reviewer", config.projectRoot),
+    defaultOptions: roleDefaultOptions(config.models.reviewer)
+  });
+  return { implementer, reviewer };
+}
+
+"use strict";
+function leaderInstructions(config) {
+  const project = config.projectRoot;
+  return `
+${roleBody("leader", config.repoRoot)}
 
 ## Concrete protocol (this deployment)
 
 You drive the handyman harness ONLY through your MCP tools (prefixed
-handyman_). The project root for every call is "${PROJECT}" (pass it as
+handyman_). The project root for every call is "${project}" (pass it as
 the "project" argument). The user message names the feature to work on.
 
 Execute this sequence, in order, waiting for each result:
@@ -317,7 +428,7 @@ Execute this sequence, in order, waiting for each result:
    human operator, not for this loop).
 
 HARD STOP rule: every tool call above targets EXACTLY the project
-"${PROJECT}". If that project's harness is missing or broken (feature_add
+    "${project}". If that project's harness is missing or broken (feature_add
 errors because the workspace does not exist), STOP and report the bootstrap
 need \u2014 NEVER switch to another registered harness (harness_list/fleet_*
 are read-only probes for observation, never a fallback target). A 2026-07-28
@@ -336,111 +447,107 @@ Auxiliary capabilities (NOT part of the cycle protocol): a READ-ONLY
 filesystem on the project root for grounding your routing decisions, and the
 web_search/web_fetch pair for internet research when the operator asks for
 investigation work. If a github_ tool is present (GITHUB_TOKEN configured)
-it is yours alone \u2014 never delegate it.${businessMemorySnapshot(PROJECT)}`;
+it is yours alone \u2014 never delegate it.${businessMemorySnapshot(project)}`;
 }
-function implementerInstructions() {
-  return `
-${roleBody("implementer")}
-
-## Concrete protocol (this deployment)
-You operate through your handyman_ tools on project "${PROJECT}" \u2014 PLUS a
-workspace scoped to that same project root: file tools (read/write/edit/
-list/grep) and a shell (execute_command: git, tests, the verifier). Use the
-workspace when the feature involves real code changes; the MCP tools remain
-the ONLY way to mutate harness state.
-Your step budget is LIMITED \u2014 spend it on the work and your two required
-writes, not on exploration (the leader already validated the harness; do NOT
-run preflight/metrics/verify MCP probes).
-For the feature named in the task, in this order:
-1. handyman_feature_log with a one-line note (what you did for the feature).
-2. handyman_report_write (kind "impl", feature = the name, content = what
-   you did and why it meets the acceptance criteria). This write is your
-   deliverable: a task without the report written is a FAILED task.
-3. Reply with the report path and nothing else.
-Write the report ONLY through handyman_report_write \u2014 the MCP tool stamps
-the house frontmatter and enforces the never-overwrite policy. Never claim
-the report exists unless the tool call succeeded.`;
-}
-function reviewerInstructions() {
-  return `
-${roleBody("reviewer")}
-
-## Concrete protocol (this deployment)
-You operate through your handyman_ tools on project "${PROJECT}"
-(read-only probes plus backlog_review) \u2014 you have NO state-mutation verbs,
-by design. You ALSO have a READ-ONLY filesystem on that project root: use it
-to read the implementation report at .handyman/backlog/impl_<feature>.md and
-the code the feature touched \u2014 judge artifacts you have READ, never the task
-text alone (a verdict on an unread report is a hallucinated verdict; a 2026-07-28
-run stamped "feature does not exist" for exactly that reason).
-Your step budget is LIMITED: read the report, probe at most once or twice, go
-straight to the verdict.
-For the feature named in the task: assess the implementation against the
-acceptance criteria. Then stamp your verdict with
-handyman_backlog_review (status "approved" or "changes_requested") \u2014 the
-verdict is your deliverable; a review without the stamp is a FAILED review.
-Reply with the verdict and one line of justification. Never claim you
-stamped unless the tool call succeeded.`;
-}
-async function connectHandymanMcp() {
-  const githubToken = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+async function connectHandymanMcp(config) {
   const mcp = new MCPClient({
     id: "handyman",
     servers: {
-      handyman: { url: new URL(MCP_URL) },
-      ...githubToken ? {
+      handyman: { url: new URL(config.mcpUrl) },
+      ...config.githubToken ? {
         github: {
           url: new URL("https://api.githubcopilot.com/mcp/"),
-          requestInit: { headers: { Authorization: `Bearer ${githubToken}` } }
+          requestInit: {
+            headers: { Authorization: `Bearer ${config.githubToken}` }
+          }
         }
       } : {}
     }
   });
   const tools = await mcp.listTools();
   const count = Object.keys(tools).length;
-  if (count === 0) throw new Error(`MCP at ${MCP_URL} exposed 0 tools`);
-  console.log(`[mcp] connected to ${MCP_URL}: ${count} tools${githubToken ? " (github MCP on)" : ""}`);
+  if (count === 0) throw new Error(`MCP at ${config.mcpUrl} exposed 0 tools`);
+  console.log(
+    `[mcp] connected to ${config.mcpUrl}: ${count} tools${config.githubToken ? " (github MCP on)" : ""}`
+  );
   return { tools, mcp };
 }
-function createRoleAgents(tools) {
-  const implementer = new Agent({
-    id: "implementer",
-    name: "Implementer",
-    description: "Implements exactly one feature: logs each step via feature_log and writes the impl report via report_write. Delegate the implementation step of a feature to it.",
-    instructions: implementerInstructions,
-    model: resolveModel(MODELS.implementer),
-    tools: toolsForVerbs(tools, implementerVerbs()),
-    workspace: roleWorkspace("implementer", PROJECT),
-    defaultOptions: roleDefaultOptions(MODELS.implementer)
-  });
-  const reviewer = new Agent({
-    id: "reviewer",
-    name: "Reviewer",
-    description: "Reviews one implemented feature against its acceptance criteria and stamps the verdict via backlog_review. Delegate the review step to it after implementation.",
-    instructions: reviewerInstructions,
-    model: resolveModel(MODELS.reviewer),
-    tools: toolsForVerbs(tools, reviewerVerbs()),
-    workspace: roleWorkspace("reviewer", PROJECT),
-    defaultOptions: roleDefaultOptions(MODELS.reviewer)
-  });
-  return { implementer, reviewer };
-}
-async function createHandymanLeader(tools, options = {}) {
-  const { implementer, reviewer } = options.subagents ?? createRoleAgents(tools);
-  const skills = experimentalSkillDirs();
+async function createHandymanLeader(config, tools, options = {}) {
+  const { implementer, reviewer } = options.subagents ?? createRoleAgents(config, tools);
+  const skills = experimentalSkillDirs(config.repoRoot);
   return new Agent({
     id: "handyman-leader",
     name: "Handyman Leader",
     description: "Handyman leader: orchestrates implementer/reviewer subagents over the handyman MCP server.",
-    instructions: leaderInstructions,
-    model: resolveModel(MODELS.leader),
+    instructions: () => leaderInstructions(config),
+    model: resolveModel(config.models.leader, { catalogPath: config.modelCatalogPath }),
     tools: { ...tools, ...webTools() },
     agents: { implementer, reviewer },
-    workspace: roleWorkspace("leader", PROJECT),
+    workspace: roleWorkspace("leader", config.projectRoot),
     ...skills.length > 0 ? { skills } : {},
-    defaultOptions: roleDefaultOptions(MODELS.leader),
+    defaultOptions: roleDefaultOptions(config.models.leader),
     ...options.memory ? { memory: options.memory } : {}
   });
+}
+
+"use strict";
+
+"use strict";
+function harnessConfigName(projectRoot) {
+  try {
+    const raw = readFileSync(join(projectRoot, "harness.config.json"), "utf-8");
+    const name = JSON.parse(raw).project_name;
+    return typeof name === "string" && name.trim() !== "" ? name : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function loadConfig(env = process.env) {
+  const repoRoot = env.HANDYMAN_REPO_ROOT ?? join(process.cwd(), "..", "..");
+  const projectRoot = env.HANDYMAN_PROJECT_ROOT ?? repoRoot;
+  return {
+    repoRoot,
+    projectRoot,
+    mcpUrl: env.HANDYMAN_MCP_URL ?? "http://127.0.0.1:8177/mcp",
+    dataDir: env.HANDYMAN_DATA_DIR ?? join(process.cwd(), "data"),
+    telemetryDir: env.HANDYMAN_TELEMETRY_DIR ?? join(process.cwd(), "logs"),
+    modelCatalogPath: env.HANDYMAN_MODEL_CATALOG ?? join(repoRoot, "agents", "mastra-handyman", "model-catalog.json"),
+    githubToken: env.GITHUB_TOKEN ?? env.GH_TOKEN,
+    harnessId: env.HANDYMAN_HARNESS_ID ?? harnessConfigName(projectRoot) ?? basename(projectRoot),
+    models: resolveRoleModels(env)
+  };
+}
+
+"use strict";
+function createHarnessIdentityProcessor(config) {
+  return {
+    name: "harness-identity",
+    process(span) {
+      if (!span) return void 0;
+      span.attributes = {
+        ...span.attributes,
+        "handyman.harness.id": config.harnessId,
+        "handyman.harness.root": config.projectRoot
+      };
+      return span;
+    },
+    async shutdown() {
+    }
+  };
+}
+function ensureHarnessRegistered(config, opts = {}) {
+  const env = opts.env ?? process.env;
+  if (env.HANDYMAN_HARNESS_REGISTER === "off") return;
+  const exec = opts.exec ?? execFileSync;
+  try {
+    exec("node", ["handyman/dist/toolbox.js", "register", config.projectRoot], {
+      cwd: config.repoRoot,
+      stdio: "pipe"
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message.split("\n")[0] ?? "" : String(error);
+    console.warn(`[harness] auto-register skipped for ${config.projectRoot}: ${message}`);
+  }
 }
 
 "use strict";
@@ -488,36 +595,76 @@ function failureDetail(data) {
 function cliFailed(data) {
   return typeof data.exit === "number" && data.exit !== 0;
 }
-const carriedSchema = z.object({
-  feature: z.string().regex(/^[A-Za-z0-9_-]+$/, "feature name must be [A-Za-z0-9_-]+ (use hyphens, no spaces)"),
-  detail: z.string().optional()
-});
+function buildCarriedSchema(ctx) {
+  const skillItem = ctx.availableSkills.length ? z.enum(ctx.availableSkills) : z.string().min(1);
+  const verbItem = ctx.availableVerbs.length ? z.enum(ctx.availableVerbs) : z.string().min(1);
+  return z.object({
+    feature: z.string().regex(/^[A-Za-z0-9_-]+$/, "feature name must be [A-Za-z0-9_-]+ (use hyphens, no spaces)").describe("Feature name ([A-Za-z0-9_-]+, no spaces)"),
+    project: z.string().min(1).describe(`Must be exactly the configured project root (HARD STOP): ${ctx.project}`),
+    title: z.string().min(1).optional().describe("Short title for feature_add"),
+    description: z.string().min(1).optional().describe("One-paragraph description for feature_add"),
+    acceptance: z.array(z.string().min(1)).min(1, "declare at least one acceptance criterion").describe("Real acceptance criteria (min 1) \u2014 they land in feature_list.json"),
+    skills: z.array(skillItem).default([]).describe(
+      ctx.availableSkills.length ? `Skill suggestions for the feature (available: ${ctx.availableSkills.join(", ")})` : "Skill suggestions (no local skills found in any scope)"
+    ),
+    mcps: z.array(verbItem).default([]).describe(
+      ctx.availableVerbs.length ? `Extra MCP verbs to activate (available: ${ctx.availableVerbs.join(", ")})` : "Extra MCP verbs (none connected within the role sets)"
+    ),
+    detail: z.string().optional()
+  }).superRefine((decl, issueCtx) => {
+    if (decl.project !== ctx.project) {
+      issueCtx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["project"],
+        message: `declared project must be exactly "${ctx.project}" (HARD STOP: a run never drifts to another project)`
+      });
+    }
+  });
+}
 const cycleOutputSchema = z.object({
   feature: z.string(),
   outcome: z.enum(["done", "changes_requested", "close_rejected", "add_failed", "start_failed"]),
   detail: z.string().optional()
 });
+function declarationBrief(inputData) {
+  const criteria = inputData.acceptance.map((c, i) => `${i + 1}. ${c}`).join("\n");
+  const skills = inputData.skills.length > 0 ? `
+Suggested skills for this feature: ${inputData.skills.join(", ")} \u2014 load them FIRST with load_skill, and discover more on demand with search_skills if the task calls for it.` : `
+No skills were suggested \u2014 if the task would benefit, discover relevant ones on demand with search_skills, then load_skill.`;
+  const mcps = inputData.mcps.length > 0 ? `
+MCP verbs declared for this run (your active tool set is exactly your protocol writes plus these): ${inputData.mcps.join(", ")}` : "";
+  return `Project: ${inputData.project}
+Acceptance criteria (declared at submission \u2014 every one must be met and evidenced):
+${criteria}${skills}${mcps}`;
+}
 function createFeatureCycleWorkflow(opts) {
-  const { tools, agents, project } = opts;
+  const { tools, agents, project, availableSkills = {} } = opts;
+  const roleVerbSet = /* @__PURE__ */ new Set([...implementerVerbs(), ...reviewerVerbs()]);
+  const availableVerbs = Object.keys(tools).filter((key) => key.startsWith(MCP_PREFIX)).map((key) => key.slice(MCP_PREFIX.length)).filter((verb) => roleVerbSet.has(verb)).sort();
+  const carriedSchema = buildCarriedSchema({
+    project,
+    availableSkills: Object.keys(availableSkills),
+    availableVerbs
+  });
   const addFeature = createStep({
     id: "add-feature",
-    description: "feature_add via MCP; an already-existing feature is noted, not fatal",
+    description: "feature_add via MCP with the DECLARED title/description/criteria; already-exists is noted, not fatal",
     inputSchema: carriedSchema,
     outputSchema: carriedSchema,
     execute: async ({ inputData, bail }) => {
       const res = await callHandymanTool(tools, "feature_add", {
         project,
         name: inputData.feature,
-        title: inputData.feature,
-        description: `Workflow-driven cycle for ${inputData.feature}`,
-        acceptance: ["The add\u2192start\u2192implement\u2192review\u2192close cycle completes via the Mastra workflow"]
+        title: inputData.title ?? inputData.feature,
+        description: inputData.description ?? `Workflow-driven cycle for ${inputData.feature}`,
+        acceptance: inputData.acceptance
       });
       if (res.ok && !cliFailed(res.data)) {
-        return { feature: inputData.feature, detail: "feature_add: added" };
+        return { ...inputData, detail: "feature_add: added" };
       }
       const detail = res.error ?? failureDetail(res.data);
       if (/already exists/i.test(detail)) {
-        return { feature: inputData.feature, detail: `feature_add: noted (${detail})` };
+        return { ...inputData, detail: `feature_add: noted (${detail})` };
       }
       return bail({ feature: inputData.feature, outcome: "add_failed", detail });
     }
@@ -534,7 +681,7 @@ function createFeatureCycleWorkflow(opts) {
         no_preflight: true
       });
       if (res.ok && !cliFailed(res.data)) {
-        return { feature: inputData.feature, detail: "feature_start: in_progress" };
+        return { ...inputData, detail: "feature_start: in_progress" };
       }
       return bail({
         feature: inputData.feature,
@@ -545,28 +692,41 @@ function createFeatureCycleWorkflow(opts) {
   });
   const implement = createStep({
     id: "implement",
-    description: "implementer agent: feature_log + report_write through its MCP tool set",
+    description: "implementer agent: feature_log + report_write through its declared tool set",
     inputSchema: carriedSchema,
     outputSchema: carriedSchema,
     retries: 1,
-    execute: async ({ inputData }) => {
+    execute: async ({ inputData, requestContext, runId }) => {
+      requestContext.set(MASTRA_THREAD_ID_KEY, `impl-${runId}`);
       const result = await agents.implementer.generate(
-        `Implement the feature "${inputData.feature}" now: your two required writes (handyman_feature_log, then handyman_report_write with kind "impl" for feature "${inputData.feature}"). If the report already exists (a previous attempt completed it), reply with its path \u2014 never claim a write that did not succeed. Reply with the report path.`
+        `Implement the feature "${inputData.feature}" now.
+${declarationBrief(inputData)}
+Your two required writes: handyman_feature_log, then handyman_report_write with kind "impl" for feature "${inputData.feature}" \u2014 the report must show how EACH acceptance criterion is met. If the report already exists (a previous attempt completed it), reply with its path \u2014 never claim a write that did not succeed. Reply with the report path.`,
+        {
+          requestContext,
+          ...inputData.mcps.length > 0 ? { activeTools: activeToolKeys("implementer", inputData.mcps) } : {}
+        }
       );
-      return { feature: inputData.feature, detail: `implementer: ${result.text}` };
+      return { ...inputData, detail: `implementer: ${result.text}` };
     }
   });
   const review = createStep({
     id: "review",
-    description: "reviewer agent: stamps backlog_review (approved | changes_requested)",
+    description: "reviewer agent: verdict against the DECLARED criteria, stamped via backlog_review",
     inputSchema: carriedSchema,
     outputSchema: carriedSchema,
     retries: 1,
-    execute: async ({ inputData }) => {
+    execute: async ({ inputData, requestContext }) => {
       const result = await agents.reviewer.generate(
-        `Review the feature "${inputData.feature}" now and stamp your verdict with handyman_backlog_review ("approved" or "changes_requested"). The implementer reported: ${inputData.detail ?? "(no implementer output)"}. Reply with the verdict and one line of justification.`
+        `Review the feature "${inputData.feature}" against its DECLARED acceptance criteria and stamp your verdict with handyman_backlog_review ("approved" or "changes_requested").
+${declarationBrief(inputData)}
+The implementer reported: ${inputData.detail ?? "(no implementer output)"}. Reply with the verdict and one line of justification.`,
+        {
+          requestContext,
+          ...inputData.mcps.length > 0 ? { activeTools: activeToolKeys("reviewer", inputData.mcps) } : {}
+        }
       );
-      return { feature: inputData.feature, detail: `reviewer: ${result.text}` };
+      return { ...inputData, detail: `reviewer: ${result.text}` };
     }
   });
   const humanReview = createStep({
@@ -576,7 +736,8 @@ function createFeatureCycleWorkflow(opts) {
     outputSchema: carriedSchema,
     suspendSchema: z.object({
       feature: z.string(),
-      review: z.string()
+      review: z.string(),
+      acceptance: z.array(z.string())
     }),
     resumeSchema: z.object({
       approved: z.boolean(),
@@ -584,7 +745,11 @@ function createFeatureCycleWorkflow(opts) {
     }),
     execute: async ({ inputData, resumeData, suspend, bail }) => {
       if (!resumeData) {
-        return await suspend({ feature: inputData.feature, review: inputData.detail ?? "(no review text)" });
+        return await suspend({
+          feature: inputData.feature,
+          review: inputData.detail ?? "(no review text)",
+          acceptance: inputData.acceptance
+        });
       }
       if (!resumeData.approved) {
         return bail({
@@ -593,7 +758,7 @@ function createFeatureCycleWorkflow(opts) {
           detail: resumeData.feedback ?? "rejected by human reviewer"
         });
       }
-      return { feature: inputData.feature, detail: resumeData.feedback ?? "approved by human" };
+      return { ...inputData, detail: resumeData.feedback ?? "approved by human" };
     }
   });
   const closeFeature = createStep({
@@ -649,14 +814,24 @@ function createProtocolTrajectoryScorer(expectedOrder) {
 
 "use strict";
 async function buildApp() {
-  const { tools, mcp } = await connectHandymanMcp();
-  const { memory, storage: memoryStorage } = createConversationMemory();
-  const subagents = createRoleAgents(tools);
-  const leader = await createHandymanLeader(tools, { memory, subagents });
-  const featureCycle = createFeatureCycleWorkflow({ tools, agents: subagents, project: PROJECT });
+  const config = loadConfig();
+  ensureHarnessRegistered(config);
+  const { tools, mcp } = await connectHandymanMcp(config);
+  const { memory, storage: memoryStorage } = createConversationMemory(config.dataDir);
+  const skillsRegistry = skillRegistry(config.repoRoot);
+  const subagents = createRoleAgents(config, tools, {
+    skillDirs: skillSearchDirs(config.repoRoot)
+  });
+  const leader = await createHandymanLeader(config, tools, { memory, subagents });
+  const featureCycle = createFeatureCycleWorkflow({
+    tools,
+    agents: subagents,
+    project: config.projectRoot,
+    availableSkills: skillsRegistry
+  });
   const observabilityStore = await new DuckDBStore({
     id: "handyman-mastra-observability",
-    path: join(DATA_DIR, "observability.duckdb")
+    path: join(config.dataDir, "observability.duckdb")
   }).getStore("observability");
   const storage = new MastraCompositeStore({
     id: "handyman-mastra-storage",
@@ -695,8 +870,13 @@ async function buildApp() {
           exporters: [new MastraStorageExporter()],
           // Privacy rule (same as the Flue sink): never persist message
           // content in spans — SensitiveDataFilter redacts it at export.
-          spanOutputProcessors: [new SensitiveDataFilter()],
-          requestContextKeys: ["feature"]
+          spanOutputProcessors: [
+            // Deployment-level harness identity on EVERY span (attributes —
+            // the per-run channel stays requestContextKeys).
+            createHarnessIdentityProcessor(config),
+            new SensitiveDataFilter()
+          ],
+          requestContextKeys: ["feature", "project"]
         }
       }
     }),

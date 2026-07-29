@@ -124,6 +124,10 @@ function err(msg: string): number {
   return 1;
 }
 
+function warn(msg: string): void {
+  process.stderr.write(`WARN: ${msg}\n`);
+}
+
 function out(line: string): void {
   process.stdout.write(`${line}\n`);
 }
@@ -171,6 +175,14 @@ function cmdRegister(hroot: string, target: string, stamp: string): number {
   if (registry.harnesses.some((e) => e.project_root === root)) {
     out(`already registered: ${root}`);
     return 0;
+  }
+  const name = basename(root);
+  const shared = registry.harnesses.filter((e) => basename(e.project_root) === name);
+  if (shared.length > 0) {
+    warn(
+      `name '${name}' is shared with ${shared.map((e) => e.project_root).join(", ")} — ` +
+        `MCP tools resolving by name will be ambiguous; prefer absolute paths`,
+    );
   }
   registry.harnesses.push({ project_root: root, registered: stamp });
   registry.harnesses.sort((a, b) => a.project_root.localeCompare(b.project_root));
@@ -1338,7 +1350,13 @@ export function main(argv: string[]): number {
 // Run when executed directly (mirrors Python `if __name__ == "__main__"`).
 // `review-notes` is async, so it must dodge the sync process.exit path used
 // by the other subcommands.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// The guard compares the invoked file NAME, not import.meta.url: esbuild
+// collapses every bundled module's import.meta.url into the bundle's own URL,
+// so the URL comparison also fired the main() of every verb this file imports
+// (running dist/toolbox.js executed index_md's main and toolbox's never ran).
+// The basename check holds from dist/, from the packed bundle, and through
+// cli.js (which re-points argv[1] at dist/<verb>.js before importing it).
+if (basename(process.argv[1] ?? "") === "toolbox.js") {
   const argv = process.argv.slice(2);
   if (argv[0] === "review-notes") {
     reviewNotesMain(argv.slice(1)).then(

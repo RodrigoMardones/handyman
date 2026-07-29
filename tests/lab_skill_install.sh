@@ -1,60 +1,115 @@
 #!/usr/bin/env bash
-# Lab probe (NOT part of the gate: run_tests.sh lists its suites explicitly and
-# this one is report-only). Simulates what an external user receives today from
-# `npx skills add RodrigoMardones/handyman`: the handyman/ directory alone,
-# without node_modules/ and without dist/ (gitignored), and reports which of the
-# four steps of the advertised flow work.
+# Consumer journey lab (NOT part of the gate: run_tests.sh lists its suites
+# explicitly and this one stays a manual probe). Drives the published-package
+# flow the way an external user lives it: unpack the npm tarball, scaffold a
+# harness, register it from the package's dispatcher, review the fleet from a
+# DIFFERENT cwd, and validate the shipped eval set — all under one mktemp with
+# an isolated HANDYMAN_ROOT so the real ~/HANDYMAN is never touched.
 #
-# This is the oracle for features 64 (publish handyman-harness to npm) and 65
-# (SKILL.md invokes npx): when they land, steps 2-4 must flip to OK — rerun this
-# and update the expectations below.
+# Oracle history: features 64/65/68 (npm publish, npx invocation) are archived,
+# and the old probe measured a flow that no longer exists (npm install + tsc
+# over the installed skill directory, expected-FAIL on steps 2-4). Rewritten
+# for feature 100 to assert the journey the package advertises today. The
+# package is unpacked with tar instead of `npm install <tarball>` on purpose:
+# installing would fetch the vis-network dependency from the registry, and this
+# lab stays offline by design (same contract as test_npm_pack.sh).
 #
 # Usage: bash tests/lab_skill_install.sh
 set -u
 
 SUITE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/assert.sh
+. "$SUITE_DIR/lib/assert.sh"
 REPO_ROOT="$(cd "$SUITE_DIR/.." && pwd)"
+PKG_SRC="$REPO_ROOT/handyman"
+STAGING="$PKG_SRC/.pack-staging"
+
+echo "consumer journey lab (lab_skill_install.sh)"
+
 # pwd -P: mktemp returns a /var symlink on macOS and symlinked roots break the
 # CLI entry guards (handoff 2026-07-19 §5.1).
 LAB="$(cd "$(mktemp -d)" && pwd -P)"
 trap 'rm -rf "$LAB"' EXIT
 
-INSTALL="$LAB/handyman-skill-install"
-cp -R "$REPO_ROOT/handyman" "$INSTALL"
-rm -rf "$INSTALL/node_modules" "$INSTALL/dist"
-
-step() { printf '\n== %s ==\n' "$1"; }
-report() { printf -- '-> %s\n' "$1"; }
-
-step "1. bootstrap sin build: scripts/scaffold.sh"
-mkdir -p "$LAB/proyecto"
-if (cd "$INSTALL" && bash scripts/scaffold.sh local "$LAB/proyecto" >/dev/null 2>&1) \
-  && [ -f "$LAB/proyecto/.handyman/feature_list.json" ]; then
-  report "OK: el scaffold funciona con bash puro (unica pieza ejecutable hoy)"
+# --- step 0: the publishable tarball ------------------------------------------
+start_case "tarball available (pack:npm run when .pack-staging has none)"
+TARBALL="$(ls "$STAGING"/handyman-harness-*.tgz 2>/dev/null | head -n 1 || true)"
+if [ -z "$TARBALL" ]; then
+  OUT="$( (cd "$PKG_SRC" && node scripts/pack_npm.mjs) 2>&1)"
+  LAST="$(printf '%s\n' "$OUT" | tail -n 1)"
+  TARBALL="$(printf '%s\n' "$OUT" | sed -n 's/^tarball: //p')"
+  if [ "$LAST" = "status: ok" ] && [ -n "$TARBALL" ] && [ -f "$TARBALL" ]; then
+    pass
+  else
+    fail "pack:npm last='$LAST'"
+  fi
 else
-  report "FAIL: el scaffold dejo de ser autonomo — REGRESION, esto hoy funciona"
+  pass
 fi
 
-step "2. npm install (deps del paquete)"
-if (cd "$INSTALL" && npm install --no-audit --no-fund >/dev/null 2>&1); then
-  report "OK: las deps instalan fuera del monorepo (feature 64 aterrizada?)"
+mkdir -p "$LAB/install"
+(cd "$LAB/install" && tar -xzf "$TARBALL")
+PKG="$LAB/install/package"
+CLI="$PKG/dist/cli.js"
+
+# --- step 1: a project with a harness ------------------------------------------
+start_case "scaffold.sh bootstraps the fixture project (bash, no build)"
+PROYECTO="$LAB/proyecto"
+mkdir -p "$PROYECTO"   # scaffold.sh requires the project root to exist
+if bash "$PKG_SRC/scripts/scaffold.sh" local "$PROYECTO" journey >/dev/null 2>&1 \
+  && [ -f "$PROYECTO/.handyman/feature_list.json" ]; then
+  pass
 else
-  report "FAIL esperado hoy: EUNSUPPORTEDPROTOCOL workspace:* (@handyman/toolbox-core)"
+  fail "scaffold left no .handyman/feature_list.json"
 fi
 
-step "3. build (tsc -b)"
-if (cd "$INSTALL" && npm exec --no -- tsc -b >/dev/null 2>&1); then
-  report "OK: compila standalone"
+# scaffold copies templates verbatim; naming the project is the user's fill-in
+# step, and the toolBox reads project_name LIVE on every query
+# (harness.config.json first, then feature_list.json).
+node -e 'const fs=require("fs");for (const p of process.argv.slice(1)){const d=JSON.parse(fs.readFileSync(p,"utf8"));if(d.project_name)d.project_name="journey";if(d.project)d.project="journey";if(d.config&&d.config.project_name)d.config.project_name="journey";fs.writeFileSync(p,JSON.stringify(d,null,2)+"\n");}' \
+  "$PROYECTO/harness.config.json" "$PROYECTO/.handyman/feature_list.json"
+
+# --- step 2: register from the unpacked package --------------------------------
+FLEET="$LAB/handyman-root"
+start_case "cli.js toolbox register records the project in the registry"
+OUT="$(HANDYMAN_ROOT="$FLEET" node "$CLI" toolbox register "$PROYECTO" 2>&1)"
+CODE=$?
+if [ "$CODE" -eq 0 ] && [ -f "$FLEET/registry.json" ] \
+  && [ "$(_json "$FLEET/registry.json" str harnesses.0.project_root)" = "$PROYECTO" ]; then
+  pass
 else
-  report "FAIL esperado hoy: sin node_modules no hay typescript; tsconfig referencia ../packages/toolbox-core"
-  report "TRAMPA: 'npx tsc' a secas instala el paquete equivocado tsc@2.0.4 (deprecado, no es TypeScript)"
+  fail "exit=$CODE output: $OUT"
 fi
 
-step "4. verbos del CLI (node dist/feature.js ready)"
-if (cd "$INSTALL" && node dist/feature.js ready >/dev/null 2>&1); then
-  report "OK: los verbos que SKILL.md ordena existen y corren"
+# --- step 3: review the fleet from ANOTHER cwd ---------------------------------
+mkdir -p "$LAB/elsewhere"
+
+start_case "toolbox status from another cwd reports the registered harness"
+OUT="$(cd "$LAB/elsewhere" && HANDYMAN_ROOT="$FLEET" node "$CLI" toolbox status 2>&1)"
+CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -qF "$PROYECTO"; then
+  pass
 else
-  report "FAIL esperado hoy: no hay dist/ (gitignoreado) — los ~30 comandos 'node dist/*.js' de SKILL.md/references estan rotos post-install"
+  fail "exit=$CODE output: $OUT"
 fi
 
-printf '\nResumen: hoy solo el paso 1 debe estar OK. Features 64-65 deben voltear 2-4.\n'
+start_case "toolbox list from another cwd shows the live project name"
+OUT="$(cd "$LAB/elsewhere" && HANDYMAN_ROOT="$FLEET" node "$CLI" toolbox list 2>&1)"
+CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "journey"; then
+  pass
+else
+  fail "exit=$CODE output: $OUT"
+fi
+
+# --- step 4: the shipped eval set validates ------------------------------------
+start_case "cli.js evals validate passes against the shipped eval set"
+OUT="$(cd "$LAB/elsewhere" && node "$CLI" evals validate 2>&1)"
+CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$OUT" | grep -q "validate: OK"; then
+  pass
+else
+  fail "exit=$CODE output: $OUT"
+fi
+
+summary

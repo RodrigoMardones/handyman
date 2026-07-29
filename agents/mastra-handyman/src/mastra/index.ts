@@ -7,14 +7,15 @@
 // '../../src/mastra').
 export { Mastra } from '@mastra/core';
 export { Agent } from '@mastra/core/agent';
-export { RequestContext } from '@mastra/core/request-context';
+export { RequestContext, MASTRA_THREAD_ID_KEY } from '@mastra/core/request-context';
 export { MastraCompositeStore } from '@mastra/core/storage';
 export { createStep, createWorkflow } from '@mastra/core/workflows';
 export { runEvals, createScorer } from '@mastra/core/evals';
+export { SkillSearchProcessor } from '@mastra/core/processors';
 export { checks } from '@mastra/evals/checks';
 export { extractTrajectory } from '@mastra/evals/scorers/utils';
 export { MCPClient } from '@mastra/mcp';
-export { Workspace, LocalFilesystem, LocalSandbox } from '@mastra/core/workspace';
+export { Workspace, LocalFilesystem, LocalSandbox, LocalSkillSource } from '@mastra/core/workspace';
 export { createTool } from '@mastra/core/tools';
 export { Memory } from '@mastra/memory';
 export { LibSQLStore } from '@mastra/libsql';

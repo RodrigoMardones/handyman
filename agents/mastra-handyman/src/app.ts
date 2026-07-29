@@ -21,23 +21,35 @@ import {
 } from './agents/handyman';
 import { createConversationMemory } from './ports/memory';
 import { loadConfig } from './ports/config';
+import { skillRegistry, skillSearchDirs } from './ports/skills';
+import { createHarnessIdentityProcessor, ensureHarnessRegistered } from './ports/harness-identity';
 import { createFeatureCycleWorkflow } from './workflows/feature-cycle';
 import { createProtocolTrajectoryScorer } from './evals/protocol-trajectory';
 
 export async function buildApp() {
   const config = loadConfig();
+  // The driven project joins the machine-global handyman registry (fleet
+  // visibility); idempotent and best-effort — never blocks boot.
+  ensureHarnessRegistered(config);
   const { tools, mcp } = await connectHandymanMcp(config);
   const { memory, storage: memoryStorage } = createConversationMemory(config.dataDir);
   // One definition of the role agents, two orchestration topologies: nested
   // in the leader (supervisor, run-feature.ts) and top-level for the
   // feature-cycle workflow (run-workflow.ts), where the workflow — not an
-  // LLM — routes the cycle.
-  const subagents = createRoleAgents(config, tools);
+  // LLM — routes the cycle. Skill scopes resolve package-relative + against
+  // the DRIVEN project (never a repoRoot): one search chain feeds both the
+  // run-declaration registry and the implementer's SkillSearchProcessor.
+  const skillDirs = skillSearchDirs({ projectRoot: config.projectRoot });
+  const skillsRegistry = skillRegistry(skillDirs);
+  const subagents = createRoleAgents(config, tools, {
+    skillDirs,
+  });
   const leader = await createHandymanLeader(config, tools, { memory, subagents });
   const featureCycle = createFeatureCycleWorkflow({
     tools,
     agents: subagents,
     project: config.projectRoot,
+    availableSkills: skillsRegistry,
   });
 
   const observabilityStore = await new DuckDBStore({
@@ -83,8 +95,13 @@ export async function buildApp() {
           exporters: [new MastraStorageExporter()],
           // Privacy rule (same as the Flue sink): never persist message
           // content in spans — SensitiveDataFilter redacts it at export.
-          spanOutputProcessors: [new SensitiveDataFilter()],
-          requestContextKeys: ['feature'],
+          spanOutputProcessors: [
+            // Deployment-level harness identity on EVERY span (attributes —
+            // the per-run channel stays requestContextKeys).
+            createHarnessIdentityProcessor(config) as never,
+            new SensitiveDataFilter(),
+          ],
+          requestContextKeys: ['feature', 'project'],
         },
       },
     }),

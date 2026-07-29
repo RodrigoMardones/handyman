@@ -4,7 +4,7 @@ description: 'Install, analyze, bootstrap, run, review, or migrate a Handyman ag
 argument-hint: 'analyze | bootstrap local|global | run-feature | review | migrate-global | upgrade'
 user-invocable: true
 metadata:
-  version: 3.7.5
+  version: 3.7.6
 ---
 
 # Handyman

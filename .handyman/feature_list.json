@@ -423,6 +423,116 @@
         "started_at": "2026-07-28T02:44:46.463Z",
         "done_at": "2026-07-28T03:13:37.274Z"
       }
+    },
+    {
+      "id": 98,
+      "name": "npm_pack_evals_and_stale_paths",
+      "title": "Paquete npm: evals funcional en tarball + mensajes sin rutas del monorepo",
+      "description": "Explore run_anywhere_distribucion gaps 2 y 3. (2) evals.js validate falla en el paquete publicado: busca ../evals/trigger-eval.json relativo a dist/ y evals/ no viaja en files. Fix: incluir el eval set en el tarball (pack_npm.mjs) o embeberlo, y cubrirlo en el smoke de test_npm_pack.sh fuera del monorepo. (3) Mensajes de produccion con rutas stale del monorepo confunden al consumidor npm: mcp.ts (~l129) sugiere 'node handyman/dist/toolbox.js register'; upgrade_harness.ts imprime 'scripts/upgrade_harness.py' (~l339) y su PROG sigue siendo upgrade_harness.py (~l572); scaffold.sh (~l177) idem con tools_discovery; references/toolbox.md y references/mcp.md mezclan 'node handyman/dist/*' con la forma npx. Unificar a 'handyman <verbo>' / 'npx handyman-harness@3 <verbo>'.",
+      "acceptance": [
+        "evals validate corre OK desde el tarball empacado, verificado por smoke fuera del monorepo en test_npm_pack.sh",
+        "grep por 'handyman/dist' y 'upgrade_harness.py' en handyman/src, scripts y references no arroja mensajes de cara al consumidor (solo comentarios internos justificados)",
+        "./init.sh y tests/run_tests.sh verdes"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-29T04:57:12.710Z",
+        "done_at": "2026-07-29T05:13:27.842Z"
+      }
+    },
+    {
+      "id": 99,
+      "name": "registry_basename_uniqueness",
+      "title": "Registry: ambiguedad de basename visible en register y resolveProject",
+      "description": "Explore run_anywhere_distribucion gap 4. resolveProject del MCP (handyman/src/mcp.ts ~l121) resuelve el arg project por basename con find() y dos roots con igual basename son ambiguos: gana el primero en silencio. El registry (packages/toolbox-core/src/registry.ts) solo impone unicidad de project_root, no de nombre. Fix: (a) toolbox register advierte (o rechaza con flag) cuando otro root registrado tiene el mismo basename; (b) resolveProject detecta multiples matches y devuelve error explicito listando los roots candidatos en vez de elegir arbitrariamente.",
+      "acceptance": [
+        "resolveProject con dos registrados de igual basename devuelve error que lista los project_root candidatos (test unitario)",
+        "toolbox register de un basename duplicado emite warning visible (test)",
+        "./init.sh y tests/run_tests.sh verdes"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-29T05:13:42.834Z",
+        "done_at": "2026-07-29T05:24:51.691Z"
+      }
+    },
+    {
+      "id": 100,
+      "name": "consumer_guide_run_anywhere",
+      "title": "Guia consumidor run-anywhere + lab test alineado al flujo npx",
+      "description": "Explore run_anywhere_distribucion gap 7 + doc. (a) README.npm.md documenta el flujo 'instala una vez, opera N proyectos': npm i -g handyman-harness o npx -y handyman-harness@3, toolbox register <path>, toolbox status/health/timeline para revisar todos los registrados desde cualquier cwd, mcp --http y arg project por tool, resources handyman://{project}/current|resume|docs. Enlazar desde README.md raiz. (b) tests/lab_skill_install.sh quedo como oraculo del flujo viejo (npm install + tsc sobre la skill instalada, FAIL en pasos 2-4) y features 64/65/68 ya archivadas: actualizarlo al flujo npx actual o reemplazarlo por un smoke equivalente que pase.",
+      "acceptance": [
+        "README.npm.md incluye seccion run-anywhere multi-proyecto con los comandos exactos y README.md raiz la enlaza",
+        "lab_skill_install.sh (o su reemplazo) pasa verde midiendo el flujo npx actual",
+        "./init.sh y tests/run_tests.sh verdes"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-29T05:24:52.133Z",
+        "done_at": "2026-07-29T05:52:00.822Z"
+      }
+    },
+    {
+      "id": 101,
+      "name": "mastra_runtime_decoupling",
+      "title": "Runtime Mastra: desacoplar del monorepo + seleccion de proyecto por nombre de registry",
+      "description": "Opcion C de backlog/explore_run_anywhere_distribucion.md, parte 1/3. Hoy agents/mastra-handyman solo corre desde el layout del monorepo: HANDYMAN_REPO_ROOT default <cwd>/../.., role templates leidos de <repoRoot>/handyman/assets, model catalog default <repoRoot>/agents/mastra-handyman/model-catalog.json, skill dirs bajo repoRoot (las de proyecto deberian colgar de projectRoot), auto-register spawnea handyman/dist/toolbox.js relativo, dataDir/telemetryDir default <cwd>/data|logs (ensucian cualquier cwd) y HANDYMAN_PROJECT_ROOT solo acepta path. Fix: (a) resolver assets del paquete handyman-harness via HANDYMAN_ASSETS_DIR env > require.resolve('handyman-harness') > fallback repoRoot dev; (b) model catalog default package-relative (agents/mastra-handyman/model-catalog.json ya vive en el paquete); (c) skill dirs: package skills package-relative + project skills bajo projectRoot + user skills ~/.agents/skills; (d) dataDir/telemetryDir default ~/HANDYMAN/agent/<harnessId>/{data,logs} con env override intacto; (e) auto-register invoca el bin handyman/handyman-harness resuelto (PATH o require.resolve), no la ruta del monorepo; (f) HANDYMAN_PROJECT_ROOT acepta nombre del registry (~$HANDYMAN_ROOT/registry.json) ademas de path; ambiguedad -> error coherente con F99.",
+      "acceptance": [
+        "el agente bootea desde un cwd arbitrario fuera del layout del monorepo contra un proyecto scratch registrado (corrida documentada), con templates/catalog/skills resueltos sin <cwd>/../..",
+        "HANDYMAN_PROJECT_ROOT acepta nombre del registry y rechaza nombres ambiguos con error accionable (test unitario)",
+        "dataDir/telemetryDir por defecto no escriben bajo cwd (test unitario)",
+        "pnpm test:unit verde en agents/mastra-handyman y ./init.sh verde; flujos dev del monorepo (studio, run-*) intactos"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "meta": {
+        "started_at": "2026-07-29T06:03:17.635Z",
+        "done_at": "2026-07-29T06:34:57.007Z"
+      }
+    },
+    {
+      "id": 102,
+      "name": "mastra_runtime_pack",
+      "title": "Runtime Mastra: bundle esbuild + bins ejecutables sin tsx",
+      "description": "Opcion C parte 2/3. Empaquetar agents/mastra-handyman como el toolchain: script de bundle esbuild (patron de handyman/scripts/pack_npm.mjs) que produzca un dist ejecutable con node puro (sin tsx) para run-feature/run-workflow(/run-skill), con assets necesarios (role templates, model-catalog, skills del paquete) resueltos desde el bundle o via handyman-harness instalado. El paquete SIGUE private: true (decision del explore: privado hasta estabilizar; publicar sera decision posterior). Dependencias @mastra/* quedan externas (pesadas, con nativos potenciales) salvo que el bundle demuestre lo contrario; documentar la eleccion.",
+      "acceptance": [
+        "script de bundle genera los bins y un smoke los ejecuta con node desde un cwd fuera del monorepo: boot OK y fallo accionable sin MCP (mensaje indica como levantar handyman mcp --http)",
+        "smoke automatizado en un script de tests/ o del paquete, verde",
+        "README de agents/mastra-handyman documenta el artefacto, sus env vars y la dependencia de un MCP handyman-harness corriendo",
+        "pnpm test:unit verde y ./init.sh verde"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "depends_on": [
+        101
+      ],
+      "meta": {
+        "started_at": "2026-07-29T06:35:20.905Z",
+        "done_at": "2026-07-29T06:47:07.960Z"
+      }
+    },
+    {
+      "id": 103,
+      "name": "mastra_project_pinning",
+      "title": "Runtime Mastra: pinning de proyecto a nivel cliente MCP",
+      "description": "Opcion C parte 3/3 + deuda prioritaria del ADR Mastra (2 incidentes de deriva de proyecto; la mitigacion actual es solo prompt). El cliente MCP del agente (donde se crea la conexion al handyman MCP en agents/mastra-handyman/src) debe fijar project=<proyecto seleccionado> en TODA llamada a tools handyman y rechazar (o reescribir con warning loggeado) cualquier intento del modelo de usar otro project. Pinning server-side en el MCP de handyman-harness queda FUERA de scope (deuda documentada aparte).",
+      "acceptance": [
+        "wrapper del cliente MCP fuerza project en todas las tool calls handyman_*; intento de usar otro proyecto queda rechazado con error claro (test estructural/unitario)",
+        "test que demuestra que una tool call con project ajeno no llega al servidor (o vuelve con error) y una con el proyecto fijado pasa",
+        "pnpm test:unit verde y ./init.sh verde"
+      ],
+      "status": "done",
+      "sprint": "feat-residual-memory-revision",
+      "depends_on": [
+        101
+      ],
+      "meta": {
+        "started_at": "2026-07-29T06:47:08.402Z",
+        "done_at": "2026-07-29T07:06:05.780Z"
+      }
     }
   ]
 }

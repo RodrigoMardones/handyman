@@ -72,6 +72,8 @@ Instala Handyman directamente desde este repositorio con el cliente de skills:
 npx skills add "RodrigoMardones/handyman"
 ```
 
+¿Solo necesitas el toolchain CLI/MCP? El paquete npm [`handyman-harness`](https://www.npmjs.com/package/handyman-harness) se instala una sola vez y opera todos los proyectos registrados desde cualquier directorio; guía "Run anywhere" en [handyman/README.npm.md](handyman/README.npm.md#run-anywhere-one-install-every-registered-project).
+
 ## 🗺️ Estructura Del Monorepo
 
 Este repositorio es un workspace pnpm con tres unidades:

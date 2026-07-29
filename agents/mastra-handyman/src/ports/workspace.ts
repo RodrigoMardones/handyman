@@ -20,7 +20,7 @@
 // symlink safe); LocalSandbox is NOT a security boundary (isolation 'none')
 // and exposes only PATH to child processes by default — API keys in
 // process.env are not leaked into agent-run commands.
-import { Workspace, LocalFilesystem, LocalSandbox } from '../mastra';
+import { Workspace, LocalFilesystem, LocalSandbox, LocalSkillSource } from '../mastra';
 
 export type WorkspaceRole = 'leader' | 'implementer' | 'reviewer' | 'skill';
 
@@ -29,13 +29,27 @@ const WRITABLE_ROLES: ReadonlySet<WorkspaceRole> = new Set(['implementer', 'skil
 /**
  * Build the per-role workspace rooted at the project the agent drives.
  * `projectRoot` must be absolute (HANDYMAN_PROJECT_ROOT / REPO_ROOT already are).
+ * `opts.skillDirs`: skill scopes for the SkillSearchProcessor (deployment,
+ * package, project, github, user — absolute paths are resolved as-is by the
+ * Workspace); BM25 local keyword search is enabled alongside.
  */
-export function roleWorkspace(role: WorkspaceRole, projectRoot: string): Workspace {
+export function roleWorkspace(
+  role: WorkspaceRole,
+  projectRoot: string,
+  opts: { skillDirs?: readonly string[] } = {},
+): Workspace {
   const writable = WRITABLE_ROLES.has(role);
   return new Workspace({
     filesystem: new LocalFilesystem({ basePath: projectRoot, readOnly: !writable }),
     // Only writable roles get a shell: git/test/verifier execution is an
     // implementation concern; leader and reviewer probe through the MCP.
     ...(writable ? { sandbox: new LocalSandbox({ workingDirectory: projectRoot }) } : {}),
+    // Skill scopes live OUTSIDE the contained project filesystem (user scope,
+    // monorepo scopes): the default source (the workspace's own contained
+    // filesystem) would deny them — read them through an uncontained
+    // LocalSkillSource. BM25 local search feeds the SkillSearchProcessor.
+    ...(opts.skillDirs
+      ? { skills: [...opts.skillDirs], skillSource: new LocalSkillSource(), bm25: true }
+      : {}),
   });
 }

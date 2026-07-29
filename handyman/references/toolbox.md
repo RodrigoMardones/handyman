@@ -38,7 +38,8 @@ Schema: `assets/schemas/registry.schema.json` (draft-07,
 
 ## Subcommands
 
-Run from the skill repo: `node handyman/dist/toolbox.js <subcommand>`.
+Run via the published bin: `handyman toolbox <subcommand>` (or
+`npx -y handyman-harness@3 toolbox <subcommand>` without a global install).
 
 | Subcommand | Does | Exit |
 |---|---|---|
@@ -84,20 +85,20 @@ and slated for retirement; the intake artifact contract itself
 ## Typical Loop
 
 ```bash
-node handyman/dist/toolbox.js discover --scan ~/proyectos --register   # once
-node handyman/dist/toolbox.js status                                   # what's going on?
-node handyman/dist/toolbox.js health                                   # anything stuck?
+handyman toolbox discover --scan ~/proyectos --register   # once
+handyman toolbox status                                   # what's going on?
+handyman toolbox health                                   # anything stuck?
 # live panel: Mastra Studio (agents/mastra-handyman, `pnpm studio`)
 ```
 
 ## Heartbeat as a post_run Hook
 
 ```json
-"post_run": ["node handyman/dist/toolbox.js heartbeat --root ."]
+"post_run": ["npx -y handyman-harness@3 toolbox heartbeat --root ."]
 ```
 
-That relative path works in the skill repo itself; a target project must point
-at wherever the skill lives. `feature done` treats a failing `post_run` step
+That invocation carries no checkout path, so the same hook works in the skill
+repo and in any target project. `feature done` treats a failing `post_run` step
 as a warning, so a missing toolBox script never blocks a verified closure.
 `timeline` merges events and history, preferring history on
 (project, feature, date) collisions; event-only entries render as

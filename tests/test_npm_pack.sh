@@ -15,6 +15,10 @@ PKG_DIR="$SUITE_DIR/../handyman"
 echo "npm pack suite (test_npm_pack.sh)"
 
 TMP="$(mktemp -d)"
+# Canonicalize the tmpdir (macOS /var -> /private/var): the per-verb entry
+# guard compares import.meta.url against file://$argv[1], so a symlinked path
+# would silently skip main() when a bundled dist/<verb>.js is run directly.
+TMP="$(cd "$TMP" && pwd -P)"
 trap 'rm -rf "$TMP"' EXIT
 
 start_case "pack:npm builds the staging tarball (status: ok)"
@@ -44,6 +48,13 @@ for v in cli backlog evals feature index_md mcp metrics preflight sprint toolbox
   printf '%s\n' "$LISTING" | grep -qx "package/dist/$v.js" || MISSING="$MISSING $v"
 done
 if [ -z "$MISSING" ]; then pass; else fail "missing:$MISSING"; fi
+
+start_case "tarball ships the eval set (evals/trigger-eval.json)"
+if printf '%s\n' "$LISTING" | grep -qx "package/evals/trigger-eval.json"; then
+  pass
+else
+  fail "evals/trigger-eval.json not in tarball"
+fi
 
 start_case "tarball ships no TypeScript sources"
 if printf '%s\n' "$LISTING" | grep -q "\.ts$"; then fail "found .ts entry"; else pass; fi
@@ -106,9 +117,27 @@ C1=$?
 C2=$?
 if [ "$C1" -eq 2 ] && [ "$C2" -eq 2 ]; then pass; else fail "noargs=$C1 unknown=$C2"; fi
 
-start_case "bundled toolbox.js resolves its core import (usage exits 0)"
-(cd "$APP" && node "$TMP/package/dist/toolbox.js" >/dev/null 2>&1)
+start_case "bundled toolbox.js runs its own main (usage on stderr, exit 2)"
+TOUT="$(cd "$APP" && node "$TMP/package/dist/toolbox.js" 2>&1)"
 CODE=$?
-assert_exit 0 "$CODE" "toolbox usage"
+if [ "$CODE" -eq 2 ] && printf '%s' "$TOUT" | grep -q "usage: toolbox.js"; then
+  pass
+else
+  fail "exit=$CODE output: $TOUT"
+fi
+
+start_case "dispatcher cli.js evals validate: shipped eval set passes"
+EOUT="$(cd "$APP" && node "$TMP/package/dist/cli.js" evals validate 2>&1)"
+CODE=$?
+if [ "$CODE" -eq 0 ] && printf '%s' "$EOUT" | grep -q "validate: OK"; then
+  pass
+else
+  fail "exit=$CODE output: $EOUT"
+fi
+
+start_case "bundled evals.js validate: identical contract"
+VOUT="$(cd "$APP" && node "$TMP/package/dist/evals.js" validate 2>&1)"
+CODE=$?
+if [ "$CODE" -eq 0 ] && [ "$VOUT" = "$EOUT" ]; then pass; else fail "exit=$CODE"; fi
 
 summary

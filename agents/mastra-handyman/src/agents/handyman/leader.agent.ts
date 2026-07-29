@@ -13,6 +13,7 @@ import { resolveModel, roleDefaultOptions } from '../../ports/model-catalog';
 import { businessMemorySnapshot } from '../../ports/memory';
 import { webTools } from '../../ports/web-tools';
 import { experimentalSkillDirs } from '../../ports/skills';
+import { pinToolsToProject } from '../../ports/mcp-pinning';
 import { roleWorkspace } from '../../ports/workspace';
 import type { AppConfig } from '../../ports/config';
 import { createRoleAgents, roleBody } from './roles.agent';
@@ -24,7 +25,7 @@ import { createRoleAgents, roleBody } from './roles.agent';
 function leaderInstructions(config: AppConfig): string {
   const project = config.projectRoot;
   return `
-${roleBody('leader', config.repoRoot)}
+${roleBody('leader', config.handymanAssetsDir)}
 
 ## Concrete protocol (this deployment)
 
@@ -96,11 +97,26 @@ export async function connectHandymanMcp(config: AppConfig) {
         : {}),
     },
   });
-  const tools = (await mcp.listTools()) as Record<string, unknown>;
-  const count = Object.keys(tools).length;
-  if (count === 0) throw new Error(`MCP at ${config.mcpUrl} exposed 0 tools`);
+  const rawTools = (await mcp.listTools()) as Record<string, unknown>;
+  const count = Object.keys(rawTools).length;
+  if (count === 0)
+    throw new Error(
+      `MCP at ${config.mcpUrl} exposed 0 tools — is the handyman MCP server running? ` +
+        `Start one with 'handyman mcp --http' (installed bin) or 'node handyman/dist/mcp.js --http' ` +
+        `from a checkout, or point HANDYMAN_MCP_URL at a live server.`,
+    );
+  // Project pinning (feature 103): every handyman_* tool that accepts
+  // `project` is wrapped ONCE here — the single choke point — so every
+  // consumer of the map (leader, implementer/reviewer via the role-tools
+  // filters, the feature-cycle workflow steps, the skill mirror) gets tools
+  // pinned to config.projectRoot.
+  const { tools, pinned } = pinToolsToProject(rawTools, config.projectRoot);
+  if (pinned.length === 0 && Object.keys(rawTools).some((name) => name.startsWith('handyman_')))
+    console.warn(
+      '[pinning] WARNING: no handyman tool accepted a project arg — pinning is INERT (inputSchema shape drift?)',
+    );
   console.log(
-    `[mcp] connected to ${config.mcpUrl}: ${count} tools${config.githubToken ? ' (github MCP on)' : ''}`,
+    `[mcp] connected to ${config.mcpUrl}: ${count} tools, ${pinned.length} pinned to ${config.projectRoot}${config.githubToken ? ' (github MCP on)' : ''}`,
   );
   return { tools, mcp };
 }
@@ -120,10 +136,10 @@ export async function createHandymanLeader(
   } = {},
 ) {
   const { implementer, reviewer } = options.subagents ?? createRoleAgents(config, tools);
-  // Experimental skills (agents/mastra-handyman/skills/*/SKILL.md) load on
-  // the leader only — the skill mirror keeps the canonical handyman skill
-  // alone by design.
-  const skills = experimentalSkillDirs(config.repoRoot);
+  // Experimental skills (<package>/skills/*/SKILL.md, or HANDYMAN_SKILL_DIRS)
+  // load on the leader only — the skill mirror keeps the canonical handyman
+  // skill alone by design.
+  const skills = experimentalSkillDirs();
   return new Agent({
     id: 'handyman-leader',
     name: 'Handyman Leader',

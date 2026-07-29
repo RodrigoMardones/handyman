@@ -56,7 +56,7 @@
  */
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, resolve, sep } from "node:path";
+import { basename, join, resolve, sep } from "node:path";
 import { parseFrontmatter } from "./core/frontmatter.js";
 import {
   PLATFORM_ROLE_DIRS,
@@ -1010,6 +1010,8 @@ function main(argv: string[]): number {
   return dispatch(args);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Run when executed directly; basename check, not import.meta.url:
+// bundle-proof (see toolbox.ts).
+if (basename(process.argv[1] ?? "") === "tools_discovery.js") {
   process.exit(main(process.argv.slice(2)));
 }

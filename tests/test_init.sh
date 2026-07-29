@@ -712,7 +712,7 @@ JSON
 BEFORE="$(cat "$T33/harness.config.json")"
 OUT="$("$SUITE_DIR/../handyman/scripts/scaffold.sh" local "$T33" demo 2>&1)"
 if [ "$(cat "$T33/harness.config.json")" = "$BEFORE" ] \
-  && printf '%s' "$OUT" | grep -q "tools_discovery.js declare mcp handyman"; then
+  && printf '%s' "$OUT" | grep -q "tools_discovery declare mcp handyman"; then
   pass
 else
   fail "config changed or declare NOTE missing: $OUT"

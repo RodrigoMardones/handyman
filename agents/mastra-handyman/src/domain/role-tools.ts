@@ -52,3 +52,18 @@ export function toolsForVerbs<T>(
   const allowed = new Set(verbs.map((v) => `${MCP_PREFIX}${v}`));
   return Object.fromEntries(Object.entries(tools).filter(([name]) => allowed.has(name)));
 }
+
+/** Tool keys ACTIVE for one declared run of a role: the role's
+ *  protocol-mandatory verbs (its writes) plus any declared extras that
+ *  belong to its set. A declaration can only NARROW within the role set —
+ *  never widen past it (foreign verbs are dropped here; the workflow schema
+ *  already rejects them at submission). */
+export function activeToolKeys(
+  role: 'implementer' | 'reviewer',
+  declared: readonly string[],
+): string[] {
+  const mandatory = role === 'implementer' ? IMPLEMENTER_EXTRA : REVIEWER_EXTRA;
+  const roleVerbs = new Set(role === 'implementer' ? implementerVerbs() : reviewerVerbs());
+  const verbs = new Set<string>([...mandatory, ...declared.filter((v) => roleVerbs.has(v))]);
+  return [...verbs].map((v) => `${MCP_PREFIX}${v}`);
+}

@@ -336,7 +336,7 @@ function printPending(pending: readonly Migration[]): void {
       }
     }
   }
-  print("    apply: scripts/upgrade_harness.py --root <root> (use --dry-run to preview)");
+  print("    apply: npx handyman-harness@3 upgrade_harness --root <root> (use --dry-run to preview)");
 }
 
 // --- check (read-only) -------------------------------------------------------
@@ -569,7 +569,7 @@ function resealVersion(
 
 // --- CLI ---------------------------------------------------------------------
 
-const PROG = "upgrade_harness.py";
+const PROG = "upgrade_harness";
 
 function usage(): string {
   return `usage: ${PROG} [-h] [--root ROOT] [--check] [--dry-run]\n`;
@@ -721,7 +721,8 @@ function isDir(path: string): boolean {
 }
 
 // Entry guard: run only when invoked directly (not when imported by a test).
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Basename check, not import.meta.url: bundle-proof (see toolbox.ts).
+if (basename(process.argv[1] ?? "") === "upgrade_harness.js") {
   process.exit(main(process.argv.slice(2)));
 }
 

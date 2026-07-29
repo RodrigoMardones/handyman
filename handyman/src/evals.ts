@@ -37,7 +37,7 @@
  */
 import { spawnSync } from "node:child_process";
 import { accessSync, constants, existsSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Ajv } from "ajv";
 import { formatHalfEven } from "./core/index.js";
@@ -670,6 +670,7 @@ export function main(argv: string[]): number {
 }
 
 // Run when executed directly (mirrors Python `if __name__ == "__main__"`).
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Basename check, not import.meta.url: bundle-proof (see toolbox.ts).
+if (basename(process.argv[1] ?? "") === "evals.js") {
   process.exit(main(process.argv.slice(2)));
 }

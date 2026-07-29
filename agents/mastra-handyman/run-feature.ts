@@ -7,9 +7,11 @@
 //
 //   pnpm run-feature <feature-name>
 //
-// Env: HANDYMAN_PROJECT_ROOT (target project; default = monorepo root),
-//      HANDYMAN_MCP_URL, HANDYMAN_{LEADER,IMPLEMENTER,REVIEWER}_MODEL,
-//      HANDYMAN_TELEMETRY_DIR (default ./logs).
+// Env: HANDYMAN_PROJECT_ROOT (target project: absolute path or registry
+//      name; default = cwd), HANDYMAN_MCP_URL,
+//      HANDYMAN_{LEADER,IMPLEMENTER,REVIEWER}_MODEL,
+//      HANDYMAN_TELEMETRY_DIR (default <HANDYMAN_ROOT>/agent/<harnessId>/logs;
+//      the npm script pins ./logs so the dev flow is unchanged).
 import { buildApp } from './src/app';
 import { RequestContext } from './src/mastra';
 import { loadConfig } from './src/ports/config';

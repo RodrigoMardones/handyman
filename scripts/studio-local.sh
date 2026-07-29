@@ -91,10 +91,14 @@ else
 fi
 
 # 5. Studio (foreground) -------------------------------------------------------
-# HANDYMAN_REPO_ROOT is mandatory: `mastra dev` does not run with cwd = the
-# package dir, so the cwd-relative anchor in the agent modules breaks.
+# HANDYMAN_REPO_ROOT stays as the dev override: `mastra dev` does not run with
+# cwd = the package dir. DATA/TELEMETRY dirs are pinned package-local: the
+# runtime default moved to <HANDYMAN_ROOT>/agent/<harnessId>/{data,logs}
+# (feature mastra_runtime_decoupling) and the dev flow keeps ./data ./logs.
 cd "$PKG_DIR"
 export HANDYMAN_REPO_ROOT="$REPO_ROOT"
+export HANDYMAN_DATA_DIR="$PKG_DIR/data"
+export HANDYMAN_TELEMETRY_DIR="$PKG_DIR/logs"
 export HANDYMAN_PROJECT_ROOT="$PROJECT"
 export HANDYMAN_LEADER_MODEL="$LEADER_MODEL"
 export HANDYMAN_IMPLEMENTER_MODEL="$IMPLEMENTER_MODEL"

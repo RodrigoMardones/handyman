@@ -3,7 +3,7 @@ type: Session Log
 feature: none
 status: idle
 role: leader
-updated: 2026-07-27
+updated: 2026-07-29
 tags: [handyman/session/current]
 ---
 
@@ -24,11 +24,8 @@ _Write 3 to 5 bullets before editing code._
 
 _Record significant steps, files changed, decisions, and blockers._
 
-- 2026-07-28 (sesión e): mandato del operador ejecutado — Flue eliminado (+ vista `/agent`), agentes con sistema real (workspace/web/git/GitHub MCP), deuda de backlog resuelta vía FS read-only del reviewer, skill mirror relegada al workflow por defecto. Evidencia: `backlog/impl_mastra_adopcion_mandato.md`. Estado: `progress/handoff-2026-07-28e.md`. Todo sin commitear (decisión del usuario).
-- 2026-07-28 (sesión f): apps/web eliminado (panel = Mastra Studio) + `toolbox serve` retirado; `pnpm studio` = arranque ordenado (MCP + Studio, proyecto `/tmp/hm-studio`, leader `kimi-coding/k3`); skills experimentales autocargadas en el leader (`agents/mastra-handyman/skills/`). Suite verde; handoff-e §6.
+- ...
 
 ## Next Step
 
 _If interrupted, the next session starts here._
-
-Commit + PR del árbol (handoff-e §5-6), luego pinning de proyecto a nivel MCP (prioridad alta: 2 incidentes de deriva). Retiro de `toolbox_llm.ts`/`toolbox_draft.ts` huérfanos como candidato menor.

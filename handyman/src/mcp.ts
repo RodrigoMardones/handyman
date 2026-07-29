@@ -118,7 +118,8 @@ export function resolveProject(project?: string): Project {
   } else if (isAbsolute(project)) {
     root = resolve(project);
   } else {
-    const match = listHarnesses().find((h) => h.name === project);
+    const matches = listHarnesses().filter((h) => h.name === project);
+    const match = matches[0];
     if (!match) {
       const names = listHarnesses()
         .map((h) => h.name)
@@ -126,7 +127,14 @@ export function resolveProject(project?: string): Project {
       throw new Error(
         `project '${project}' is not registered. Registered harnesses: ${names || "(none)"}. ` +
           `Pass a registered name, an absolute project root, or register it with ` +
-          `'node handyman/dist/toolbox.js register <root>'.`,
+          `'npx handyman-harness@3 toolbox register <root>'.`,
+      );
+    }
+    if (matches.length > 1) {
+      const candidates = matches.map((h) => h.root).join(", ");
+      throw new Error(
+        `project name '${project}' is ambiguous: ${matches.length} registered harnesses share it: ` +
+          `${candidates}. Pass the absolute project root instead of the name.`,
       );
     }
     root = match.root;
@@ -996,7 +1004,7 @@ export function buildServer(): McpServer {
     description:
       "List pending features whose depends_on are all satisfied (feature.js ready --json). " +
       "`drained: true` means the backlog has no claimable work. Claim the lowest id with the CLI " +
-      "(node handyman/dist/feature.js start <name>) before implementing.",
+      "(npx handyman-harness@3 feature start <name>) before implementing.",
     inputSchema: { project: projectField },
     annotations: {
       readOnlyHint: true,
@@ -1917,8 +1925,9 @@ async function main(): Promise<void> {
 }
 
 // Only start the transport when executed as a program, so tests can import the
-// handlers and buildServer() without hijacking stdio.
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// handlers and buildServer() without hijacking stdio. Basename check, not
+// import.meta.url: bundle-proof (see toolbox.ts).
+if (basename(process.argv[1] ?? "") === "mcp.js") {
   main().catch((e) => {
     console.error("handyman-mcp-server fatal:", e);
     process.exit(1);

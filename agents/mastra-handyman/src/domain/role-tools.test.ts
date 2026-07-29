@@ -5,6 +5,7 @@
 // stayed green.
 import { describe, expect, it } from 'vitest';
 import {
+  activeToolKeys,
   implementerVerbs,
   MCP_PREFIX,
   READ_ONLY_PROBES,
@@ -61,5 +62,30 @@ describe('toolsForVerbs', () => {
 
   it('returns an empty map when the server exposes none of the verbs', () => {
     expect(Object.keys(toolsForVerbs(fakeTools(['nope']), reviewerVerbs()))).toHaveLength(0);
+  });
+});
+
+describe('activeToolKeys', () => {
+  it('implementer: protocol writes + declared probes within its set', () => {
+    const keys = activeToolKeys('implementer', ['verify', 'metrics']);
+    expect(keys).toContain(`${MCP_PREFIX}feature_log`);
+    expect(keys).toContain(`${MCP_PREFIX}report_write`);
+    expect(keys).toContain(`${MCP_PREFIX}verify`);
+    expect(keys).toContain(`${MCP_PREFIX}metrics`);
+    expect(keys).not.toContain(`${MCP_PREFIX}backlog_review`);
+  });
+
+  it('reviewer: verdict + declared probes, never implementer writes', () => {
+    const keys = activeToolKeys('reviewer', ['verify', 'feature_log']);
+    expect(keys).toContain(`${MCP_PREFIX}backlog_review`);
+    expect(keys).toContain(`${MCP_PREFIX}verify`);
+    // feature_log is outside the reviewer set — dropped even if declared:
+    expect(keys).not.toContain(`${MCP_PREFIX}feature_log`);
+  });
+
+  it('empty declaration narrows to the protocol writes only', () => {
+    expect(activeToolKeys('implementer', []).sort()).toEqual(
+      [`${MCP_PREFIX}feature_log`, `${MCP_PREFIX}report_write`].sort(),
+    );
   });
 });

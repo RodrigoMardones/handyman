@@ -174,7 +174,7 @@ else
 fi
 if [ "$config_existed" -eq 1 ]; then
   echo "    NOTE: harness.config.json pre-exists; declare the server in discovery.mcp with:"
-  echo "          node handyman/dist/tools_discovery.js declare mcp handyman"
+  echo "          npx -y handyman-harness@3 tools_discovery declare mcp handyman"
 fi
 
 cat <<EOF

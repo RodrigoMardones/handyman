@@ -24,7 +24,13 @@
 // the cycle is from the feature status.
 import { z } from 'zod';
 import type { createRoleAgents } from '../agents/handyman';
-import { createStep, createWorkflow } from '../mastra';
+import {
+  MCP_PREFIX,
+  activeToolKeys,
+  implementerVerbs,
+  reviewerVerbs,
+} from '../domain/role-tools';
+import { createStep, createWorkflow, MASTRA_THREAD_ID_KEY } from '../mastra';
 
 // ---------------------------------------------------------------------------
 // MCP invocation from steps (no agent in the loop for the deterministic verbs)
@@ -123,22 +129,88 @@ export function cliFailed(data: Record<string, unknown>): boolean {
 // Schemas
 // ---------------------------------------------------------------------------
 
-/** What flows between steps (and the workflow input). The feature regex is
- *  the harness naming rule enforced at the door: a Studio run typed with
- *  spaces ("revision de antiguo harness") must fail AT SUBMISSION with a
- *  clear message, not burn a full agent run that ends in close_rejected
- *  while every step reports false success (2026-07-28 incident). */
-const carriedSchema = z.object({
-  feature: z
-    .string()
-    .regex(/^[A-Za-z0-9_-]+$/, 'feature name must be [A-Za-z0-9_-]+ (use hyphens, no spaces)'),
-  acceptanceCriteria: z.array(z.string()).optional().default([]),
-  skills?: z.array(z.string()).optional().default([]),
-  mcps?: z.array(z.string()).optional().default([]),
-});
+/** Facts the run declaration is validated AGAINST at submission — what makes
+ *  it declarative instead of free text: the construction-time project (HARD
+ *  STOP: a declared run can never drift to another project), the skills the
+ *  registry knows (the enum doubles as the Studio form's option list) and
+ *  the handyman verbs within the role sets it may activate. */
+export interface DeclarationContext {
+  project: string;
+  availableSkills: readonly string[];
+  availableVerbs: readonly string[];
+}
 
-/** Exported for tests (submission-time naming validation). */
-export { carriedSchema };
+/** What flows between steps (and the workflow input): the RUN DECLARATION.
+ *  Every field is carried verbatim end-to-end (each step revalidates it).
+ *  - feature: the harness naming rule enforced at the door (2026-07-28
+ *    incident: a spaced name burned a full run ending in close_rejected).
+ *  - project: must equal the construction project — the drift the leader's
+ *    HARD STOP rule warns about is impossible by construction here.
+ *  - acceptance: REAL criteria (min 1) — they land in feature_list.json via
+ *    feature_add and are quoted verbatim to implementer and reviewer.
+ *  - skills: SUGGESTIONS for the feature (validated against the registry).
+ *    The implementer loads suggested skills first (load_skill) and can
+ *    discover more on demand (search_skills, BM25 over the workspace).
+ *  - mcps: extra verbs to activate beside the protocol writes (validated
+ *    against the role sets; enforced per role via activeTools). */
+export function buildCarriedSchema(ctx: DeclarationContext) {
+  const skillItem = ctx.availableSkills.length
+    ? z.enum(ctx.availableSkills as [string, ...string[]])
+    : z.string().min(1);
+  const verbItem = ctx.availableVerbs.length
+    ? z.enum(ctx.availableVerbs as [string, ...string[]])
+    : z.string().min(1);
+  return z
+    .object({
+      feature: z
+        .string()
+        .regex(/^[A-Za-z0-9_-]+$/, 'feature name must be [A-Za-z0-9_-]+ (use hyphens, no spaces)')
+        .describe('Feature name ([A-Za-z0-9_-]+, no spaces)'),
+      project: z
+        .string()
+        .min(1)
+        .describe(`Must be exactly the configured project root (HARD STOP): ${ctx.project}`),
+      title: z.string().min(1).optional().describe('Short title for feature_add'),
+      description: z
+        .string()
+        .min(1)
+        .optional()
+        .describe('One-paragraph description for feature_add'),
+      acceptance: z
+        .array(z.string().min(1))
+        .min(1, 'declare at least one acceptance criterion')
+        .describe('Real acceptance criteria (min 1) — they land in feature_list.json'),
+      skills: z
+        .array(skillItem)
+        .default([])
+        .describe(
+          ctx.availableSkills.length
+            ? `Skill suggestions for the feature (available: ${ctx.availableSkills.join(', ')})`
+            : 'Skill suggestions (no local skills found in any scope)',
+        ),
+      mcps: z
+        .array(verbItem)
+        .default([])
+        .describe(
+          ctx.availableVerbs.length
+            ? `Extra MCP verbs to activate (available: ${ctx.availableVerbs.join(', ')})`
+            : 'Extra MCP verbs (none connected within the role sets)',
+        ),
+      detail: z.string().optional(),
+    })
+    .superRefine((decl, issueCtx) => {
+      if (decl.project !== ctx.project) {
+        issueCtx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['project'],
+          message: `declared project must be exactly "${ctx.project}" (HARD STOP: a run never drifts to another project)`,
+        });
+      }
+    });
+}
+
+/** Carried declaration (output side of the schema). */
+type Carried = z.infer<ReturnType<typeof buildCarriedSchema>>;
 
 /** Typed business outcome of the whole cycle — the workflow output. */
 const cycleOutputSchema = z.object({
@@ -152,33 +224,67 @@ type CycleOutput = z.infer<typeof cycleOutputSchema>;
 // Workflow
 // ---------------------------------------------------------------------------
 
+/** Prompt section anchoring the declaration for the agent steps: the project,
+ *  the acceptance criteria verbatim, the skill SUGGESTIONS (the implementer
+ *  loads them first with load_skill; search_skills discovers more on demand)
+ *  and the declared MCP verbs. */
+function declarationBrief(inputData: Carried): string {
+  const criteria = inputData.acceptance.map((c, i) => `${i + 1}. ${c}`).join('\n');
+  const skills =
+    inputData.skills.length > 0
+      ? `\nSuggested skills for this feature: ${inputData.skills.join(', ')} — load them FIRST with load_skill, and discover more on demand with search_skills if the task calls for it.`
+      : `\nNo skills were suggested — if the task would benefit, discover relevant ones on demand with search_skills, then load_skill.`;
+  const mcps =
+    inputData.mcps.length > 0
+      ? `\nMCP verbs declared for this run (your active tool set is exactly your protocol writes plus these): ${inputData.mcps.join(', ')}`
+      : '';
+  return `Project: ${inputData.project}\nAcceptance criteria (declared at submission — every one must be met and evidenced):\n${criteria}${skills}${mcps}`;
+}
+
 export function createFeatureCycleWorkflow(opts: {
   tools: Record<string, unknown>;
   agents: ReturnType<typeof createRoleAgents>;
   project: string;
+  /** Skills a run may declare (name → absolute dir), from the config-anchored
+   *  registry (src/ports/skills.ts). */
+  availableSkills?: Record<string, string>;
 }) {
-  const { tools, agents, project } = opts;
+  const { tools, agents, project, availableSkills = {} } = opts;
+  // Declarable verbs: present in the connected tool map AND inside the role
+  // sets (a declaration narrows a role, never widens it).
+  const roleVerbSet = new Set([...implementerVerbs(), ...reviewerVerbs()]);
+  const availableVerbs = Object.keys(tools)
+    .filter((key) => key.startsWith(MCP_PREFIX))
+    .map((key) => key.slice(MCP_PREFIX.length))
+    .filter((verb) => roleVerbSet.has(verb))
+    .sort();
+  const carriedSchema = buildCarriedSchema({
+    project,
+    availableSkills: Object.keys(availableSkills),
+    availableVerbs,
+  });
 
   const addFeature = createStep({
     id: 'add-feature',
-    description: 'feature_add via MCP; an already-existing feature is noted, not fatal',
+    description:
+      'feature_add via MCP with the DECLARED title/description/criteria; already-exists is noted, not fatal',
     inputSchema: carriedSchema,
     outputSchema: carriedSchema,
     execute: async ({ inputData, bail }) => {
       const res = await callHandymanTool(tools, 'feature_add', {
         project,
         name: inputData.feature,
-        title: inputData.feature,
-        description: `Workflow-driven cycle for ${inputData.feature}`,
-        acceptance: ['The add→start→implement→review→close cycle completes via the Mastra workflow'],
+        title: inputData.title ?? inputData.feature,
+        description: inputData.description ?? `Workflow-driven cycle for ${inputData.feature}`,
+        acceptance: inputData.acceptance,
       });
       if (res.ok && !cliFailed(res.data)) {
-        return { feature: inputData.feature, detail: 'feature_add: added' };
+        return { ...inputData, detail: 'feature_add: added' };
       }
       const detail = res.error ?? failureDetail(res.data);
       // Same tolerance as the leader protocol: re-adding an existing feature is noted.
       if (/already exists/i.test(detail)) {
-        return { feature: inputData.feature, detail: `feature_add: noted (${detail})` };
+        return { ...inputData, detail: `feature_add: noted (${detail})` };
       }
       // HARD STOP equivalent (never drift to another project): typed outcome, run ends.
       return bail<CycleOutput>({ feature: inputData.feature, outcome: 'add_failed', detail });
@@ -197,7 +303,7 @@ export function createFeatureCycleWorkflow(opts: {
         no_preflight: true,
       });
       if (res.ok && !cliFailed(res.data)) {
-        return { feature: inputData.feature, detail: 'feature_start: in_progress' };
+        return { ...inputData, detail: 'feature_start: in_progress' };
       }
       return bail<CycleOutput>({
         feature: inputData.feature,
@@ -216,33 +322,49 @@ export function createFeatureCycleWorkflow(opts: {
   // anywhere in this graph keeps crash recovery honest.
   const implement = createStep({
     id: 'implement',
-    description: 'implementer agent: feature_log + report_write through its MCP tool set',
+    description: 'implementer agent: feature_log + report_write through its declared tool set',
     inputSchema: carriedSchema,
     outputSchema: carriedSchema,
     retries: 1,
-    execute: async ({ inputData }) => {
+    execute: async ({ inputData, requestContext, runId }) => {
+      // Skill-search thread isolation: the SkillSearchProcessor keeps loaded
+      // skills per thread ('default' is shared) — pin one per RUN so a
+      // feature never inherits skills loaded by a previous one.
+      requestContext.set(MASTRA_THREAD_ID_KEY, `impl-${runId}`);
       const result = await agents.implementer.generate(
-        `Implement the feature "${inputData.feature}" now: your two required writes (handyman_feature_log, then handyman_report_write with kind "impl" for feature "${inputData.feature}"). If the report already exists (a previous attempt completed it), reply with its path — never claim a write that did not succeed. Reply with the report path.`,
+        `Implement the feature "${inputData.feature}" now.\n${declarationBrief(inputData)}\nYour two required writes: handyman_feature_log, then handyman_report_write with kind "impl" for feature "${inputData.feature}" — the report must show how EACH acceptance criterion is met. If the report already exists (a previous attempt completed it), reply with its path — never claim a write that did not succeed. Reply with the report path.`,
+        {
+          requestContext,
+          ...(inputData.mcps.length > 0
+            ? { activeTools: activeToolKeys('implementer', inputData.mcps) }
+            : {}),
+        } as never,
       );
-      return { feature: inputData.feature, detail: `implementer: ${result.text}` };
+      return { ...inputData, detail: `implementer: ${result.text}` };
     },
   });
 
   const review = createStep({
     id: 'review',
-    description: 'reviewer agent: stamps backlog_review (approved | changes_requested)',
+    description: 'reviewer agent: verdict against the DECLARED criteria, stamped via backlog_review',
     inputSchema: carriedSchema,
     outputSchema: carriedSchema,
     retries: 1,
-    execute: async ({ inputData }) => {
+    execute: async ({ inputData, requestContext }) => {
       // Parity with the leader topology: the reviewer's task carries what the
       // implementer reported as a fallback; the reviewer also reads the impl
       // report from disk via its read-only workspace filesystem (the backlog
       // lives at .handyman/backlog/ in the project root).
       const result = await agents.reviewer.generate(
-        `Review the feature "${inputData.feature}" now and stamp your verdict with handyman_backlog_review ("approved" or "changes_requested"). The implementer reported: ${inputData.detail ?? '(no implementer output)'}. Reply with the verdict and one line of justification.`,
+        `Review the feature "${inputData.feature}" against its DECLARED acceptance criteria and stamp your verdict with handyman_backlog_review ("approved" or "changes_requested").\n${declarationBrief(inputData)}\nThe implementer reported: ${inputData.detail ?? '(no implementer output)'}. Reply with the verdict and one line of justification.`,
+        {
+          requestContext,
+          ...(inputData.mcps.length > 0
+            ? { activeTools: activeToolKeys('reviewer', inputData.mcps) }
+            : {}),
+        } as never,
       );
-      return { feature: inputData.feature, detail: `reviewer: ${result.text}` };
+      return { ...inputData, detail: `reviewer: ${result.text}` };
     },
   });
 
@@ -255,6 +377,7 @@ export function createFeatureCycleWorkflow(opts: {
     suspendSchema: z.object({
       feature: z.string(),
       review: z.string(),
+      acceptance: z.array(z.string()),
     }),
     resumeSchema: z.object({
       approved: z.boolean(),
@@ -262,7 +385,11 @@ export function createFeatureCycleWorkflow(opts: {
     }),
     execute: async ({ inputData, resumeData, suspend, bail }) => {
       if (!resumeData) {
-        return await suspend({ feature: inputData.feature, review: inputData.detail ?? '(no review text)' });
+        return await suspend({
+          feature: inputData.feature,
+          review: inputData.detail ?? '(no review text)',
+          acceptance: inputData.acceptance,
+        });
       }
       if (!resumeData.approved) {
         return bail<CycleOutput>({
@@ -271,7 +398,7 @@ export function createFeatureCycleWorkflow(opts: {
           detail: resumeData.feedback ?? 'rejected by human reviewer',
         });
       }
-      return { feature: inputData.feature, detail: resumeData.feedback ?? 'approved by human' };
+      return { ...inputData, detail: resumeData.feedback ?? 'approved by human' };
     },
   });
 

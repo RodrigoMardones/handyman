@@ -51,7 +51,7 @@ Streamable HTTP (multi-client, e.g. the toolBox panel as just another MCP
 client):
 
 ```bash
-node handyman/dist/mcp.js --http --host 127.0.0.1 --port 8177   # endpoint: /mcp
+npx -y handyman-harness@3 mcp --http --host 127.0.0.1 --port 8177   # endpoint: /mcp
 ```
 
 Stateful: the server assigns an `Mcp-Session-Id` at initialize, one
@@ -62,7 +62,7 @@ it. The harness state itself lives on disk, so sessions are disposable
 coordinators, not state owners.
 
 Declare it in the harness (`harness.config.json → discovery.mcp`) with
-`node handyman/dist/tools_discovery.js declare mcp handyman` so preflight
+`npx -y handyman-harness@3 tools_discovery declare mcp handyman` so preflight
 verifies the registration.
 
 ## Tools

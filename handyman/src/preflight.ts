@@ -36,7 +36,7 @@
  */
 import { type SpawnSyncReturns, spawnSync } from "node:child_process";
 import { realpathSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveWorkspace } from "./core/index.js";
 
@@ -383,15 +383,11 @@ function main(argv: string[]): number {
 }
 
 // Entry guard: run only when invoked directly (not when imported by a test).
-// Same guard used by `validate_harness.ts`, `update_harness.ts` and
-// `upgrade_harness.ts` (not the `realpathSync`-wrapped guard from
-// `feature.ts`, which targets a symlink-fan-out bug specific to how
-// `feature.py`/`feature.ts` itself gets invoked). `preflight.js` is always
-// reached via a literal `node dist/preflight.js` path from its callers
-// (`feature.ts`'s `runPreflight`, `init.sh`, the test suite) - never through
-// a symlink - so the plain guard is sufficient and matches the nearer
-// precedent.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Basename check, not import.meta.url: esbuild collapses every bundled
+// module's import.meta.url into the bundle's URL, which would fire the main()
+// of any verb imported by the entry point (see toolbox.ts). The invoked file
+// name is stable from dist/, the bundle, and the cli.js dispatcher.
+if (basename(process.argv[1] ?? "") === "preflight.js") {
   const code = main(process.argv.slice(2));
   process.exit(code);
 }

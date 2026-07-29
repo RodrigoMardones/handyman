@@ -1711,17 +1711,8 @@ function resolveRoot(rootArg: string): string {
 }
 
 // Run when executed directly (mirrors Python `if __name__ == "__main__"`).
-// FIX (handoff bug #3): the `file://${argv[1]}` guard fails when the script is
-// reached via a symlink or a path containing characters needing escaping. Use
-// realpath on both sides of the comparison so symlinks/spaces match correctly.
-if (import.meta.url === entryGuardUrl()) {
+// Basename check, not import.meta.url: bundle-proof (see toolbox.ts) and
+// symlink-proof (handoff bug #3) — it never depends on the script's path.
+if (basename(process.argv[1] ?? "") === "feature.js") {
   process.exit(main(process.argv.slice(2)));
-}
-
-function entryGuardUrl(): string {
-  try {
-    return `file://${realpathSync(fileURLToPath(import.meta.url))}`;
-  } catch {
-    return import.meta.url;
-  }
 }

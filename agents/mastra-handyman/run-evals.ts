@@ -111,10 +111,19 @@ try {
     // Leave the scratch reusable: close the feature deterministically (CLI,
     // not the agent) now the verifier is green again.
     if (featureStatus(red.feature) === 'in_progress') {
-      execFileSync('node', ['handyman/dist/feature.js', '--root', config.projectRoot, 'done', red.feature], {
-        cwd: config.repoRoot,
-        stdio: 'pipe',
-      });
+      // feature.js ships inside the handyman package the assets dir points at
+      // (env > handyman-harness package > dev fallback) — no repoRoot anchor.
+      execFileSync(
+        'node',
+        [
+          join(config.handymanAssetsDir, 'dist', 'feature.js'),
+          '--root',
+          config.projectRoot,
+          'done',
+          red.feature,
+        ],
+        { stdio: 'pipe' },
+      );
     }
   }
 } finally {

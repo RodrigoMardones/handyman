@@ -37,6 +37,7 @@
  *   M26 streamable HTTP transport: stateful sessions, 404 on unknown id
  *   M27 sprint_close: elicitation confirms, confirm:true fallback, preview first
  *   M28 handoff_submit/handoff_claim round-trip the disk queue
+ *   M29 resolveProject rejects an ambiguous name; the absolute root still resolves
  *
  * Exit code 0 when all pass, 1 otherwise.
  */
@@ -870,6 +871,51 @@ async function main() {
       `submitted=${JSON.stringify(submitted)} claimed=${JSON.stringify(claimed)} second=${JSON.stringify(second)}`,
     );
     fs.rmSync(ROOT8, { recursive: true, force: true });
+  }
+
+  // M29 — resolveProject refuses an ambiguous harness name
+  //
+  // Two registered roots sharing a basename make name-based resolution
+  // ambiguous: the error must list both candidate project_roots and point at
+  // the absolute path, which itself keeps resolving (unregistered absolute
+  // roots were always accepted).
+  {
+    const AMB = fs.mkdtempSync(path.join(os.tmpdir(), "hmcp-amb-"));
+    const DUP1 = path.join(AMB, "one", "hm-studio");
+    const DUP2 = path.join(AMB, "two", "hm-studio");
+    writeHarness(DUP1);
+    writeHarness(DUP2);
+    const HROOT = fs.mkdtempSync(path.join(os.tmpdir(), "hmcp-amb-root-"));
+    fs.writeFileSync(
+      path.join(HROOT, "registry.json"),
+      JSON.stringify({
+        version: 1,
+        harnesses: [
+          { project_root: DUP1, registered: "2026-07-29" },
+          { project_root: DUP2, registered: "2026-07-29" },
+        ],
+      }),
+    );
+    process.env.HANDYMAN_ROOT = HROOT;
+    let message = "";
+    try {
+      mcp.resolveProject("hm-studio");
+    } catch (e) {
+      message = String(e.message || e);
+    }
+    check(
+      "resolveProject rejects an ambiguous name listing both candidate roots",
+      message.includes("ambiguous") && message.includes(DUP1) && message.includes(DUP2),
+      message,
+    );
+    const viaPath = mcp.resolveProject(DUP2);
+    check(
+      "resolveProject still accepts the absolute root of a name-duplicated harness",
+      viaPath.root === DUP2 && viaPath.name === "hm-studio",
+      JSON.stringify(viaPath),
+    );
+    fs.rmSync(HROOT, { recursive: true, force: true });
+    fs.rmSync(AMB, { recursive: true, force: true });
   }
 
   fs.rmSync(ROOT, { recursive: true, force: true });

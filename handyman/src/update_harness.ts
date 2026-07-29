@@ -864,7 +864,8 @@ function main(argv: string[]): number {
 // Python `os.path.abspath(args.root)` never resolves symlinks for `--root`
 // (unlike validate_harness's `Path.resolve()`), so `main` does the same:
 // plain `path.resolve`, no `realpathSync`.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Basename check, not import.meta.url: bundle-proof (see toolbox.ts).
+if (basename(process.argv[1] ?? "") === "update_harness.js") {
   process.exit(main(process.argv.slice(2)));
 }
 

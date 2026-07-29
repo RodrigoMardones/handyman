@@ -94,7 +94,7 @@ const publish = {
   type: "module",
   engines: manifest.engines,
   bin: { handyman: "dist/cli.js" },
-  files: ["dist", "assets", "NOTICE"],
+  files: ["dist", "assets", "evals", "NOTICE"],
   exports: manifest.exports,
   repository: {
     type: "git",
@@ -108,6 +108,9 @@ writeFileSync(
 );
 
 cpSync(join(PKG_DIR, "assets"), join(STAGING, "assets"), { recursive: true });
+// evals/ ships beside dist/: evals.js resolves ../evals/trigger-eval.json
+// relative to dist/, the same layout the repo keeps (feature 98).
+cpSync(join(PKG_DIR, "evals"), join(STAGING, "evals"), { recursive: true });
 cpSync(join(PKG_DIR, "README.npm.md"), join(STAGING, "README.md"));
 cpSync(join(REPO_ROOT, "LICENSE"), join(STAGING, "LICENSE"));
 cpSync(join(REPO_ROOT, "NOTICE"), join(STAGING, "NOTICE"));
@@ -125,6 +128,8 @@ if (JSON.stringify(publish).includes("workspace:"))
   die("publish manifest still references workspace:* dependencies");
 const missing = ["cli", ...VERBS].filter((v) => !paths.includes(`dist/${v}.js`));
 if (missing.length > 0) die(`tarball is missing verbs: ${missing.join(", ")}`);
+if (!paths.includes("evals/trigger-eval.json"))
+  die("tarball is missing evals/trigger-eval.json (evals validate would break)");
 
 process.stdout.write(`tarball: ${join(STAGING, report.filename)}\n`);
 process.stdout.write(

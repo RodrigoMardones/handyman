@@ -5,11 +5,12 @@ import { describe, expect, it } from 'vitest';
 import { createRoleAgents } from '../agents/handyman';
 import type { AppConfig } from '../ports/config';
 import {
+  buildCarriedSchema,
   callHandymanTool,
-  carriedSchema,
   createFeatureCycleWorkflow,
   cliFailed,
   failureDetail,
+  type DeclarationContext,
 } from './feature-cycle';
 
 function fakeTool(result: unknown) {
@@ -128,13 +129,16 @@ describe('createFeatureCycleWorkflow', () => {
     // here; instructions are functions, so role templates are not read at
     // build time either).
     const config: AppConfig = {
-      repoRoot: '/tmp',
+      repoRoot: undefined,
+      handymanAssetsDir: '/tmp',
+      handymanRoot: '/tmp',
       projectRoot: '/tmp',
       mcpUrl: 'http://127.0.0.1:8177/mcp',
       dataDir: '/tmp',
       telemetryDir: '/tmp',
       modelCatalogPath: '/nonexistent/model-catalog.json',
       githubToken: undefined,
+      harnessId: 'test-harness',
       models: { leader: 'zai/glm-5.2', implementer: 'zai/glm-5.2', reviewer: 'zai/glm-5.2' },
     };
     const agents = createRoleAgents(config, {});
@@ -150,12 +154,65 @@ describe('createFeatureCycleWorkflow', () => {
     ]);
   });
 
+  const declCtx: DeclarationContext = {
+    project: '/tmp/x',
+    availableSkills: ['ejemplo-skill'],
+    availableVerbs: ['verify', 'metrics'],
+  };
+  /** Minimal declaration that passes every anchor. */
+  const validDecl = { feature: 'f-1', project: '/tmp/x', acceptance: ['c1'] };
+
   it('rejects an invalid feature name at submission (harness naming rule)', () => {
-    expect(carriedSchema.safeParse({ feature: 'revision-antiguo-harness' }).success).toBe(true);
-    const bad = carriedSchema.safeParse({ feature: 'revision de antiguo harness con esto' });
+    const schema = buildCarriedSchema(declCtx);
+    expect(schema.safeParse(validDecl).success).toBe(true);
+    const bad = schema.safeParse({ ...validDecl, feature: 'revision de antiguo harness con esto' });
     expect(bad.success).toBe(false);
     if (!bad.success) {
       expect(bad.error.issues[0]?.message).toContain('[A-Za-z0-9_-]+');
     }
+  });
+
+  it('rejects a declaration for a different project (HARD STOP anchor)', () => {
+    const res = buildCarriedSchema(declCtx).safeParse({ ...validDecl, project: '/tmp/other' });
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error.issues[0]?.message).toContain('HARD STOP');
+  });
+
+  it('requires at least one acceptance criterion', () => {
+    const res = buildCarriedSchema(declCtx).safeParse({ ...validDecl, acceptance: [] });
+    expect(res.success).toBe(false);
+  });
+
+  it('rejects unknown skill suggestions, listing the available ones (enum)', () => {
+    const res = buildCarriedSchema(declCtx).safeParse({ ...validDecl, skills: ['nope'] });
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error.issues[0]?.message).toContain('ejemplo-skill');
+  });
+
+  it('rejects verbs outside the role tool sets, listing the declarable ones (enum)', () => {
+    const res = buildCarriedSchema(declCtx).safeParse({ ...validDecl, mcps: ['feature_block'] });
+    expect(res.success).toBe(false);
+    if (!res.success) expect(res.error.issues[0]?.message).toContain('verify');
+  });
+
+  it('accepts a full declaration with skills and mcps anchored', () => {
+    const res = buildCarriedSchema(declCtx).safeParse({
+      ...validDecl,
+      title: 'Feature uno',
+      skills: ['ejemplo-skill'],
+      mcps: ['verify'],
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it('defaults omitted suggestions to empty lists (discovery is on-demand)', () => {
+    const res = buildCarriedSchema(declCtx).safeParse(validDecl);
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.data.skills).toEqual([]);
+      expect(res.data.mcps).toEqual([]);
+    }
+    const explicit = buildCarriedSchema(declCtx).safeParse({ ...validDecl, skills: [] });
+    expect(explicit.success).toBe(true);
   });
 });
