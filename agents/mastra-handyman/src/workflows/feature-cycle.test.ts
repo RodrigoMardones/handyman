@@ -2,7 +2,8 @@
 // (the piece with real variance — Mastra's wrapper shape is not contractual)
 // and the workflow graph shape. No MCP server, no model calls.
 import { describe, expect, it } from 'vitest';
-import { createRoleAgents } from '../agents/handyman-leader';
+import { createRoleAgents } from '../agents/handyman';
+import type { AppConfig } from '../ports/config';
 import {
   callHandymanTool,
   carriedSchema,
@@ -123,8 +124,20 @@ describe('cliFailed / failureDetail', () => {
 
 describe('createFeatureCycleWorkflow', () => {
   it('builds the committed six-step cycle graph', () => {
-    // Empty tool map: agent construction is offline (no model call happens here).
-    const agents = createRoleAgents({});
+    // Empty tool map: agent construction is offline (no model call happens
+    // here; instructions are functions, so role templates are not read at
+    // build time either).
+    const config: AppConfig = {
+      repoRoot: '/tmp',
+      projectRoot: '/tmp',
+      mcpUrl: 'http://127.0.0.1:8177/mcp',
+      dataDir: '/tmp',
+      telemetryDir: '/tmp',
+      modelCatalogPath: '/nonexistent/model-catalog.json',
+      githubToken: undefined,
+      models: { leader: 'zai/glm-5.2', implementer: 'zai/glm-5.2', reviewer: 'zai/glm-5.2' },
+    };
+    const agents = createRoleAgents(config, {});
     const workflow = createFeatureCycleWorkflow({ tools: {}, agents, project: '/tmp/x' });
     expect(workflow.committed).toBe(true);
     expect(Object.keys(workflow.steps)).toEqual([

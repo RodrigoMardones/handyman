@@ -6,22 +6,24 @@
 //
 //   HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-skill pnpm run-skill -- <feature>
 import { buildApp } from './src/app';
-import { PROJECT } from './src/agents/handyman-leader';
 import { createHandymanSkillAgent } from './src/agents/handyman-skill';
 import { RequestContext } from './src/mastra';
+import { loadConfig } from './src/ports/config';
 import { featureThread } from './src/ports/memory';
+
+const config = loadConfig();
 
 const feature = process.argv.slice(2).filter((a) => a !== '--')[0] ?? 'skill_mirror_probe';
 
 // The skill agent is a probe, not a registered topology: build it over the
 // app's MCP tool map (no second MCPClient).
 const { tools, close } = await buildApp();
-const agent = createHandymanSkillAgent(tools, PROJECT);
+const agent = createHandymanSkillAgent(tools, config);
 
 const requestContext = new RequestContext();
 requestContext.set('feature', feature);
 
-console.log(`[skill] feature="${feature}" project="${PROJECT}"`);
+console.log(`[skill] feature="${feature}" project="${config.projectRoot}"`);
 const startedAt = Date.now();
 try {
   const skills = await agent.listSkills();
@@ -29,7 +31,7 @@ try {
 
   const result = await agent.generate(`Run the feature loop for feature "${feature}".`, {
     maxSteps: 20,
-    memory: featureThread(feature, PROJECT),
+    memory: featureThread(feature, config.projectRoot),
     requestContext,
   });
 

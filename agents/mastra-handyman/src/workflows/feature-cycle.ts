@@ -23,7 +23,7 @@
 // If they ever disagree, the disk wins: abandon the run and re-derive where
 // the cycle is from the feature status.
 import { z } from 'zod';
-import type { createRoleAgents } from '../agents/handyman-leader';
+import type { createRoleAgents } from '../agents/handyman';
 import { createStep, createWorkflow } from '../mastra';
 
 // ---------------------------------------------------------------------------
@@ -132,7 +132,9 @@ const carriedSchema = z.object({
   feature: z
     .string()
     .regex(/^[A-Za-z0-9_-]+$/, 'feature name must be [A-Za-z0-9_-]+ (use hyphens, no spaces)'),
-  detail: z.string().optional(),
+  acceptanceCriteria: z.array(z.string()).optional().default([]),
+  skills?: z.array(z.string()).optional().default([]),
+  mcps?: z.array(z.string()).optional().default([]),
 });
 
 /** Exported for tests (submission-time naming validation). */

@@ -17,7 +17,6 @@
 //                    (api.moonshot.ai 401s it) — different product; register
 //                    'moonshotai' with its own key if ever needed.
 import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
 import { createAnthropic } from '../mastra';
 
 /** Default model spec for every role: GLM-5.2 served by Z.AI. */
@@ -57,12 +56,13 @@ const PROVIDER_FACTORIES: Record<string, (env: NodeJS.ProcessEnv) => AnthropicFa
 
 // ---------------------------------------------------------------------------
 // Personal catalog (hand-configured, 2026-07-28): extra providers declared in
-// model-catalog.json (package root; HANDYMAN_MODEL_CATALOG overrides the
-// path). Anthropic-protocol only — that wire format is already proven with
-// zai/kimi-coding and covers Ollama, LM Studio and most local servers
-// (/v1/messages) with ZERO new dependencies. Mastra's custom-gateway route
-// (ModelsDevGateway) was evaluated and deferred: its provider/key machinery
-// fights keyless local servers (see explore report).
+// model-catalog.json (the path is computed by the config port — the
+// HANDYMAN_MODEL_CATALOG override lives there). Anthropic-protocol only —
+// that wire format is already proven with zai/kimi-coding and covers Ollama,
+// LM Studio and most local servers (/v1/messages) with ZERO new dependencies.
+// Mastra's custom-gateway route (ModelsDevGateway) was evaluated and
+// deferred: its provider/key machinery fights keyless local servers (see
+// explore report).
 // ---------------------------------------------------------------------------
 
 export interface CatalogProvider {
@@ -74,33 +74,29 @@ export interface CatalogProvider {
   models?: string[];
 }
 
-const DEFAULT_CATALOG_PATH = join(
-  process.env.HANDYMAN_REPO_ROOT ?? join(process.cwd(), '..', '..'),
-  'agents',
-  'mastra-handyman',
-  'model-catalog.json',
-);
+// Cache keyed by catalog path: the file is static deployment config, read
+// once per boot (resolveModel hits it at agent construction).
+const catalogCache = new Map<string, Record<string, CatalogProvider>>();
 
-let catalogCache: Record<string, CatalogProvider> | null = null;
-
-/** Load the personal catalog (missing/invalid file → empty, never throws). */
-export function loadCatalogProviders(path?: string): Record<string, CatalogProvider> {
-  if (catalogCache && !path) return catalogCache;
-  const catalogPath = path ?? process.env.HANDYMAN_MODEL_CATALOG ?? DEFAULT_CATALOG_PATH;
+/** Load the personal catalog from an explicit path (missing/invalid file →
+ *  empty, never throws). */
+export function loadCatalogProviders(path: string): Record<string, CatalogProvider> {
+  const cached = catalogCache.get(path);
+  if (cached) return cached;
   const providers: Record<string, CatalogProvider> = {};
-  if (existsSync(catalogPath)) {
+  if (existsSync(path)) {
     try {
-      const parsed = JSON.parse(readFileSync(catalogPath, 'utf-8')) as {
+      const parsed = JSON.parse(readFileSync(path, 'utf-8')) as {
         providers?: CatalogProvider[];
       };
       for (const p of parsed.providers ?? []) {
         if (p?.id && p.baseURL && p.protocol === 'anthropic') providers[p.id] = p;
       }
     } catch (error) {
-      console.warn(`[model-catalog] ignoring unreadable catalog at ${catalogPath}:`, error);
+      console.warn(`[model-catalog] ignoring unreadable catalog at ${path}:`, error);
     }
   }
-  if (!path) catalogCache = providers;
+  catalogCache.set(path, providers);
   return providers;
 }
 
@@ -147,8 +143,15 @@ export function roleDefaultOptions(spec: string) {
  * string to Mastra's built-in model router (159 providers — openrouter,
  * openai, google, groq…), which is what makes the catalog dynamic: any
  * registry provider works by naming it, no code changes.
+ * options.catalogPath: personal catalog file (from the config port) consulted
+ * between the factories and the router pass-through; options.env: provider
+ * API keys source (tests inject fakes).
  */
-export function resolveModel(spec: string, env: NodeJS.ProcessEnv = process.env) {
+export function resolveModel(
+  spec: string,
+  options: { catalogPath?: string; env?: NodeJS.ProcessEnv } = {},
+) {
+  const env = options.env ?? process.env;
   const slash = spec.indexOf('/');
   if (slash < 1) throw new Error(`model spec "${spec}" must be 'provider/model'`);
   const provider = spec.slice(0, slash);
@@ -156,7 +159,9 @@ export function resolveModel(spec: string, env: NodeJS.ProcessEnv = process.env)
   const factory = PROVIDER_FACTORIES[provider];
   if (factory) return factory(env)(modelId);
   // Personal catalog (local servers, hand-configured in model-catalog.json).
-  const catalogProvider = loadCatalogProviders()[provider];
+  const catalogProvider = options.catalogPath
+    ? loadCatalogProviders(options.catalogPath)[provider]
+    : undefined;
   if (catalogProvider) {
     assertCatalogModel(catalogProvider, modelId);
     const apiKey = catalogProvider.apiKeyEnv ? (env[catalogProvider.apiKeyEnv] ?? '') : 'local';

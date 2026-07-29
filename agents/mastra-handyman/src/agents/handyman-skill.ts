@@ -12,25 +12,20 @@
 // features on real projects, not just exercise the process verbs.
 import { join } from 'node:path';
 import { Agent } from '../mastra';
-import { DEFAULT_ROLE_MODEL, resolveModel, roleDefaultOptions } from '../ports/model-catalog';
+import { resolveModel, roleDefaultOptions } from '../ports/model-catalog';
 import { roleWorkspace } from '../ports/workspace';
 import { webTools } from '../ports/web-tools';
+import type { AppConfig } from '../ports/config';
 
-// Same anchoring convention as handyman-leader.ts (cwd = package dir).
-const REPO_ROOT = process.env.HANDYMAN_REPO_ROOT ?? join(process.cwd(), '..', '..');
-
-/** Canonical skill directory: handyman/SKILL.md + handyman/references/. */
-export const HANDYMAN_SKILL_DIR = join(REPO_ROOT, 'handyman');
-
-export function createHandymanSkillAgent(tools: Record<string, unknown>, project: string) {
-  const spec = process.env.HANDYMAN_LEADER_MODEL ?? DEFAULT_ROLE_MODEL;
+export function createHandymanSkillAgent(tools: Record<string, unknown>, config: AppConfig) {
+  const spec = config.models.leader;
   return new Agent({
     id: 'handyman-skill-mirror',
     name: 'Handyman Skill Mirror',
     description:
       'Mirror agent: runs the handyman cycle guided only by the native handyman skill (SKILL.md) over the handyman MCP tools.',
     instructions: `You operate a Handyman harness through your MCP tools (prefixed handyman_).
-The project root for EVERY tool call is "${project}" (pass it as the "project" argument).
+The project root for EVERY tool call is "${config.projectRoot}" (pass it as the "project" argument).
 
 You have a native skill called "handyman" — load it FIRST and follow its
 run-feature protocol for the feature named by the user: add (tolerate
@@ -52,10 +47,11 @@ probes, never a fallback target).
 
 Your step budget is LIMITED: no exploratory probes beyond what the protocol
 needs (skill loads + the cycle verbs + at most one verify).`,
-    model: resolveModel(spec),
+    model: resolveModel(spec, { catalogPath: config.modelCatalogPath }),
     tools: { ...tools, ...webTools() } as never,
-    skills: [HANDYMAN_SKILL_DIR],
-    workspace: roleWorkspace('skill', project),
+    // Canonical skill directory: handyman/SKILL.md + handyman/references/.
+    skills: [join(config.repoRoot, 'handyman')],
+    workspace: roleWorkspace('skill', config.projectRoot),
     defaultOptions: { ...roleDefaultOptions(spec), maxSteps: 20 },
   });
 }

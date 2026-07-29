@@ -13,10 +13,11 @@
 // dir. Env: same as run-feature.ts (HANDYMAN_PROJECT_ROOT, HANDYMAN_DATA_DIR,
 // HANDYMAN_MCP_URL, HANDYMAN_{IMPLEMENTER,REVIEWER}_MODEL).
 import { buildApp } from './src/app';
-import { PROJECT } from './src/agents/handyman-leader';
 import { RequestContext } from './src/mastra';
+import { loadConfig } from './src/ports/config';
 import { projectResourceId } from './src/ports/memory';
 
+const config = loadConfig();
 const argv = process.argv.slice(2).filter((a) => a !== '--');
 const [command, feature, ...rest] = argv;
 const USAGE =
@@ -55,11 +56,11 @@ function printResult(result: Record<string, unknown>) {
 }
 
 try {
-  console.log(`[wf] ${command} feature="${feature}" runId="${runId}" project="${PROJECT}"`);
+  console.log(`[wf] ${command} feature="${feature}" runId="${runId}" project="${config.projectRoot}"`);
   const startedAt = Date.now();
   switch (command) {
     case 'start': {
-      const run = await workflow.createRun({ runId, resourceId: projectResourceId(PROJECT) });
+      const run = await workflow.createRun({ runId, resourceId: projectResourceId(config.projectRoot) });
       const result = await run.start({ inputData: { feature }, requestContext });
       printResult(result as unknown as Record<string, unknown>);
       break;
@@ -74,13 +75,13 @@ try {
         approved: verdict === 'approve',
         feedback: rest.slice(1).join(' ') || undefined,
       };
-      const run = await workflow.createRun({ runId, resourceId: projectResourceId(PROJECT) });
+      const run = await workflow.createRun({ runId, resourceId: projectResourceId(config.projectRoot) });
       const result = await run.resume({ step: 'human-review', resumeData, requestContext });
       printResult(result as unknown as Record<string, unknown>);
       break;
     }
     case 'restart': {
-      const run = await workflow.createRun({ runId, resourceId: projectResourceId(PROJECT) });
+      const run = await workflow.createRun({ runId, resourceId: projectResourceId(config.projectRoot) });
       const result = await run.restart({ requestContext });
       printResult(result as unknown as Record<string, unknown>);
       break;

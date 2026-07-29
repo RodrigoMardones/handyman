@@ -1,5 +1,6 @@
 // Unit tests for the model catalog: spec parsing, env overrides and error
 // paths. No network: resolveModel only builds provider/model objects.
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   assertCatalogModel,
@@ -9,6 +10,9 @@ import {
   resolveRoleModels,
   roleDefaultOptions,
 } from './model-catalog';
+
+// The shipped catalog at the package root (tests run with cwd = package dir).
+const SHIPPED_CATALOG = join(process.cwd(), 'model-catalog.json');
 
 describe('resolveRoleModels', () => {
   it('defaults every role to the Z.AI GLM default', () => {
@@ -29,13 +33,13 @@ describe('resolveRoleModels', () => {
 
 describe('resolveModel', () => {
   it('resolves a known provider/model spec to a model instance', () => {
-    const model = resolveModel('zai/glm-5.2', { Z_AI_API_KEY: 'test-key' });
+    const model = resolveModel('zai/glm-5.2', { env: { Z_AI_API_KEY: 'test-key' } });
     expect(model).toBeDefined();
     expect(typeof model).not.toBe('string');
   });
 
   it('resolves kimi-coding specs', () => {
-    const model = resolveModel('kimi-coding/k3', { KIMI_API_KEY: 'test-key' });
+    const model = resolveModel('kimi-coding/k3', { env: { KIMI_API_KEY: 'test-key' } });
     expect(model).toBeDefined();
   });
 
@@ -62,7 +66,7 @@ describe('resolveModel', () => {
 
 describe('personal catalog (local providers)', () => {
   it('loads the shipped model-catalog.json with the two local examples', () => {
-    const providers = loadCatalogProviders();
+    const providers = loadCatalogProviders(SHIPPED_CATALOG);
     expect(Object.keys(providers)).toEqual(['ollama', 'lmstudio']);
     expect(providers.ollama?.baseURL).toBe('http://127.0.0.1:11434/v1');
     expect(providers.ollama?.apiKeyEnv).toBeNull();
@@ -73,7 +77,7 @@ describe('personal catalog (local providers)', () => {
   });
 
   it('resolves catalog specs to Anthropic-protocol instances without a key', () => {
-    const model = resolveModel('ollama/qwen3:32b', {});
+    const model = resolveModel('ollama/qwen3:32b', { catalogPath: SHIPPED_CATALOG });
     expect(model).toBeDefined();
     expect(typeof model).not.toBe('string');
   });

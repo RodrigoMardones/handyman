@@ -18,12 +18,12 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildApp } from './src/app';
-import { PROJECT } from './src/agents/handyman-leader';
 import { createProtocolTrajectoryScorer } from './src/evals/protocol-trajectory';
 import { checks, runEvals } from './src/mastra';
+import { loadConfig } from './src/ports/config';
 import { projectResourceId } from './src/ports/memory';
 
-const REPO_ROOT = process.env.HANDYMAN_REPO_ROOT ?? join(process.cwd(), '..', '..');
+const config = loadConfig();
 
 /** Full protocol sequence for a green run (delegations are tool calls).
  *  Read from the agent's output messages — the clean tool-name space shared
@@ -42,7 +42,7 @@ const PROTOCOL_GREEN = [
 const PROTOCOL_RED = PROTOCOL_GREEN.slice(0, 4);
 
 function featureStatus(name: string): string | undefined {
-  const fl = JSON.parse(readFileSync(join(PROJECT, '.handyman', 'feature_list.json'), 'utf-8'));
+  const fl = JSON.parse(readFileSync(join(config.projectRoot, '.handyman', 'feature_list.json'), 'utf-8'));
   return fl.features.find((f: { name: string }) => f.name === name)?.status;
 }
 
@@ -61,7 +61,7 @@ async function runCase(mastra: Awaited<ReturnType<typeof buildApp>>['mastra'], c
     scorers: [{ scorer: createProtocolTrajectoryScorer(c.expectedTools), threshold: 1.0 }],
     targetOptions: {
       maxSteps: 30,
-      memory: { thread: `eval-${c.feature}`, resource: projectResourceId(PROJECT) },
+      memory: { thread: `eval-${c.feature}`, resource: projectResourceId(config.projectRoot) },
       delegation: {
         messageFilter: () => [],
         onDelegationStart: () => ({ proceed: true, modifiedMaxSteps: 15 }),
@@ -96,7 +96,7 @@ try {
 
   // Case 2 — red verifier: the feature must NOT close (a refusal is data,
   // not a tool error — the gates must still pass; the disk shows the truth).
-  const initSh = join(PROJECT, 'init.sh');
+  const initSh = join(config.projectRoot, 'init.sh');
   const original = readFileSync(initSh, 'utf-8');
   const red: EvalCase = {
     feature: `eval_red_${Date.now().toString(36)}`,
@@ -111,8 +111,8 @@ try {
     // Leave the scratch reusable: close the feature deterministically (CLI,
     // not the agent) now the verifier is green again.
     if (featureStatus(red.feature) === 'in_progress') {
-      execFileSync('node', ['handyman/dist/feature.js', '--root', PROJECT, 'done', red.feature], {
-        cwd: REPO_ROOT,
+      execFileSync('node', ['handyman/dist/feature.js', '--root', config.projectRoot, 'done', red.feature], {
+        cwd: config.repoRoot,
         stdio: 'pipe',
       });
     }

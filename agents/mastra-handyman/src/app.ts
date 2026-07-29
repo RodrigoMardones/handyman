@@ -18,26 +18,31 @@ import {
   connectHandymanMcp,
   createHandymanLeader,
   createRoleAgents,
-  PROJECT,
-} from './agents/handyman-leader';
-import { createConversationMemory, DATA_DIR } from './ports/memory';
+} from './agents/handyman';
+import { createConversationMemory } from './ports/memory';
+import { loadConfig } from './ports/config';
 import { createFeatureCycleWorkflow } from './workflows/feature-cycle';
 import { createProtocolTrajectoryScorer } from './evals/protocol-trajectory';
 
 export async function buildApp() {
-  const { tools, mcp } = await connectHandymanMcp();
-  const { memory, storage: memoryStorage } = createConversationMemory();
+  const config = loadConfig();
+  const { tools, mcp } = await connectHandymanMcp(config);
+  const { memory, storage: memoryStorage } = createConversationMemory(config.dataDir);
   // One definition of the role agents, two orchestration topologies: nested
   // in the leader (supervisor, run-feature.ts) and top-level for the
   // feature-cycle workflow (run-workflow.ts), where the workflow — not an
   // LLM — routes the cycle.
-  const subagents = createRoleAgents(tools);
-  const leader = await createHandymanLeader(tools, { memory, subagents });
-  const featureCycle = createFeatureCycleWorkflow({ tools, agents: subagents, project: PROJECT });
+  const subagents = createRoleAgents(config, tools);
+  const leader = await createHandymanLeader(config, tools, { memory, subagents });
+  const featureCycle = createFeatureCycleWorkflow({
+    tools,
+    agents: subagents,
+    project: config.projectRoot,
+  });
 
   const observabilityStore = await new DuckDBStore({
     id: 'handyman-mastra-observability',
-    path: join(DATA_DIR, 'observability.duckdb'),
+    path: join(config.dataDir, 'observability.duckdb'),
   }).getStore('observability');
 
   const storage = new MastraCompositeStore({

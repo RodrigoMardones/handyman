@@ -10,24 +10,23 @@
 // Env: HANDYMAN_PROJECT_ROOT (target project; default = monorepo root),
 //      HANDYMAN_MCP_URL, HANDYMAN_{LEADER,IMPLEMENTER,REVIEWER}_MODEL,
 //      HANDYMAN_TELEMETRY_DIR (default ./logs).
-import { join } from 'node:path';
 import { buildApp } from './src/app';
-import { PROJECT } from './src/agents/handyman-leader';
 import { RequestContext } from './src/mastra';
-import { DEFAULT_ROLE_MODEL } from './src/ports/model-catalog';
+import { loadConfig } from './src/ports/config';
 import { featureThread } from './src/ports/memory';
 import { createFeatureTelemetry } from './src/ports/telemetry';
 import { appendTokensLedger } from './src/ports/tokens-ledger';
 import { aggregateRunUsage } from './src/ports/usage-aggregate';
 
 const feature = process.argv.slice(2).filter((a) => a !== '--')[0] ?? 'spike_mastra_integration';
-const leaderModel = process.env.HANDYMAN_LEADER_MODEL ?? DEFAULT_ROLE_MODEL;
+const config = loadConfig();
+const leaderModel = config.models.leader;
 
 const { mastra, observabilityStore, close } = await buildApp();
 const leader = mastra.getAgentById('handyman-leader');
 
 const telemetry = createFeatureTelemetry({
-  dir: process.env.HANDYMAN_TELEMETRY_DIR ?? join(process.cwd(), 'logs'),
+  dir: config.telemetryDir,
   feature,
   modelSpec: leaderModel,
 });
@@ -37,7 +36,7 @@ const telemetry = createFeatureTelemetry({
 const requestContext = new RequestContext();
 requestContext.set('feature', feature);
 
-console.log(`[run] feature="${feature}" project="${PROJECT}" model="${leaderModel}"`);
+console.log(`[run] feature="${feature}" project="${config.projectRoot}" model="${leaderModel}"`);
 const startedAt = Date.now();
 
 try {
@@ -45,7 +44,7 @@ try {
     maxSteps: 30,
     // One conversation thread per feature, one resource per project (the
     // pattern that replaces Flue's one-agent-instance-per-feature).
-    memory: featureThread(feature, PROJECT),
+    memory: featureThread(feature, config.projectRoot),
     requestContext,
     // Subagent isolation (phase 1): each delegation starts from a FRESH
     // thread and sees only its task prompt — never the leader's transcript.
@@ -76,7 +75,7 @@ try {
   const runUsage = await aggregateRunUsage(observabilityStore, result.traceId ?? '');
   const usageForLedger =
     runUsage.inputTokens !== undefined ? runUsage : (result.usage ?? {});
-  const entry = appendTokensLedger(PROJECT, feature, leaderModel, usageForLedger, 'run');
+  const entry = appendTokensLedger(config.projectRoot, feature, leaderModel, usageForLedger, 'run');
   console.log(
     entry
       ? `[ledger] tokens.jsonl += in=${entry.input_tokens} out=${entry.output_tokens} (${entry.model}, scope=${entry.scope})`

@@ -13,20 +13,17 @@ import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { LibSQLStore, Memory } from '../mastra';
 
-// One live process per data dir: the DuckDB observability store takes an
-// exclusive native file lock (single writer), so parallel runs MUST point at
-// separate data dirs via HANDYMAN_DATA_DIR. Same deployment rule as the Flue
-// package's "one process per instance", and the lock error is FATAL to the
-// run (it rejects the model stream), not a degraded export.
-export const DATA_DIR = process.env.HANDYMAN_DATA_DIR ?? join(process.cwd(), 'data');
-
-/** Conversation storage + Memory facade (thread per feature, resource per project). */
-export function createConversationMemory() {
+/** Conversation storage + Memory facade (thread per feature, resource per
+ *  project). dataDir comes from the config port (HANDYMAN_DATA_DIR): one
+ *  live process per dir — the DuckDB observability store that shares it
+ *  takes an exclusive single-writer lock, and the lock error is FATAL to the
+ *  run (it rejects the model stream), not a degraded export. */
+export function createConversationMemory(dataDir: string) {
   // SQLite drivers create the DB file but NOT its parent directory.
-  mkdirSync(DATA_DIR, { recursive: true });
+  mkdirSync(dataDir, { recursive: true });
   const storage = new LibSQLStore({
     id: 'handyman-mastra-memory',
-    url: `file:${join(DATA_DIR, 'mastra.db')}`,
+    url: `file:${join(dataDir, 'mastra.db')}`,
   });
   const memory = new Memory({
     storage,
