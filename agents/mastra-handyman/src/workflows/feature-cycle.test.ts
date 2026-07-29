@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { createRoleAgents } from '../agents/handyman-leader';
 import {
   callHandymanTool,
+  carriedSchema,
   createFeatureCycleWorkflow,
   cliFailed,
   failureDetail,
@@ -67,6 +68,36 @@ describe('callHandymanTool', () => {
     const res = await callHandymanTool(tools, 'feature_add', {});
     expect(res.data).toEqual({ exit: 0, output: 'added' });
   });
+
+  it('treats an MCP error TEXT result as failure, not success (2026-07-28 incident)', async () => {
+    // Mastra's MCPClient hands server-side isError rejections back as plain
+    // text (gotcha 12): without the guard, a server-rejected feature_add
+    // read as ok:true with empty data and the step reported "added".
+    const tools = {
+      handyman_feature_add: fakeTool(
+        'MCP error -32602: Input validation error: feature name must be [A-Za-z0-9_-]+',
+      ),
+    };
+    const res = await callHandymanTool(tools, 'feature_add', {});
+    expect(res.ok).toBe(false);
+    expect(res.error).toContain('feature name must be');
+  });
+
+  it('detects an MCP error inside text content with the isError flag stripped', async () => {
+    const tools = {
+      handyman_feature_add: fakeTool({
+        content: [{ type: 'text', text: 'MCP error -32602: Input validation error: bad name' }],
+      }),
+    };
+    const res = await callHandymanTool(tools, 'feature_add', {});
+    expect(res.ok).toBe(false);
+  });
+
+  it('keeps plain-text non-error results as ok output', async () => {
+    const tools = { handyman_feature_log: fakeTool('logged') };
+    const res = await callHandymanTool(tools, 'feature_log', {});
+    expect(res).toMatchObject({ ok: true, data: { output: 'logged' } });
+  });
 });
 
 describe('cliFailed / failureDetail', () => {
@@ -104,5 +135,14 @@ describe('createFeatureCycleWorkflow', () => {
       'human-review',
       'close-feature',
     ]);
+  });
+
+  it('rejects an invalid feature name at submission (harness naming rule)', () => {
+    expect(carriedSchema.safeParse({ feature: 'revision-antiguo-harness' }).success).toBe(true);
+    const bad = carriedSchema.safeParse({ feature: 'revision de antiguo harness con esto' });
+    expect(bad.success).toBe(false);
+    if (!bad.success) {
+      expect(bad.error.issues[0]?.message).toContain('[A-Za-z0-9_-]+');
+    }
   });
 });

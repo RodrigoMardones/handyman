@@ -1,0 +1,21 @@
+{
+  "_comment": "Catálogo personal de providers de modelos (2026-07-28). Edítalo a mano: cada entrada habilita specs '<id>/<modelo>' vía HANDYMAN_{LEADER,IMPLEMENTER,REVIEWER}_MODEL. Solo protocolo 'anthropic' (servidores con endpoint /v1/messages: Ollama, LM Studio, vLLM-anthropic, proxies). apiKeyEnv: null = sin key (se envía 'local'). models: [] = cualquier modelo que el servidor tenga cargado. Override de ruta: HANDYMAN_MODEL_CATALOG.",
+  "providers": [
+    {
+      "id": "ollama",
+      "name": "Ollama local",
+      "baseURL": "http://127.0.0.1:11434/v1",
+      "apiKeyEnv": null,
+      "protocol": "anthropic",
+      "models": []
+    },
+    {
+      "id": "lmstudio",
+      "name": "LM Studio local",
+      "baseURL": "http://127.0.0.1:1234/v1",
+      "apiKeyEnv": null,
+      "protocol": "anthropic",
+      "models": []
+    }
+  ]
+}

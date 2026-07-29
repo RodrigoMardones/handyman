@@ -16,6 +16,8 @@
 //                    is NOT valid on the Moonshot platform endpoints
 //                    (api.moonshot.ai 401s it) — different product; register
 //                    'moonshotai' with its own key if ever needed.
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { createAnthropic } from '../mastra';
 
 /** Default model spec for every role: GLM-5.2 served by Z.AI. */
@@ -24,7 +26,8 @@ export const DEFAULT_ROLE_MODEL = 'zai/glm-5.2';
 /** Per-role model specs, overridable via HANDYMAN_{LEADER,IMPLEMENTER,REVIEWER}_MODEL.
  *  Examples:
  *    HANDYMAN_IMPLEMENTER_MODEL=kimi-coding/k2p7
- *    HANDYMAN_REVIEWER_MODEL=kimi-coding/k3 */
+ *    HANDYMAN_REVIEWER_MODEL=kimi-coding/k3
+ *    HANDYMAN_LEADER_MODEL=openrouter/moonshotai/kimi-k3   (via model router) */
 export function resolveRoleModels(env: NodeJS.ProcessEnv = process.env) {
   return {
     leader: env.HANDYMAN_LEADER_MODEL ?? DEFAULT_ROLE_MODEL,
@@ -52,17 +55,119 @@ const PROVIDER_FACTORIES: Record<string, (env: NodeJS.ProcessEnv) => AnthropicFa
     }),
 };
 
-/** Resolve a 'provider/model' spec to an AI SDK model instance. */
+// ---------------------------------------------------------------------------
+// Personal catalog (hand-configured, 2026-07-28): extra providers declared in
+// model-catalog.json (package root; HANDYMAN_MODEL_CATALOG overrides the
+// path). Anthropic-protocol only — that wire format is already proven with
+// zai/kimi-coding and covers Ollama, LM Studio and most local servers
+// (/v1/messages) with ZERO new dependencies. Mastra's custom-gateway route
+// (ModelsDevGateway) was evaluated and deferred: its provider/key machinery
+// fights keyless local servers (see explore report).
+// ---------------------------------------------------------------------------
+
+export interface CatalogProvider {
+  id: string;
+  name?: string;
+  baseURL: string;
+  apiKeyEnv: string | null;
+  protocol: 'anthropic';
+  models?: string[];
+}
+
+const DEFAULT_CATALOG_PATH = join(
+  process.env.HANDYMAN_REPO_ROOT ?? join(process.cwd(), '..', '..'),
+  'agents',
+  'mastra-handyman',
+  'model-catalog.json',
+);
+
+let catalogCache: Record<string, CatalogProvider> | null = null;
+
+/** Load the personal catalog (missing/invalid file → empty, never throws). */
+export function loadCatalogProviders(path?: string): Record<string, CatalogProvider> {
+  if (catalogCache && !path) return catalogCache;
+  const catalogPath = path ?? process.env.HANDYMAN_MODEL_CATALOG ?? DEFAULT_CATALOG_PATH;
+  const providers: Record<string, CatalogProvider> = {};
+  if (existsSync(catalogPath)) {
+    try {
+      const parsed = JSON.parse(readFileSync(catalogPath, 'utf-8')) as {
+        providers?: CatalogProvider[];
+      };
+      for (const p of parsed.providers ?? []) {
+        if (p?.id && p.baseURL && p.protocol === 'anthropic') providers[p.id] = p;
+      }
+    } catch (error) {
+      console.warn(`[model-catalog] ignoring unreadable catalog at ${catalogPath}:`, error);
+    }
+  }
+  if (!path) catalogCache = providers;
+  return providers;
+}
+
+/** Guard: a provider with a non-empty `models` list only serves those ids. */
+export function assertCatalogModel(provider: CatalogProvider, modelId: string): void {
+  if (provider.models && provider.models.length > 0 && !provider.models.includes(modelId)) {
+    throw new Error(
+      `model "${modelId}" not declared for provider "${provider.id}" in the catalog ` +
+        `(declared: ${provider.models.join(', ')}) — edit model-catalog.json`,
+    );
+  }
+}
+
+/**
+ * Per-model capability defaults: what each spec gets on top of the role
+ * default options. Values verified against the OpenRouter model API (ctx,
+ * supported params) — they apply only if those router specs are ever used
+ * (the operator discarded OpenRouter as a default 2026-07-28: no key).
+ */
+export const MODEL_CAPABILITIES: Record<
+  string,
+  { maxOutputTokens: number; reasoning?: 'low' | 'medium' | 'high' }
+> = {
+  'openrouter/z-ai/glm-5.2': { maxOutputTokens: 65_536, reasoning: 'high' },
+  'openrouter/moonshotai/kimi-k3': { maxOutputTokens: 32_768, reasoning: 'high' },
+  'openrouter/moonshotai/kimi-k2.7-code': { maxOutputTokens: 32_768, reasoning: 'high' },
+};
+
+/** Role defaultOptions for a resolved spec: base budget + its capabilities. */
+export function roleDefaultOptions(spec: string) {
+  const caps = MODEL_CAPABILITIES[spec];
+  return {
+    maxSteps: 15,
+    modelSettings: {
+      maxOutputTokens: caps?.maxOutputTokens ?? 16_384,
+      ...(caps?.reasoning ? { reasoning: caps.reasoning } : {}),
+    },
+  } as const;
+}
+
+/**
+ * Resolve a 'provider/model' spec. Custom providers (zai, kimi-coding) are
+ * built as AI SDK instances here; EVERYTHING ELSE passes through as a
+ * string to Mastra's built-in model router (159 providers — openrouter,
+ * openai, google, groq…), which is what makes the catalog dynamic: any
+ * registry provider works by naming it, no code changes.
+ */
 export function resolveModel(spec: string, env: NodeJS.ProcessEnv = process.env) {
   const slash = spec.indexOf('/');
   if (slash < 1) throw new Error(`model spec "${spec}" must be 'provider/model'`);
   const provider = spec.slice(0, slash);
   const modelId = spec.slice(slash + 1);
   const factory = PROVIDER_FACTORIES[provider];
-  if (!factory) {
-    throw new Error(
-      `unknown provider "${provider}" in model spec "${spec}" (known: ${Object.keys(PROVIDER_FACTORIES).join(', ')})`,
-    );
+  if (factory) return factory(env)(modelId);
+  // Personal catalog (local servers, hand-configured in model-catalog.json).
+  const catalogProvider = loadCatalogProviders()[provider];
+  if (catalogProvider) {
+    assertCatalogModel(catalogProvider, modelId);
+    const apiKey = catalogProvider.apiKeyEnv ? (env[catalogProvider.apiKeyEnv] ?? '') : 'local';
+    return createAnthropic({
+      name: catalogProvider.id,
+      baseURL: catalogProvider.baseURL,
+      apiKey,
+      headers: { Authorization: `Bearer ${apiKey}` },
+    })(modelId);
   }
-  return factory(env)(modelId);
+  // Model-router pass-through (needs the provider's env key, e.g.
+  // OPENROUTER_API_KEY for openrouter/*).
+  return spec;
 }

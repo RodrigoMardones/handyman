@@ -11,9 +11,9 @@ type: Sprint
 ## 1. Concluido en esta sesión
 
 ### Bugs de la plataforma (verificados end-to-end en el standalone de producción)
-- **Navegación a harness desde /fleet**: la fila enlaza `<a href="/harness/<name>">` ([fleetHtml.ts](../../../apps/web/app/fleet/fleetHtml.ts)).
-- **Tabs current/history/checkpoints/workspace MOC (404)**: los tokens de `/api/md` ahora son los que `resolveMd` acepta (`current`/`history`/`checkpoints`/`index`), no filenames ([harnessHtml.ts](../../../apps/web/app/harness/harnessHtml.ts)).
-- **Buscador /search**: los resultados son estado derivado (`useMemo`) en vez de `innerHTML` manual que React sobrescribía ([SearchClient.tsx](../../../apps/web/components/SearchClient.tsx)).
+- **Navegación a harness desde /fleet**: la fila enlaza `<a href="/harness/<name>">` (`apps/web/app/fleet/fleetHtml.ts` — archivo eliminado con apps/web el 2026-07-28).
+- **Tabs current/history/checkpoints/workspace MOC (404)**: los tokens de `/api/md` ahora son los que `resolveMd` acepta (`current`/`history`/`checkpoints`/`index`), no filenames (`apps/web/app/harness/harnessHtml.ts` — eliminado).
+- **Buscador /search**: los resultados son estado derivado (`useMemo`) en vez de `innerHTML` manual que React sobrescribía (`apps/web/components/SearchClient.tsx` — eliminado).
 
 ### Código muerto eliminado
 - **Borrado:** `apps/web/lib/toolboxCore.ts` (smoke de feature 42, 0 importadores, superseded por `lib/runtime.ts`); `handyman/src/toolbox_ask.ts` y `handyman/src/toolbox_summary.ts` (shims sin ningún importador/test/export — revisa la nota de feature 50 que los listaba como "entrypoints estables": es falso para estos dos; `toolbox_llm`/`toolbox_draft` **sí** están vivos vía deep-import de tests, se conservan).

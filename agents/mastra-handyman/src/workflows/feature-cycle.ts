@@ -61,6 +61,17 @@ export async function callHandymanTool(
   } catch (error) {
     return { ok: false, data: {}, error: error instanceof Error ? error.message : String(error) };
   }
+  // Mastra's MCPClient does NOT surface server-side isError envelopes as
+  // errors: it hands back the error TEXT as a normal result (README gotcha
+  // 12). A string result carrying an MCP/validation error is a FAILURE —
+  // without this, a server-rejected feature_add read as "added" with empty
+  // data (the 2026-07-28 Studio run with a spaced feature name).
+  const looksLikeMcpError = (text: string): boolean =>
+    /MCP error|Input validation|invalid arguments|"isError":\s*true|status:\s*error/i.test(text);
+  if (typeof raw === 'string') {
+    if (looksLikeMcpError(raw)) return { ok: false, data: {}, error: raw.slice(0, 500) };
+    return { ok: true, data: { output: raw } };
+  }
   const envelope = (raw ?? {}) as {
     isError?: boolean;
     structuredContent?: Record<string, unknown>;
@@ -77,6 +88,9 @@ export async function callHandymanTool(
   if (!envelope.content && typeof raw === 'object' && raw !== null && Object.keys(raw).length > 0) {
     // The wrapper already unwrapped the payload.
     return { ok: true, data: raw as Record<string, unknown> };
+  }
+  if (text && looksLikeMcpError(text)) {
+    return { ok: false, data: {}, error: text.slice(0, 500) };
   }
   try {
     return { ok: true, data: JSON.parse(text) as Record<string, unknown> };
@@ -109,11 +123,20 @@ export function cliFailed(data: Record<string, unknown>): boolean {
 // Schemas
 // ---------------------------------------------------------------------------
 
-/** What flows between steps (and the workflow input). */
+/** What flows between steps (and the workflow input). The feature regex is
+ *  the harness naming rule enforced at the door: a Studio run typed with
+ *  spaces ("revision de antiguo harness") must fail AT SUBMISSION with a
+ *  clear message, not burn a full agent run that ends in close_rejected
+ *  while every step reports false success (2026-07-28 incident). */
 const carriedSchema = z.object({
-  feature: z.string(),
+  feature: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]+$/, 'feature name must be [A-Za-z0-9_-]+ (use hyphens, no spaces)'),
   detail: z.string().optional(),
 });
+
+/** Exported for tests (submission-time naming validation). */
+export { carriedSchema };
 
 /** Typed business outcome of the whole cycle — the workflow output. */
 const cycleOutputSchema = z.object({

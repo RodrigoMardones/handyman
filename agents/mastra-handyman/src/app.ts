@@ -52,7 +52,7 @@ export async function buildApp() {
     // Scorer registry (phase 4): runEvals persists scores per case and looks
     // scorers up by id — unregistered ids warn on save. Instances here share
     // ids with the ones the eval runner creates inline; the eval's own
-    // instances produce the scores, these make them persistable (score_events).
+    // instances produce the scores, these make them persistable (mastra_scorers).
     scorers: {
       'check-tool-order': checks.toolOrder([
         'handyman_feature_add',

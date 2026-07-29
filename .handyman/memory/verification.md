@@ -135,6 +135,8 @@ OLLAMA_BASE_URL=... bash tests/test_toolbox_serve.sh` -> `48 run, 48 passed,
 0 failed`, y los procesos arrancados a mano seguian vivos (y el servidor
 seguia respondiendo) despues de que la suite terminara.
 
+**(RETIRADO 2026-07-28: `apps/web` y sus suites `test_web_*` + `test_toolbox_serve.sh` se eliminaron; el panel es Mastra Studio via `pnpm studio`. Lo que sigue es historia de la migracion Next.)**
+
 **apps/web (Next.js strangler, feature `toolbox_next_scaffold`).** Mismo
 mecanismo `TOOLBOX_BASE_URL`, apuntando esta vez al puerto de
 `apps/web/.next/standalone/apps/web/server.js` (arranque real documentado en

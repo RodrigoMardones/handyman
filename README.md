@@ -14,7 +14,7 @@ La idea central es simple: el chat coordina, pero el disco es la fuente de verda
 |---------------|---------|--------------------|
 | Instalar la skill | [Instalacion Con Skills](#-instalacion-con-skills) | Agregar Handyman a tu entorno de skills. |
 | Entender el flujo | [Que Es Handyman](#-que-es-handyman) | Roles, estado en disco y verificacion. |
-| Arrancar el panel web | [apps/web/README.md](apps/web/README.md) | El toolBox corriendo en `localhost:3210`. |
+| Arrancar el panel de agentes | [agents/mastra-handyman/README.md](agents/mastra-handyman/README.md) | Mastra Studio corriendo en `localhost:4111` (`pnpm studio`). |
 | Ubicar el codigo | [Estructura Del Monorepo](#%EF%B8%8F-estructura-del-monorepo) | Las tres unidades del workspace. |
 | Instalar el harness | [Modos De Instalacion](#-modos-de-instalacion) | Elegir `local` o `global` sin mezclar estado. |
 | Ubicar archivos | [Archivos Principales](#-archivos-principales) | Saber que editar y que revisar. |
@@ -79,14 +79,17 @@ Este repositorio es un workspace pnpm con tres unidades:
 | Unidad | Que contiene |
 |--------|--------------|
 | [`handyman/`](handyman) | El toolchain TypeScript/Node (CLI de features, backlog, preflight, toolbox) y la skill (`SKILL.md`, `references/`, `assets/`). |
-| [`packages/toolbox-core/`](packages/toolbox-core) | La capa de datos HTTP-agnostica y los relays LLM que comparten el toolchain y el panel. |
-| [`apps/web/`](apps/web) | El **panel web toolBox**: la vista Next.js de los harnesses registrados. Arranque en [apps/web/README.md](apps/web/README.md). |
+| [`packages/toolbox-core/`](packages/toolbox-core) | La capa de datos compartida del toolchain (registry, fleet, relays LLM). |
+| [`agents/mastra-handyman/`](agents/mastra-handyman) | El runtime de agentes (Mastra): leader + roles sobre el MCP, workflow durable, skill mirror y el panel Mastra Studio. Arranque: `pnpm studio`. |
 
 ```bash
 pnpm install
 pnpm --filter handyman build          # compila toolchain + toolbox-core
-pnpm --filter @handyman/web dev       # panel en http://localhost:3210
+pnpm studio                           # MCP + Mastra Studio en http://localhost:4111
 ```
+
+> El panel web `apps/web` se eliminó el 2026-07-28: el observador es Mastra
+> Studio (ADR `docs/adr-mastra-adopcion.md`).
 
 ## 🏗️ Modos De Instalacion
 

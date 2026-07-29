@@ -8,6 +8,7 @@
     "run-feature": "tsx run-feature.ts",
     "run-workflow": "tsx run-workflow.ts",
     "run-skill": "tsx run-skill.ts",
+    "studio": "mastra dev -d studio -e ../../.env",
     "test:unit": "vitest run",
     "test:eval": "tsx run-evals.ts"
   },
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
+    "mastra": "1.20.2",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2",
     "vitest": "^4.1.10"

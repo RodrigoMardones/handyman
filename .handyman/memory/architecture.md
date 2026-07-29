@@ -31,28 +31,30 @@ Define que es "buen trabajo" en este repo. Los reviewers evaluan el codigo contr
      `resolveWorkspace` y el data layer allowlisted del observador
      (`state.ts`: guards, corpus, md, tags, CSP). handyman lo consume via
      `workspace:*` y deja shims re-export en `src/` para que los entrypoints
-     `dist/` historicos (tests, serve) no cambien; `buildState` vive en
-     `handyman/src/toolbox_state.ts` (necesita snapshots/metrics del CLI) y
-     se expone a `apps/web` con el export `"./state"` del package.json. El
+     `dist/` historicos (tests) no cambien; `buildState` vive en
+     `handyman/src/toolbox_state.ts` (necesita snapshots/metrics del CLI);
+     su consumidor web (`apps/web`, export `"./state"`) se elimino el
+     2026-07-28 y queda solo para tests. El
      build es `tsc -b` con project reference (el paquete compila primero);
      CI instala el workspace con pnpm.
    - **Datos/plantillas:** `handyman/assets/` (templates + `schemas/*.json`) son datos,
      no codigo. Los JSON Schema son la fuente de verdad del contrato de estado.
-   - **Observador (toolBox):** `node dist/toolbox.js serve` levanta un solo
-     proceso read-only sobre el registro de harnesses: el Next standalone de
-     `apps/web`. `handyman/src/toolbox*.ts` aportan el CLI y el armado de estado
-     (`toolbox_state.ts` / `buildState`); la UI y todas las rutas HTTP viven en
-     `apps/web`. El panel UMD legacy (`assets/toolbox_panel.js`) se retiro en la
-     feature `toolbox_panel_retirement` y el server Node (`toolbox_serve.ts`) en
-     la feature 50, asi que `GET /` ya no es un placeholder: sirve la landing
-     unificada. Los writes siguen en los CLIs de rol (la unica ruta que escribe
-     disco es `POST /api/intake`).
+   - **Observador (toolBox) — RETIRADO 2026-07-28:** `apps/web` (el panel
+     Next) se elimino junto con `toolbox.js serve`; el panel de agentes es
+     **Mastra Studio** (`pnpm studio` -> `scripts/studio-local.sh`, que levanta
+     MCP + `mastra dev` con el proyecto de experimento). Los subcomandos
+     read-only del toolBox (`status`/`health`/`timeline`/`moc`/`review-notes`)
+     siguen siendo el contrato; `handyman/src/toolbox_state.ts`/`buildState`
+     queda para tests y para el export `"./state"` (ya sin consumidor web).
+     `toolbox_llm.ts`/`toolbox_draft.ts` quedan huerfanos (solo tests los
+     ejercitan) — candidatos a retiro.
 2. **Politica de dependencias.** Minimalismo agresivo: solo stdlib de Node +
    `ajv` (validacion de los mismos JSON Schema) + `vis-network` (renderer de
    graphify, servido como UMD desde `node_modules` en `/vendor/vis-network.js`).
    Las deps de UI del antiguo panel UMD (marked/dompurify/minisearch/react/htm)
-   se retiraron de `handyman/package.json` con el panel y viven ahora en
-   `apps/web` (ESM) y `packages/toolbox-core` (minisearch Node-side). Toda dep
+   se retiraron de `handyman/package.json` con el panel y vivian en
+   `apps/web` (ESM, eliminado el 2026-07-28) y `packages/toolbox-core`
+   (minisearch Node-side). Toda dep
    nueva requiere justificacion explicita.
    - **`minisearch` en `apps/web`** (feature 47, CHECKPOINTS C3): la vista
      `/search` de la app Next construye el indice BM25 client-side sobre

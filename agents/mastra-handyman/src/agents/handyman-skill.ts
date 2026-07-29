@@ -12,7 +12,7 @@
 // features on real projects, not just exercise the process verbs.
 import { join } from 'node:path';
 import { Agent } from '../mastra';
-import { DEFAULT_ROLE_MODEL, resolveModel } from '../ports/model-catalog';
+import { DEFAULT_ROLE_MODEL, resolveModel, roleDefaultOptions } from '../ports/model-catalog';
 import { roleWorkspace } from '../ports/workspace';
 import { webTools } from '../ports/web-tools';
 
@@ -23,6 +23,7 @@ const REPO_ROOT = process.env.HANDYMAN_REPO_ROOT ?? join(process.cwd(), '..', '.
 export const HANDYMAN_SKILL_DIR = join(REPO_ROOT, 'handyman');
 
 export function createHandymanSkillAgent(tools: Record<string, unknown>, project: string) {
+  const spec = process.env.HANDYMAN_LEADER_MODEL ?? DEFAULT_ROLE_MODEL;
   return new Agent({
     id: 'handyman-skill-mirror',
     name: 'Handyman Skill Mirror',
@@ -51,10 +52,10 @@ probes, never a fallback target).
 
 Your step budget is LIMITED: no exploratory probes beyond what the protocol
 needs (skill loads + the cycle verbs + at most one verify).`,
-    model: resolveModel(process.env.HANDYMAN_LEADER_MODEL ?? DEFAULT_ROLE_MODEL),
+    model: resolveModel(spec),
     tools: { ...tools, ...webTools() } as never,
     skills: [HANDYMAN_SKILL_DIR],
     workspace: roleWorkspace('skill', project),
-    defaultOptions: { maxSteps: 20, modelSettings: { maxOutputTokens: 16384 } },
+    defaultOptions: { ...roleDefaultOptions(spec), maxSteps: 20 },
   });
 }

@@ -8,10 +8,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Agent, MCPClient } from '../mastra';
 import type { Memory } from '../mastra';
-import { resolveModel, resolveRoleModels } from '../ports/model-catalog';
+import { resolveModel, resolveRoleModels, roleDefaultOptions } from '../ports/model-catalog';
 import { businessMemorySnapshot } from '../ports/memory';
 import { roleWorkspace } from '../ports/workspace';
 import { webTools } from '../ports/web-tools';
+import { experimentalSkillDirs } from '../ports/skills';
 import { implementerVerbs, reviewerVerbs, toolsForVerbs } from '../domain/role-tools';
 
 // Repo root: the documented runtime (tsx run-feature.ts from this package's
@@ -167,13 +168,9 @@ export async function connectHandymanMcp() {
 // leader's maxSteps — without these the subagent falls back to the Mastra
 // default of 5, which cut the implementer off before report_write landed
 // (found in the sup_loop_1/sup_mixed_kimi runs: leader narrated "report
-// written", disk said otherwise). maxOutputTokens: Mastra's registry does
-// not know glm-5.2 and caps output at 4096 with a warning; GLM also burns
-// output tokens on thinking, so keep the cap generous (Flue used 16384).
-const ROLE_DEFAULT_OPTIONS = {
-  maxSteps: 15,
-  modelSettings: { maxOutputTokens: 16384 },
-} as const;
+// written", disk said otherwise). maxOutputTokens/reasoning: per-model, via
+// roleDefaultOptions (Mastra's registry does not know glm-5.2 and caps
+// output at 4096 with a warning; GLM also burns output tokens on thinking).
 
 /** Implementer + reviewer subagents, shared by the supervisor (phase 1) and
  *  the feature-cycle workflow (phase 3): one definition, two orchestration
@@ -189,7 +186,7 @@ export function createRoleAgents(tools: Record<string, unknown>) {
     model: resolveModel(MODELS.implementer),
     tools: toolsForVerbs(tools, implementerVerbs()) as never,
     workspace: roleWorkspace('implementer', PROJECT),
-    defaultOptions: ROLE_DEFAULT_OPTIONS,
+    defaultOptions: roleDefaultOptions(MODELS.implementer),
   });
 
   const reviewer = new Agent({
@@ -201,7 +198,7 @@ export function createRoleAgents(tools: Record<string, unknown>) {
     model: resolveModel(MODELS.reviewer),
     tools: toolsForVerbs(tools, reviewerVerbs()) as never,
     workspace: roleWorkspace('reviewer', PROJECT),
-    defaultOptions: ROLE_DEFAULT_OPTIONS,
+    defaultOptions: roleDefaultOptions(MODELS.reviewer),
   });
 
   return { implementer, reviewer };
@@ -217,6 +214,10 @@ export async function createHandymanLeader(
   options: { memory?: Memory; subagents?: ReturnType<typeof createRoleAgents> } = {},
 ) {
   const { implementer, reviewer } = options.subagents ?? createRoleAgents(tools);
+  // Experimental skills (agents/mastra-handyman/skills/*/SKILL.md) load on
+  // the leader only — the skill mirror keeps the canonical handyman skill
+  // alone by design.
+  const skills = experimentalSkillDirs();
 
   return new Agent({
     id: 'handyman-leader',
@@ -228,7 +229,8 @@ export async function createHandymanLeader(
     tools: { ...tools, ...webTools() } as never,
     agents: { implementer, reviewer },
     workspace: roleWorkspace('leader', PROJECT),
-    defaultOptions: ROLE_DEFAULT_OPTIONS,
+    ...(skills.length > 0 ? { skills } : {}),
+    defaultOptions: roleDefaultOptions(MODELS.leader),
     ...(options.memory ? { memory: options.memory } : {}),
   });
 }

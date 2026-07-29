@@ -221,19 +221,55 @@ HANDYMAN_PROJECT_ROOT=/tmp/hm-mastra-spike pnpm run-workflow -- status <feature>
     `listFiles` no está en la interfaz `WorkspaceFilesystem` (solo las tools
     del agente la exponen); la API programática es `readFile`/`writeFile`/
     `stat`/…
+17. **Un `isError` del MCP vuelve como TEXTO plano del wrapper y se leía como
+    éxito** (incidente Studio 2026-07-28): un run con feature con espacios
+    (`revision de antiguo harness…`) mostró `feature_add: added` /
+    `feature_start: in_progress` sin escribir nada (el servidor rechazó por
+    regex y el texto del error pasó por `callHandymanTool` como `ok:true,
+    data:{}`); los agentes improvisaron reportes con el nombre sanitizado y
+    el close terminó `close_rejected`. Fix doble: `carriedSchema` valida el
+    nombre en la SUBMISSION del workflow (mensaje claro en la UI) y
+    `callHandymanTool` trata cualquier texto con pinta de error MCP como
+    `ok:false`. Tests: `feature-cycle.test.ts` (27/27).
 
 ## Modelos por rol (multi-provider)
 
-| Rol | Env var | Default |
+| Rol | Env var | Default (`pnpm studio`) |
 |---|---|---|
-| leader | `HANDYMAN_LEADER_MODEL` | `zai/glm-5.2` |
+| leader | `HANDYMAN_LEADER_MODEL` | `kimi-coding/k3` |
 | implementer | `HANDYMAN_IMPLEMENTER_MODEL` | `zai/glm-5.2` |
 | reviewer | `HANDYMAN_REVIEWER_MODEL` | `zai/glm-5.2` |
 
-Providers (`src/ports/model-catalog.ts`): `zai` → Z.AI GLM (protocolo
-Anthropic, key `Z_AI_API_KEY`); `kimi-coding` → Kimi for Coding
-(`api.kimi.com/coding`, modelos `k2p7`/`k3`, key `KIMI_API_KEY`). Un token de
-Kimi for Coding NO es válido en `api.moonshot.ai` (401) — productos distintos.
+**Principales (decisión del operador 2026-07-28):** `kimi-coding` (Kimi for
+Coding, `KIMI_API_KEY`) y `zai` (Z.AI GLM protocolo Anthropic,
+`Z_AI_API_KEY`) — factories propias en `src/ports/model-catalog.ts`.
+
+**Locales, configurados a mano:** `agents/mastra-handyman/model-catalog.json`
+declara providers extra (editar el JSON, sin tocar código) — por defecto
+`ollama` (`127.0.0.1:11434/v1`) y `lmstudio` (`127.0.0.1:1234/v1`), ambos por
+**protocolo Anthropic** (`/v1/messages`, el mismo wire ya probado con
+zai/kimi → cero dependencias nuevas, sin key). Uso:
+`HANDYMAN_IMPLEMENTER_MODEL=ollama/qwen3:32b`. `models: []` = cualquier
+modelo que el servidor tenga cargado; una lista restringe. Override de ruta:
+`HANDYMAN_MODEL_CATALOG`. La vía custom-gateway de Mastra
+(`ModelsDevGateway`) se evaluó y se descartó para locales: su maquinaria de
+providers/keys pelea con servidores sin key (ver explore report).
+
+**Router built-in (pass-through):** cualquier otro spec cae como string al
+model router de Mastra (159 providers) — `openrouter/*` (con
+`OPENROUTER_API_KEY`), `openai/*`, `google/*`… disponible pero SIN
+credenciales configuradas a fecha de hoy (decisión: desestimado como
+default). Investigación: `.handyman/backlog/explore_modelos_dinamicos_catalogo.md`.
+
+**Capacidades por modelo** (`MODEL_CAPABILITIES`, verificadas contra la API
+de OpenRouter): presets de `reasoning`/`maxOutputTokens` para specs
+`openrouter/*` (65 536 glm / 32 768 Kimi) — aplican si alguna vez se usa el
+router con esos modelos; los providers custom quedan en 16 384 sin
+reasoning flag. `roleDefaultOptions(spec)` aplica el preset por rol.
+
+Un token de Kimi for Coding NO es válido en `api.moonshot.ai` (401) —
+productos distintos. Y ojo: el `zhipuai*` del registry apunta al endpoint CN
+(`open.bigmodel.cn`), no al Z.AI internacional del provider custom `zai`.
 
 Ejemplo mixto validado:
 
@@ -325,8 +361,45 @@ Reporte completo: `.handyman/backlog/impl_mastra_spike_phases_0_2.md`.
 - **ADR: `docs/adr-mastra-adopcion.md`** — **ratificado por el operador el
   2026-07-28** (adopción + sunset de Flue ejecutado ese día).
 
-## Superficie de sistema (2026-07-28, mandato del operador)
+## Studio (panel oficial, 2026-07-28)
 
+El aditivo post-ADR "Studio como panel" quedó habilitado con el entry
+`studio/index.ts` (re-exporta `buildApp()`) y la dev-dependency `mastra`
+pineada (`1.20.2`, peer-compatible con core 1.53.0). **Reemplaza a apps/web**
+(eliminada el mismo día junto con `toolbox serve`).
+
+Arranque ordenado (un comando, `scripts/studio-local.sh`):
+
+```bash
+pnpm studio     # desde la raíz del repo -> http://localhost:4111
+```
+
+El script, en orden: carga `.env` → build de `handyman/dist` si falta →
+bootstrap del proyecto de experimento (`HANDYMAN_PROJECT_ROOT`, default
+`/tmp/hm-studio`, via `scaffold.sh local` — NUNCA el monorepo por defecto) →
+MCP arriba en 8177 (reusa uno vivo; lo mata al salir si lo levantó él) →
+`mastra dev` en foreground. Defaults de experimento: **leader
+`kimi-coding/k3`** (override: `HANDYMAN_LEADER_MODEL`); implementer/reviewer
+siguen en `zai/glm-5.2`.
+
+Da: chat con el leader (sus 27 tools: 25 MCP + `web_search`/`web_fetch`),
+inspección de agents/tools, el workflow `feature-cycle` (start/resume desde
+la UI) y los traces en DuckDB. Verificado end-to-end: `/api/agents` 200,
+chat REST real, scaffold automático del proyecto, y skill experimental
+respondiendo `SKILL-OK` con el leader k3. **Gotcha:** `mastra dev` NO corre
+con cwd = package dir — el script fija `HANDYMAN_REPO_ROOT` explícito (la
+trampa documentada de paths relativos, aplicada al entry).
+
+### Skills experimentales
+
+Todo directorio `agents/mastra-handyman/skills/<nombre>/SKILL.md` se carga
+como skill nativa del LEADER en el siguiente arranque (`src/ports/skills.ts`)
+— sin tocar código. La skill mirror (`run-skill`) no las carga: su contrato
+es la skill canónica sola. `skills/ejemplo-skill/` es el canario del
+mecanismo (pide "prueba de skill" en el chat → `SKILL-OK`) y la plantilla de
+copia; bórrala al tener las tuyas.
+
+## Superficie de sistema (2026-07-28, mandato del operador)
 Los agentes tienen acceso real al sistema, a la manera documentada de Mastra:
 
 | Capacidad | Vía | Alcance por rol |

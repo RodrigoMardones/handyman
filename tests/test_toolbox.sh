@@ -525,7 +525,6 @@ while IFS= read -r f; do
   fi
 done <<EOF
 $(find "$SUITE_DIR/../handyman/src" "$SUITE_DIR/../packages/toolbox-core/src" \
-  "$SUITE_DIR/../apps/web/app" "$SUITE_DIR/../apps/web/lib" \
   -name '*.ts' -o -name '*.tsx' 2>/dev/null)
 EOF
 if [ -z "$NULFILES" ]; then

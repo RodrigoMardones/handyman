@@ -3,8 +3,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "web:dev": "pnpm --filter @handyman/web dev",
-    "web:build": "pnpm --filter @handyman/web build",
+    "studio": "bash scripts/studio-local.sh",
     "agents:run": "pnpm --filter @handyman/mastra-handyman run-feature",
     "agents:workflow": "pnpm --filter @handyman/mastra-handyman run-workflow",
     "agents:skill": "pnpm --filter @handyman/mastra-handyman run-skill",

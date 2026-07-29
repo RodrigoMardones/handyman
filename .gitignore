@@ -2,9 +2,6 @@
 node_modules/
 handyman/dist/
 handyman/.pack-staging/
-apps/web/.next/
-apps/web/next-env.d.ts
-apps/web/tsconfig.tsbuildinfo
 
 # Python bytecode and test caches
 __pycache__/
